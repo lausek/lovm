@@ -6,7 +6,10 @@ use crate::vm::Vm;
 fn test() {
     let mut vm = Vm::new();
     let code = code! {
-        Null, Null, Null
+        Store, A, #U(1);
+        Store, B, A;
+        Add, B, #U(1);
+        Store, C, B;
     };
 
     vm.run(&code).unwrap();
