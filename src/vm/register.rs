@@ -1,11 +1,14 @@
 use super::*;
 
+use std::cmp;
+
 #[derive(Clone, Copy, Debug)]
 pub struct VmRegister {
     a: Value,
     b: Value,
     c: Value,
     d: Value,
+    pub(super) cmp: Option<cmp::Ordering>,
 }
 
 impl VmRegister {
@@ -15,6 +18,7 @@ impl VmRegister {
             b: Value::U(0),
             c: Value::U(0),
             d: Value::U(0),
+            cmp: None,
         }
     }
 }

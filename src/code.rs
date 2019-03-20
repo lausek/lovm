@@ -32,6 +32,7 @@ pub enum Instruction {
     Div,
     Rem,
     Pow,
+    Cmp,
 
     Store,
 

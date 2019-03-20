@@ -15,10 +15,12 @@ pub enum Value {
 impl Value {
     pub fn coalesce(&self, value: &Value) -> Value {
         match (self, value) {
-            (I(s), I(n)) => *self,
-            (U(s), U(n)) => *self,
-            (I64(s), I64(n)) => *self,
-            (U64(s), U64(n)) => *self,
+            (U(_), I(_)) | (I(_), I(_)) => *self,
+            (U64(_), I64(_)) | (I64(_), I64(_)) => *self,
+            (I(s), U(_)) => Value::U(*s as u8),
+            (U(_), U(_)) => *self,
+            (I64(s), U64(_)) => Value::U64(*s as u64),
+            (U64(_), U64(_)) => *self,
             _ => panic!("cannot coalesce from `{:?}` to `{:?}`", self, value),
         }
     }
@@ -71,6 +73,32 @@ impl std::ops::Div for Value {
             (U(lhs), U(rhs)) => Value::U(lhs / rhs),
             (I64(lhs), I64(rhs)) => Value::I64(lhs / rhs),
             (U64(lhs), U64(rhs)) => Value::U64(lhs / rhs),
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl std::cmp::PartialEq for Value {
+    fn eq(&self, rhs: &Self) -> bool {
+        match (self, rhs.coalesce(&self)) {
+            (I(lhs), I(rhs)) => *lhs == rhs,
+            (U(lhs), U(rhs)) => *lhs == rhs,
+            (I64(lhs), I64(rhs)) => *lhs == rhs,
+            (U64(lhs), U64(rhs)) => *lhs == rhs,
+            (T(lhs), T(rhs)) => *lhs == rhs,
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl std::cmp::PartialOrd for Value {
+    fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
+        match (self, rhs.coalesce(&self)) {
+            (I(lhs), I(rhs)) => Some(lhs.cmp(&rhs)),
+            (U(lhs), U(rhs)) => Some(lhs.cmp(&rhs)),
+            (I64(lhs), I64(rhs)) => Some(lhs.cmp(&rhs)),
+            (U64(lhs), U64(rhs)) => Some(lhs.cmp(&rhs)),
+            (T(lhs), T(rhs)) => Some(lhs.cmp(&rhs)),
             _ => unimplemented!(),
         }
     }

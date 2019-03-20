@@ -41,19 +41,8 @@ impl Vm {
                     match inx {
                         Instruction::Store => {
                             let args = take(bl, &mut ip, 2);
-                            let val = match args[1] {
-                                Code::Register(reg) => self.register[reg],
-                                Code::Ref(addr) => self.memory[addr],
-                                Code::Value(value) => value,
-                                _ => unimplemented!(),
-                            };
-                            match args[0] {
-                                Code::Register(reg) => self.register[reg] = val,
-                                Code::Ref(addr) => self.memory[addr] = val,
-                                _ => unreachable!(),
-                            }
-                            println!("first arg {:?}", args[0]);
-                            println!("second arg {:?}", args[1]);
+                            let val = *read(&self, &args[1]);
+                            write(self, &args[0], val);
                         }
                         Instruction::Add
                         | Instruction::Sub
@@ -73,6 +62,14 @@ impl Vm {
                             };
 
                             write(self, &args[0], val)
+                        }
+                        Instruction::Cmp => {
+                            let args = take(bl, &mut ip, 2);
+                            let op1 = *read(&self, &args[0]);
+                            let op2 = *read(&self, &args[1]);
+                            println!("{:?}, {:?}", op1, op2);
+
+                            self.register.cmp = op1.partial_cmp(&op2);
                         }
                         _ => println!("not implemented: `{:?}`", inx),
                     }

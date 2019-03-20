@@ -10,6 +10,8 @@ fn test() {
         Store, B, A;
         Add, B, #U(1);
         Store, C, B;
+        Cmp, C, B;
+        Cmp, D, #I(1);
     };
 
     vm.run(&code).unwrap();
