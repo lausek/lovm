@@ -1,22 +1,23 @@
 pub mod register;
 
 use crate::code::*;
+use crate::value::*;
 
 pub const VM_MEMORY_SIZE: usize = 65556;
-pub const VM_STACK_SIZE: usize = 255;
+pub const VM_STACK_SIZE: usize = 256;
 
 pub type VmResult = Result<(), String>;
 
 pub struct Vm {
-    memory: [Code; VM_MEMORY_SIZE],
-    stack: [Code; VM_STACK_SIZE],
+    memory: [Value; VM_MEMORY_SIZE],
+    stack: [Value; VM_STACK_SIZE],
 }
 
 impl Vm {
     pub fn new() -> Self {
         Self {
-            memory: [Code::Instruction(0x0); VM_MEMORY_SIZE],
-            stack: [Code::Instruction(0x0); VM_STACK_SIZE],
+            memory: [Value::U(0); VM_MEMORY_SIZE],
+            stack: [Value::U(0); VM_STACK_SIZE],
         }
     }
 }
