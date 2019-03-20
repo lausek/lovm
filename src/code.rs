@@ -19,3 +19,12 @@ pub enum Instruction {
     Store,
     Push,
 }
+
+macro_rules! code {
+    {$($b:expr),*} => {{
+        use crate::code::Instruction::*;
+        vec![$(
+            crate::code::Code::Instruction($b)
+        ),*]
+    }}
+}

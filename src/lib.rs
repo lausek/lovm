@@ -1,3 +1,4 @@
+#[macro_use]
 pub mod code;
 pub mod test;
 pub mod value;
