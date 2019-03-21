@@ -1,7 +1,5 @@
 use self::Value::*;
 
-type Numeric = f64;
-
 #[derive(Clone, Copy, Debug)]
 pub enum Value {
     I(i8),

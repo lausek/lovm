@@ -7,8 +7,6 @@ use register::*;
 use crate::code::*;
 use crate::value::*;
 
-use std::cmp;
-
 pub const VM_MEMORY_SIZE: usize = 2400;
 pub const VM_STACK_SIZE: usize = 256;
 
@@ -65,12 +63,25 @@ impl Vm {
 
                             write(self, &args[0], val)
                         }
+                        Instruction::And | Instruction::Or | Instruction::Xor => {
+                            let args = take(bl, &mut ip, 2);
+                            let op1 = usize::from(*read(&self, &args[0]));
+                            let op2 = usize::from(*read(&self, &args[1]));
+                            println!("{:?}, {:?}", op1, op2);
+
+                            let val = match inx {
+                                Instruction::And => op1 & op2,
+                                Instruction::Or => op1 | op2,
+                                Instruction::Xor => op1 ^ op2,
+                                _ => unimplemented!(),
+                            };
+
+                            write(self, &args[0], Value::U(val as u8))
+                        }
                         Instruction::Cmp => {
                             let args = take(bl, &mut ip, 2);
                             let op1 = *read(&self, &args[0]);
                             let op2 = *read(&self, &args[1]);
-                            println!("{:?}, {:?}", op1, op2);
-
                             self.register.cmp = op1.partial_cmp(&op2);
                         }
                         Instruction::Jeq
@@ -80,28 +91,11 @@ impl Vm {
                         | Instruction::Jle
                         | Instruction::Jlt => {
                             let args = take(bl, &mut ip, 1);
-                            let addr = usize::from(*read(&self, &args[0]));
-                            let cmp = self.register.cmp.expect("no comparison");
 
-                            match inx {
-                                Instruction::Jeq if cmp == cmp::Ordering::Equal => ip = addr,
-                                Instruction::Jne if cmp != cmp::Ordering::Equal => ip = addr,
-                                Instruction::Jge
-                                    if (cmp == cmp::Ordering::Greater)
-                                        | (cmp == cmp::Ordering::Equal) =>
-                                {
-                                    ip = addr
-                                }
-                                Instruction::Jgt if cmp == cmp::Ordering::Greater => ip = addr,
-                                Instruction::Jle
-                                    if (cmp == cmp::Ordering::Less)
-                                        | (cmp == cmp::Ordering::Equal) =>
-                                {
-                                    ip = addr
-                                }
-                                Instruction::Jlt if cmp == cmp::Ordering::Less => ip = addr,
-                                // no jump will be executed
-                                _ => {}
+                            if self.register.is_jmp_needed(inx) {
+                                ip = usize::from(*read(&self, &args[0]));
+                            } else {
+                                ip += 1;
                             }
 
                             continue;

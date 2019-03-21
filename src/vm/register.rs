@@ -21,6 +21,24 @@ impl VmRegister {
             cmp: None,
         }
     }
+
+    pub fn is_jmp_needed(&self, inx: Instruction) -> bool {
+        let cmp = self.cmp.expect("no comparison");
+        match inx {
+            Instruction::Jeq if cmp == cmp::Ordering::Equal => true,
+            Instruction::Jne if cmp != cmp::Ordering::Equal => true,
+            Instruction::Jge if (cmp == cmp::Ordering::Greater) | (cmp == cmp::Ordering::Equal) => {
+                true
+            }
+            Instruction::Jgt if cmp == cmp::Ordering::Greater => true,
+            Instruction::Jle if (cmp == cmp::Ordering::Less) | (cmp == cmp::Ordering::Equal) => {
+                true
+            }
+            Instruction::Jlt if cmp == cmp::Ordering::Less => true,
+            // no jump will be executed
+            _ => false,
+        }
+    }
 }
 
 impl std::ops::Index<Register> for VmRegister {

@@ -32,6 +32,9 @@ pub enum Instruction {
     Div,
     Rem,
     Pow,
+    And,
+    Or,
+    Xor,
 
     Cmp,
     Jeq,
