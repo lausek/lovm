@@ -6,6 +6,7 @@ use crate::vm::Vm;
 fn test() {
     let mut vm = Vm::new();
     let code = code! {
+        Push;
         Add, A, #U(1);
         Cmp, A, #U(10);
         Jne, #U(0);

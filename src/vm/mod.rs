@@ -15,7 +15,7 @@ pub type VmResult = Result<(), String>;
 pub struct Vm {
     memory: VmMemory,
     register: VmRegister,
-    stack: [Value; VM_STACK_SIZE],
+    stack: Vec<VmRegister>,
 }
 
 impl Vm {
@@ -23,7 +23,7 @@ impl Vm {
         Self {
             memory: VmMemory::new(),
             register: VmRegister::new(),
-            stack: [Value::U(0); VM_STACK_SIZE],
+            stack: Vec::with_capacity(VM_STACK_SIZE),
         }
     }
 }
@@ -47,7 +47,10 @@ impl Vm {
                         Instruction::Add
                         | Instruction::Sub
                         | Instruction::Mul
-                        | Instruction::Div => {
+                        | Instruction::Div
+                        | Instruction::And
+                        | Instruction::Or
+                        | Instruction::Xor => {
                             let args = take(bl, &mut ip, 2);
                             let op1 = *read(&self, &args[0]);
                             let op2 = *read(&self, &args[1]);
@@ -58,18 +61,6 @@ impl Vm {
                                 Instruction::Sub => op1 - op2,
                                 Instruction::Mul => op1 * op2,
                                 Instruction::Div => op1 / op2,
-                                _ => unimplemented!(),
-                            };
-
-                            write(self, &args[0], val)
-                        }
-                        Instruction::And | Instruction::Or | Instruction::Xor => {
-                            let args = take(bl, &mut ip, 2);
-                            let op1 = *read(&self, &args[0]);
-                            let op2 = *read(&self, &args[1]);
-                            println!("{:?}, {:?}", op1, op2);
-
-                            let val = match inx {
                                 Instruction::And => op1 & op2,
                                 Instruction::Or => op1 | op2,
                                 Instruction::Xor => op1 ^ op2,
