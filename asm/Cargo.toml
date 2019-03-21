@@ -8,4 +8,8 @@ edition = "2018"
 name = "lovm-asm"
 path = "src/bin.rs"
 
+[lib]
+name = "lovm_asm_lib"
+
 [dependencies]
+lovm = { path = "../." }
