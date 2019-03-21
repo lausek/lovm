@@ -1,0 +1,11 @@
+[package]
+name = "lovm-asm"
+version = "0.1.0"
+authors = ["lausek <root@lausek.eu>"]
+edition = "2018"
+
+[[bin]]
+name = "lovm-asm"
+path = "src/bin.rs"
+
+[dependencies]
