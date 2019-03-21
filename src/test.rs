@@ -9,11 +9,11 @@ fn test() {
         Add, A, #U(1);
         Cmp, A, #U(10);
         Jne, #U(0);
-        Push;
-        Store, B, #U(0b1111_0000);
+        Pusha;
+        Mov, B, #U(0b1111_0000);
         Xor, B, #U(0b0000_1111);
         Cmp, B, #U(0);
-        Pop;
+        Popa;
     };
 
     println!("bytecode: {:?}", code);

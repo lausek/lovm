@@ -37,6 +37,7 @@ pub enum Instruction {
     Xor,
 
     Cmp,
+    Jmp,
     Jeq,
     Jne,
     Jge,
@@ -44,11 +45,13 @@ pub enum Instruction {
     Jle,
     Jlt,
 
-    Store,
+    Mov,
     Call,
     Ret,
     Push,
     Pop,
+    Pusha,
+    Popa,
 }
 
 macro_rules! code {

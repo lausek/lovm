@@ -15,6 +15,7 @@ pub type VmResult = Result<(), String>;
 pub struct Vm {
     memory: VmMemory,
     stack: Vec<VmRegister>,
+    code_stack: Vec<Value>,
 }
 
 impl Vm {
@@ -22,6 +23,7 @@ impl Vm {
         Self {
             memory: VmMemory::new(),
             stack: Vec::with_capacity(VM_STACK_SIZE),
+            code_stack: Vec::with_capacity(VM_STACK_SIZE),
         }
     }
 }
@@ -39,7 +41,7 @@ impl Vm {
                 Code::Instruction(inx) => {
                     println!("{:?}", inx);
                     match inx {
-                        Instruction::Store => {
+                        Instruction::Mov => {
                             let args = take(bl, &mut ip, 2);
                             let val = *read(&self, &args[1]);
                             write(self, &args[0], val);
@@ -96,8 +98,18 @@ impl Vm {
                             let args = take(bl, &mut ip, 1);
                             ip = usize::from(*read(&self, &args[0]));
                         }
-                        Instruction::Push => self.push_frame(None),
-                        Instruction::Pop => self.pop_frame(None),
+                        Instruction::Push => {
+                            let args = take(bl, &mut ip, 1);
+                            let val = *read(self, &args[0]);
+                            self.code_stack.push(val);
+                        }
+                        Instruction::Pop => {
+                            let val = self.code_stack.pop().expect("nothing to pop");
+                            let args = take(bl, &mut ip, 1);
+                            write(self, &args[0], val);
+                        }
+                        Instruction::Pusha => self.push_frame(None),
+                        Instruction::Popa => self.pop_frame(None),
                         _ => println!("not implemented: `{:?}`", inx),
                     }
                 }
