@@ -77,6 +77,48 @@ impl std::ops::Div for Value {
     }
 }
 
+impl std::ops::BitAnd for Value {
+    type Output = Value;
+    fn bitand(self, rhs: Self) -> Self {
+        match (self, rhs.coalesce(&self)) {
+            (I(lhs), I(rhs)) => Value::I(lhs & rhs),
+            (U(lhs), U(rhs)) => Value::U(lhs & rhs),
+            (I64(lhs), I64(rhs)) => Value::I64(lhs & rhs),
+            (U64(lhs), U64(rhs)) => Value::U64(lhs & rhs),
+            (T(lhs), T(rhs)) => Value::T(lhs & rhs),
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl std::ops::BitOr for Value {
+    type Output = Value;
+    fn bitor(self, rhs: Self) -> Self {
+        match (self, rhs.coalesce(&self)) {
+            (I(lhs), I(rhs)) => Value::I(lhs | rhs),
+            (U(lhs), U(rhs)) => Value::U(lhs | rhs),
+            (I64(lhs), I64(rhs)) => Value::I64(lhs | rhs),
+            (U64(lhs), U64(rhs)) => Value::U64(lhs | rhs),
+            (T(lhs), T(rhs)) => Value::T(lhs | rhs),
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl std::ops::BitXor for Value {
+    type Output = Value;
+    fn bitxor(self, rhs: Self) -> Self {
+        match (self, rhs.coalesce(&self)) {
+            (I(lhs), I(rhs)) => Value::I(lhs ^ rhs),
+            (U(lhs), U(rhs)) => Value::U(lhs ^ rhs),
+            (I64(lhs), I64(rhs)) => Value::I64(lhs ^ rhs),
+            (U64(lhs), U64(rhs)) => Value::U64(lhs ^ rhs),
+            (T(lhs), T(rhs)) => Value::T(lhs ^ rhs),
+            _ => unimplemented!(),
+        }
+    }
+}
+
 impl std::cmp::PartialEq for Value {
     fn eq(&self, rhs: &Self) -> bool {
         match (self, rhs.coalesce(&self)) {

@@ -65,8 +65,8 @@ impl Vm {
                         }
                         Instruction::And | Instruction::Or | Instruction::Xor => {
                             let args = take(bl, &mut ip, 2);
-                            let op1 = usize::from(*read(&self, &args[0]));
-                            let op2 = usize::from(*read(&self, &args[1]));
+                            let op1 = *read(&self, &args[0]);
+                            let op2 = *read(&self, &args[1]);
                             println!("{:?}, {:?}", op1, op2);
 
                             let val = match inx {
@@ -76,7 +76,7 @@ impl Vm {
                                 _ => unimplemented!(),
                             };
 
-                            write(self, &args[0], Value::U(val as u8))
+                            write(self, &args[0], val)
                         }
                         Instruction::Cmp => {
                             let args = take(bl, &mut ip, 2);
