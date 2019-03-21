@@ -9,6 +9,7 @@ pub enum Value {
     I64(i64),
     U64(u64),
     T(bool),
+    // TODO: Usize(u8) needed?
     // TODO: add str?
 }
 
@@ -99,6 +100,18 @@ impl std::cmp::PartialOrd for Value {
             (I64(lhs), I64(rhs)) => Some(lhs.cmp(&rhs)),
             (U64(lhs), U64(rhs)) => Some(lhs.cmp(&rhs)),
             (T(lhs), T(rhs)) => Some(lhs.cmp(&rhs)),
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl std::convert::From<Value> for usize {
+    fn from(v: Value) -> usize {
+        match v {
+            I(n) => n as usize,
+            U(n) => n as usize,
+            I64(n) => n as usize,
+            U64(n) => n as usize,
             _ => unimplemented!(),
         }
     }

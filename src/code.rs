@@ -32,11 +32,19 @@ pub enum Instruction {
     Div,
     Rem,
     Pow,
+
     Cmp,
+    Jeq,
+    Jne,
+    Jge,
+    Jgt,
+    Jle,
+    Jlt,
 
     Store,
 
     Push,
+    Pop,
 }
 
 macro_rules! code {
@@ -45,10 +53,10 @@ macro_rules! code {
         use crate::code::Register::*;
         use crate::value::Value::*;
         vec![$(
-            crate::code::Code::Instruction($inx),
-            $(
+            crate::code::Code::Instruction($inx)
+            $(,
                 crate::code::Code::Register($reg)
-             ),*
+             )*
             $(,
                 crate::code::Code::Value($c)
              )?

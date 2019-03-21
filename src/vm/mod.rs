@@ -7,6 +7,8 @@ use register::*;
 use crate::code::*;
 use crate::value::*;
 
+use std::cmp;
+
 pub const VM_MEMORY_SIZE: usize = 2400;
 pub const VM_STACK_SIZE: usize = 256;
 
@@ -71,10 +73,43 @@ impl Vm {
 
                             self.register.cmp = op1.partial_cmp(&op2);
                         }
+                        Instruction::Jeq
+                        | Instruction::Jne
+                        | Instruction::Jge
+                        | Instruction::Jgt
+                        | Instruction::Jle
+                        | Instruction::Jlt => {
+                            let args = take(bl, &mut ip, 1);
+                            let addr = usize::from(*read(&self, &args[0]));
+                            let cmp = self.register.cmp.expect("no comparison");
+
+                            match inx {
+                                Instruction::Jeq if cmp == cmp::Ordering::Equal => ip = addr,
+                                Instruction::Jne if cmp != cmp::Ordering::Equal => ip = addr,
+                                Instruction::Jge
+                                    if (cmp == cmp::Ordering::Greater)
+                                        | (cmp == cmp::Ordering::Equal) =>
+                                {
+                                    ip = addr
+                                }
+                                Instruction::Jgt if cmp == cmp::Ordering::Greater => ip = addr,
+                                Instruction::Jle
+                                    if (cmp == cmp::Ordering::Less)
+                                        | (cmp == cmp::Ordering::Equal) =>
+                                {
+                                    ip = addr
+                                }
+                                Instruction::Jlt if cmp == cmp::Ordering::Less => ip = addr,
+                                // no jump will be executed
+                                _ => {}
+                            }
+
+                            continue;
+                        }
                         _ => println!("not implemented: `{:?}`", inx),
                     }
                 }
-                _ => panic!("shall not happen!"),
+                what => panic!("shall not happen! {:?}", what),
             }
 
             println!("regs: {:?}", self.register);
