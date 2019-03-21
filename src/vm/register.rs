@@ -9,6 +9,7 @@ pub struct VmRegister {
     c: Value,
     d: Value,
     pub(super) cmp: Option<cmp::Ordering>,
+    pub(super) ret: Option<usize>,
 }
 
 impl VmRegister {
@@ -19,6 +20,7 @@ impl VmRegister {
             c: Value::U(0),
             d: Value::U(0),
             cmp: None,
+            ret: None,
         }
     }
 

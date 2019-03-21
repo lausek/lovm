@@ -14,7 +14,6 @@ pub type VmResult = Result<(), String>;
 
 pub struct Vm {
     memory: VmMemory,
-    register: VmRegister,
     stack: Vec<VmRegister>,
 }
 
@@ -22,7 +21,6 @@ impl Vm {
     pub fn new() -> Self {
         Self {
             memory: VmMemory::new(),
-            register: VmRegister::new(),
             stack: Vec::with_capacity(VM_STACK_SIZE),
         }
     }
@@ -33,6 +31,8 @@ impl Vm {
         let bl = bl.as_slice();
         let len = bl.len();
         let mut ip = 0usize;
+
+        self.push_frame(None);
 
         while ip < len {
             match bl[ip] {
@@ -73,7 +73,7 @@ impl Vm {
                             let args = take(bl, &mut ip, 2);
                             let op1 = *read(&self, &args[0]);
                             let op2 = *read(&self, &args[1]);
-                            self.register.cmp = op1.partial_cmp(&op2);
+                            (*register_mut(self)).cmp = op1.partial_cmp(&op2);
                         }
                         Instruction::Jeq
                         | Instruction::Jne
@@ -83,7 +83,7 @@ impl Vm {
                         | Instruction::Jlt => {
                             let args = take(bl, &mut ip, 1);
 
-                            if self.register.is_jmp_needed(inx) {
+                            if register(self).is_jmp_needed(inx) {
                                 ip = usize::from(*read(&self, &args[0]));
                             } else {
                                 ip += 1;
@@ -91,24 +91,50 @@ impl Vm {
 
                             continue;
                         }
+                        Instruction::Call => {
+                            self.push_frame(Some(ip + 1));
+                            let args = take(bl, &mut ip, 1);
+                            ip = usize::from(*read(&self, &args[0]));
+                        }
+                        Instruction::Push => self.push_frame(None),
+                        Instruction::Pop => self.pop_frame(None),
                         _ => println!("not implemented: `{:?}`", inx),
                     }
                 }
                 what => panic!("shall not happen! {:?}", what),
             }
 
-            println!("regs: {:?}", self.register);
+            println!("regs: {:?}", register(self));
 
             ip += 1;
         }
 
         Ok(())
     }
+
+    fn push_frame(&mut self, ret: Option<usize>) {
+        if self.stack.is_empty() {
+            self.stack.push(VmRegister::new());
+        }
+        let mut frame = register(self).clone();
+        frame.ret = ret;
+        self.stack.push(frame);
+        *register_mut(self) = VmRegister::new();
+    }
+
+    fn pop_frame(&mut self, ip: Option<&mut usize>) {
+        let frame = self.stack.pop().expect("frame to pop");
+        match (ip, frame.ret) {
+            (Some(ip), Some(jump_ip)) => *ip = jump_ip,
+            _ => {}
+        }
+        *register_mut(self) = *self.stack.last().expect("no last frame");
+    }
 }
 
 fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
     match code {
-        Code::Register(reg) => vm.register[*reg] = value,
+        Code::Register(reg) => register_mut(vm)[*reg] = value,
         Code::Ref(addr) => vm.memory[*addr] = value,
         _ => unimplemented!(),
     };
@@ -116,7 +142,7 @@ fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
 
 fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
     match code {
-        Code::Register(reg) => &vm.register[*reg],
+        Code::Register(reg) => &register(vm)[*reg],
         Code::Ref(addr) => &vm.memory[*addr],
         Code::Value(value) => value,
         _ => unimplemented!(),
@@ -127,4 +153,12 @@ fn take<'bl>(bl: &'bl [Code], ip: &mut usize, n: usize) -> &'bl [Code] {
     let view = &bl[*ip + 1..=*ip + n];
     *ip += n;
     view
+}
+
+fn register(vm: &Vm) -> &VmRegister {
+    vm.stack.last().expect("no last frame")
+}
+
+fn register_mut(vm: &mut Vm) -> &mut VmRegister {
+    vm.stack.last_mut().expect("no last frame")
 }

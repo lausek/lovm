@@ -45,7 +45,8 @@ pub enum Instruction {
     Jlt,
 
     Store,
-
+    Call,
+    Ret,
     Push,
     Pop,
 }
