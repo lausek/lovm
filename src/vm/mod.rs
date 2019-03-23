@@ -46,6 +46,15 @@ impl Vm {
                             let val = *read(&self, &args[1]);
                             write(self, &args[0], val);
                         }
+                        Instruction::Inc | Instruction::Dec => {
+                            let args = take(bl, &mut ip, 1);
+                            let val = *read(&self, &args[0]);
+                            match inx {
+                                Instruction::Inc => write(self, &args[0], val + Value::U(1)),
+                                Instruction::Dec => write(self, &args[0], val - Value::U(1)),
+                                _ => unreachable!(),
+                            }
+                        }
                         Instruction::Add
                         | Instruction::Sub
                         | Instruction::Mul
@@ -77,7 +86,8 @@ impl Vm {
                             let op2 = *read(&self, &args[1]);
                             (*register_mut(self)).cmp = op1.partial_cmp(&op2);
                         }
-                        Instruction::Jeq
+                        Instruction::Jmp
+                        | Instruction::Jeq
                         | Instruction::Jne
                         | Instruction::Jge
                         | Instruction::Jgt

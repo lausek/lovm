@@ -26,6 +26,8 @@ pub enum Register {
 #[derive(Clone, Copy, Debug)]
 #[repr(u8)]
 pub enum Instruction {
+    Inc,
+    Dec,
     Add,
     Sub,
     Mul,

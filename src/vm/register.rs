@@ -37,6 +37,7 @@ impl VmRegister {
                 true
             }
             Instruction::Jlt if cmp == cmp::Ordering::Less => true,
+            Instruction::Jmp => true,
             // no jump will be executed
             _ => false,
         }
