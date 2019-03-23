@@ -1,5 +1,3 @@
-extern crate lovm_asm_lib;
-
 use lovm::*;
 use lovm_asm_lib::*;
 
