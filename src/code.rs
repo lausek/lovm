@@ -7,9 +7,27 @@ use serde::{Deserialize, Serialize};
 
 pub type CodeBlock = Vec<Code>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Program {
     codeblock: CodeBlock,
+}
+
+impl Program {
+    pub fn serialize(&self) -> Result<Vec<u8>, bincode::Error> {
+        bincode::serialize(&self)
+    }
+
+    pub fn deserialize(bytes: &[u8]) -> Result<Self, bincode::Error> {
+        bincode::deserialize(bytes)
+    }
+
+    pub fn with_code(codeblock: CodeBlock) -> Self {
+        Self { codeblock }
+    }
+
+    pub fn code(&self) -> &CodeBlock {
+        &self.codeblock
+    }
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]

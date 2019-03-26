@@ -1,8 +1,10 @@
 pub use super::*;
 
-pub type CompileResult = Result<CodeBlock, String>;
+use self::parser::Ast;
 
-pub struct Compiler {}
+pub type CompileResult = Result<Program, String>;
+
+pub struct Compiler;
 
 impl Compiler {
     pub fn new() -> Self {
@@ -10,10 +12,17 @@ impl Compiler {
     }
 
     pub fn compile(&mut self, src: &str) -> CompileResult {
-        let ast = parser::parse(src);
-
+        let ast = parser::parse(src)?;
         println!("{:?}", ast);
 
-        Ok(CodeBlock::new())
+        let mut codeblock = CodeBlock::new();
+        for step in ast.into_iter() {
+            match step {
+                Ast::Instruction(inx) => codeblock.push(Code::Instruction(inx)),
+                _ => unimplemented!(),
+            }
+        }
+
+        Ok(Program::with_code(codeblock))
     }
 }
