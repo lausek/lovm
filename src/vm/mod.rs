@@ -1,8 +1,8 @@
 pub mod memory;
 pub mod register;
 
-use memory::*;
-use register::*;
+use self::memory::*;
+use self::register::*;
 
 use crate::code::*;
 use crate::value::*;
