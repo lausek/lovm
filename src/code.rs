@@ -1,12 +1,18 @@
 // the bytecode definition of lovm
 //
-//
 
 use crate::value::*;
 
+use serde::{Deserialize, Serialize};
+
 pub type CodeBlock = Vec<Code>;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize)]
+pub struct Program {
+    codeblock: CodeBlock,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Code {
     Instruction(Instruction),
     Ref(usize),
@@ -14,7 +20,7 @@ pub enum Code {
     Value(Value),
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum Register {
     A,
@@ -23,7 +29,7 @@ pub enum Register {
     D,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum Instruction {
     Inc,

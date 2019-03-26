@@ -1,6 +1,8 @@
 use self::Value::*;
 
-#[derive(Clone, Copy, Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Value {
     I(i8),
     U(u8),
