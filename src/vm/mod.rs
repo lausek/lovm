@@ -29,6 +29,10 @@ impl Vm {
 }
 
 impl Vm {
+    pub fn run_program(&mut self, program: &Program) -> VmResult {
+        self.run(&program.codeblock)
+    }
+
     pub fn run(&mut self, bl: &CodeBlock) -> VmResult {
         let bl = bl.as_slice();
         let len = bl.len();

@@ -13,7 +13,10 @@ fn main() {
     let mut file = std::fs::File::open(program).expect("cannot read file");
     let mut src = String::new();
     file.read_to_string(&mut src).expect("reading file failed");
-    let codeblock = compiler::compile(src.as_ref()).unwrap();
 
-    vm.run(&codeblock).unwrap();
+    let codeblock = compiler::Compiler::new()
+        .compile(src.as_ref())
+        .expect("compilation failed");
+
+    vm.run_program(&codeblock).unwrap();
 }

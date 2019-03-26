@@ -9,7 +9,7 @@ pub type CodeBlock = Vec<Code>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Program {
-    codeblock: CodeBlock,
+    pub(crate) codeblock: CodeBlock,
 }
 
 impl Program {
