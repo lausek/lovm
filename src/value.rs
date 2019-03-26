@@ -158,3 +158,14 @@ impl std::convert::From<Value> for usize {
         }
     }
 }
+
+impl std::str::FromStr for Value {
+    type Err = String;
+    fn from_str(from: &str) -> Result<Value, Self::Err> {
+        match from {
+            "true" => Ok(Value::T(true)),
+            "false" => Ok(Value::T(false)),
+            _ => Ok(Value::I64(i64::from_str(from).unwrap())),
+        }
+    }
+}

@@ -5,7 +5,7 @@ use std::str::FromStr;
 pub type LexTokens = Vec<LexToken>;
 pub type Location = (usize, usize);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum LexTokenType {
     Ident(String),
     Instruction(Instruction),
@@ -37,7 +37,7 @@ pub fn lex_line(src: &str) -> LexTokens {
 
     for c in src.chars() {
         match c {
-            '#' | ',' | ' ' if 0 < loc.1 - loc.0 - 1 => {
+            ':' | '#' | ',' | ' ' if 0 < loc.1 - loc.0 - 1 => {
                 let buffer = &src[loc.0..(loc.1 - 1)].trim();
                 if !buffer.is_empty() {
                     let tok = LexToken::new(loc, buffer);

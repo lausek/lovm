@@ -47,7 +47,7 @@ pub enum Register {
     D,
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 #[repr(u8)]
 pub enum Instruction {
     Inc,

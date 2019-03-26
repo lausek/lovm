@@ -1,3 +1,5 @@
+#![feature(bind_by_move_pattern_guards)]
+
 pub mod compiler;
 mod parser;
 
