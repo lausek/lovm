@@ -1,8 +1,7 @@
 pub mod compiler;
-mod lexer;
 mod parser;
 
-pub use lexer::*;
-pub use parser::*;
+pub use self::compiler::*;
+pub use self::parser::*;
 
 pub use lovm::code::*;
