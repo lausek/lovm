@@ -55,6 +55,8 @@ impl Compiler {
 
     fn compile_operand(&self, op: Operand) -> Result<Code, String> {
         match op {
+            // TODO: this doesn't allow for jump lookahead. whole code
+            // must be generated in first place and addresses inserted afterwards.
             Operand::Ident(ident) => match self.labels.get(&ident) {
                 Some(off) => Ok(Code::Ref(*off)),
                 _ => Err(format!("label `{}` was not declared", ident)),

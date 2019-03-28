@@ -1,0 +1,52 @@
+; the fibonacci function implemented in loas
+
+; TODO: this function would normally call `fib`.
+;       atm. a jump like that is not possible, because
+;       the label list doesn't support lookahead yet.
+fib_n:
+    push D
+    ret
+
+; TODO: use this implementation once lookahead works
+fib_recursive:
+    sub D, #1
+    push D
+    ; call fib    ; fib(n-1)
+
+    sub D, #1
+    push D
+    ; call fib    ; fib(n-2)
+
+    pop A
+    pop B
+    add A, B    ; fib(n-1) + fib(n-2)
+    push A
+    ret
+
+fib_1:
+    cmp D, #1
+    jne fib_n
+    ; the parameter was 1 -> return 1
+    push D
+    ret
+
+fib:
+    pop D       ; nth number
+    cmp D, #0
+    jne fib_1
+    ; the parameter was 0 -> return 0
+    push D
+    ret
+
+main:
+    push #0
+    call fib
+    pop A
+
+    push #1
+    call fib
+    pop A
+
+    push #8
+    call fib
+    pop A

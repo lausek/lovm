@@ -78,5 +78,6 @@ fn to_type(buffer: &str) -> LexTokenType {
     if let Ok(inx) = Instruction::from_str(buffer) {
         return LexTokenType::Instruction(inx);
     }
+    // TODO: check if `Ident` is lowercase register name (a-d) => return new Register(_) variant then
     LexTokenType::Ident(buffer.to_string())
 }
