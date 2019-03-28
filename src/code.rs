@@ -33,6 +33,7 @@ impl Program {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Code {
     Instruction(Instruction),
+    // TODO: this should be a variant of `Value`
     Ref(usize),
     Register(Register),
     Value(Value),
@@ -148,12 +149,12 @@ impl std::str::FromStr for Instruction {
     }
 }
 
-macro_rules! code {
+macro_rules! program {
     {$($inx:expr $(,$reg:ident)* $(,#$c:expr)?;)*} => {{
         use crate::code::Instruction::*;
         use crate::code::Register::*;
         use crate::value::Value::*;
-        vec![$(
+        let codeblock = vec![$(
             crate::code::Code::Instruction($inx)
             $(,
                 crate::code::Code::Register($reg)
@@ -161,6 +162,7 @@ macro_rules! code {
             $(,
                 crate::code::Code::Value($c)
              )?
-        ),*]
+        ),*];
+        crate::code::Program { codeblock }
     }}
 }

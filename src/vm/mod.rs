@@ -98,7 +98,10 @@ impl Vm {
                             let args = take(bl, &mut ip, 1);
 
                             if register(self).is_jmp_needed(inx) {
-                                ip = usize::from(*read(&self, &args[0]));
+                                match &args[0] {
+                                    Code::Ref(r) => ip = usize::from(*r),
+                                    _ => panic!("invalid jump operand"),
+                                }
                             } else {
                                 ip += 1;
                             }
@@ -169,7 +172,7 @@ fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
         Code::Register(reg) => &register(vm)[*reg],
         Code::Ref(addr) => match &vm.memory[*addr] {
             Code::Value(value) => value,
-            _ => panic!("unreadable memory accessed"),
+            code => panic!("unreadable memory accessed: {:?}", code),
         },
         Code::Value(value) => value,
         _ => unimplemented!(),

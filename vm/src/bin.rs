@@ -18,5 +18,7 @@ fn main() {
         .compile(src.as_ref())
         .expect("compilation failed");
 
+    println!("{:?}", program);
+
     vm.run(&program).unwrap();
 }

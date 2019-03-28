@@ -30,7 +30,7 @@ impl Compiler {
                     let off = if codeblock.is_empty() {
                         0
                     } else {
-                        codeblock.len() - 1
+                        codeblock.len()
                     };
                     self.labels.insert(label, off);
                 }
