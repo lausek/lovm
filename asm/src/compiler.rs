@@ -10,6 +10,11 @@ pub type CompileResult = Result<Program, String>;
 
 pub struct Compiler {
     labels: HashMap<String, usize>,
+    // TODO: if a label lookup doesn't deliver a result while generating, remember the labels
+    // name and the current generation offset for later. after all generation is done, we will
+    // go for a final lookup and insert the now existing result at the index on the codeblock.
+    // TODO: is this a reasonable approach and shouldn't this be the default behaviour for binding if so?
+    // late_binds: Vec<(String, usize)>,
 }
 
 impl Compiler {
