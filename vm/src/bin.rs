@@ -14,9 +14,9 @@ fn main() {
     let mut src = String::new();
     file.read_to_string(&mut src).expect("reading file failed");
 
-    let codeblock = compiler::Compiler::new()
+    let program = compiler::Compiler::new()
         .compile(src.as_ref())
         .expect("compilation failed");
 
-    vm.run_program(&codeblock).unwrap();
+    vm.run(&program).unwrap();
 }

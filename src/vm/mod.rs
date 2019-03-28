@@ -29,19 +29,17 @@ impl Vm {
 }
 
 impl Vm {
-    pub fn run_program(&mut self, program: &Program) -> VmResult {
-        self.run(&program.codeblock)
-    }
+    pub fn run(&mut self, program: &Program) -> VmResult {
+        let bl = &program.codeblock;
+        self.memory.map(bl, 0);
 
-    pub fn run(&mut self, bl: &CodeBlock) -> VmResult {
-        let bl = bl.as_slice();
         let len = bl.len();
         let mut ip = 0usize;
 
         self.push_frame(None);
 
         while ip < len {
-            match bl[ip] {
+            match self.memory[ip] {
                 Code::Instruction(inx) => {
                     println!("{:?}", inx);
                     match inx {

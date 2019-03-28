@@ -1,11 +1,9 @@
 #!(cfg(test))
 
-use crate::vm::Vm;
-
 #[test]
 fn test() {
-    let mut vm = Vm::new();
-    let code = code! {
+    let mut vm = crate::vm::Vm::new();
+    let codeblock = code! {
         Inc, C;
         Add, A, #U(1);
         Cmp, A, #U(10);
@@ -18,9 +16,9 @@ fn test() {
         Jeq, #U(0);
     };
 
-    println!("bytecode: {:?}", code);
+    println!("bytecode: {:?}", codeblock);
 
-    vm.run(&code).unwrap();
+    vm.run(&crate::code::Program { codeblock }).unwrap();
 
     assert!(false);
 }
