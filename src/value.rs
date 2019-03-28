@@ -165,7 +165,14 @@ impl std::str::FromStr for Value {
         match from {
             "true" => Ok(Value::T(true)),
             "false" => Ok(Value::T(false)),
-            _ => Ok(Value::I64(i64::from_str(from).unwrap())),
+            _ => {
+                const MIN: i64 = i8::min_value() as i64;
+                const MAX: i64 = i8::max_value() as i64;
+                match i64::from_str(from).unwrap() {
+                    val @ MIN..=MAX => Ok(Value::I(val as i8)),
+                    val => Ok(Value::I64(val)),
+                }
+            }
         }
     }
 }
