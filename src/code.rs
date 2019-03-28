@@ -4,12 +4,16 @@
 use crate::value::*;
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 pub type CodeBlock = Vec<Code>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Program {
     pub(crate) codeblock: CodeBlock,
+    // FIXME: `HashMap` probably is the reason why compiled
+    // code files are relatively big in size
+    pub(crate) labels: HashMap<String, usize>,
 }
 
 impl Program {
@@ -22,11 +26,22 @@ impl Program {
     }
 
     pub fn with_code(codeblock: CodeBlock) -> Self {
-        Self { codeblock }
+        Self {
+            codeblock,
+            labels: HashMap::new(),
+        }
     }
 
     pub fn code(&self) -> &CodeBlock {
         &self.codeblock
+    }
+
+    pub fn labels(&self) -> &HashMap<String, usize> {
+        &self.labels
+    }
+
+    pub fn labels_mut(&mut self) -> &mut HashMap<String, usize> {
+        &mut self.labels
     }
 }
 
@@ -163,6 +178,6 @@ macro_rules! program {
                 crate::code::Code::Value($c)
              )?
         ),*];
-        crate::code::Program { codeblock }
+        crate::code::Program::with_code(codeblock)
     }}
 }

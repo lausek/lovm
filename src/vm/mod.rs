@@ -34,7 +34,7 @@ impl Vm {
         self.memory.map(bl, 0);
 
         let len = bl.len();
-        let mut ip = 0usize;
+        let mut ip = program.labels().get("main").map(|r| *r).unwrap_or(0);
 
         self.push_frame(None);
 
@@ -111,8 +111,13 @@ impl Vm {
                         Instruction::Call => {
                             self.push_frame(Some(ip + 1));
                             let args = take(bl, &mut ip, 1);
-                            ip = usize::from(*read(&self, &args[0]));
+                            match &args[0] {
+                                Code::Ref(r) => ip = usize::from(*r),
+                                _ => panic!("invalid jump operand"),
+                            }
+                            continue;
                         }
+                        Instruction::Ret => self.pop_frame(Some(&mut ip)),
                         Instruction::Push => {
                             let args = take(bl, &mut ip, 1);
                             let val = *read(self, &args[0]);
@@ -143,10 +148,8 @@ impl Vm {
         if self.stack.is_empty() {
             self.stack.push(VmRegister::new());
         }
-        let mut frame = register(self).clone();
-        frame.ret = ret;
-        self.stack.push(frame);
-        *register_mut(self) = VmRegister::new();
+        self.stack.push(VmRegister::new());
+        register_mut(self).ret = ret;
     }
 
     fn pop_frame(&mut self, ip: Option<&mut usize>) {

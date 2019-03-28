@@ -1,0 +1,17 @@
+do_times:
+    pop D
+    inner_loop:
+    inc C
+    cmp C, D
+    jne inner_loop
+    ret
+
+; without the special label `main`, the above code
+; would be executed directly
+main:
+    push #2
+    call do_times
+
+    push #5
+    call do_times
+    ret

@@ -47,7 +47,10 @@ impl Compiler {
             }
         }
 
-        Ok(Program::with_code(codeblock))
+        let mut program = Program::with_code(codeblock);
+        *program.labels_mut() = self.labels.clone();
+
+        Ok(program)
     }
 
     fn compile_operand(&self, op: Operand) -> Result<Code, String> {
