@@ -92,7 +92,7 @@ impl Instruction {
             | Instruction::Push
             | Instruction::Pop => 1,
 
-            Instruction::Ret | Instruction::Pusha | Instruction::Popa | _ => 0,
+            Instruction::Ret | Instruction::Pusha | Instruction::Popa => 0,
         }
     }
 }

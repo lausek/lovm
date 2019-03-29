@@ -104,7 +104,7 @@ impl Vm {
 
                             if register(self).is_jmp_needed(inx) {
                                 match &args[0] {
-                                    Code::Ref(r) => ip = usize::from(*r),
+                                    Code::Ref(r) => ip = *r,
                                     _ => panic!("invalid jump operand"),
                                 }
                             } else {
