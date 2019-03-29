@@ -70,18 +70,26 @@ impl Compiler {
     }
 
     fn compile_operand(&mut self, op: Operand) -> Result<(), String> {
+        // we have to push a placeholder value or the index will become corrupt
+        let mut code = Code::Ref(std::usize::MAX);
+
         match op {
             Operand::Ident(ident) => match self.labels.get_mut(&ident) {
-                Some(LabelOffset::Resolved(off)) => self.codeblock.push(Code::Ref(*off)),
+                Some(LabelOffset::Resolved(off)) => code = Code::Ref(*off),
                 Some(LabelOffset::Unresolved(positions)) => positions.push(self.codeblock.len()),
-                _ => return Err(format!("label `{}` was not declared", ident)),
+                _ => {
+                    self.labels
+                        .insert(ident, LabelOffset::Unresolved(vec![self.codeblock.len()]));
+                }
             },
-            Operand::Register(reg) => self.codeblock.push(Code::Register(reg)),
+            Operand::Register(reg) => code = Code::Register(reg),
             Operand::Value(raw) => match Value::from_str(&raw) {
-                Ok(value) => self.codeblock.push(Code::Value(value)),
+                Ok(value) => code = Code::Value(value),
                 Err(msg) => return Err(msg),
             },
         }
+
+        self.codeblock.push(code);
         Ok(())
     }
 
@@ -94,7 +102,7 @@ impl Compiler {
             // use reverse order to not invalidate indices
             Some(LabelOffset::Unresolved(positions)) => {
                 for pos in positions.into_iter().rev() {
-                    self.codeblock.insert(pos, Code::Ref(off));
+                    *self.codeblock.get_mut(pos).unwrap() = Code::Ref(off);
                 }
                 Ok(())
             }
