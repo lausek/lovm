@@ -4,45 +4,13 @@
 use crate::value::*;
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 pub type CodeBlock = Vec<Code>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Program {
     pub(crate) codeblock: CodeBlock,
-    // FIXME: `HashMap` probably is the reason why compiled
-    // code files are relatively big in size
     pub(crate) labels: Vec<(String, usize)>,
-}
-
-impl Program {
-    pub fn serialize(&self) -> Result<Vec<u8>, bincode::Error> {
-        bincode::serialize(&self)
-    }
-
-    pub fn deserialize(bytes: &[u8]) -> Result<Self, bincode::Error> {
-        bincode::deserialize(bytes)
-    }
-
-    pub fn with_code(codeblock: CodeBlock) -> Self {
-        Self {
-            codeblock,
-            labels: vec![],
-        }
-    }
-
-    pub fn code(&self) -> &CodeBlock {
-        &self.codeblock
-    }
-
-    pub fn labels(&self) -> &Vec<(String, usize)> {
-        &self.labels
-    }
-
-    pub fn labels_mut(&mut self) -> &mut Vec<(String, usize)> {
-        &mut self.labels
-    }
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -129,6 +97,35 @@ impl Instruction {
     }
 }
 
+impl Program {
+    pub fn serialize(&self) -> Result<Vec<u8>, bincode::Error> {
+        bincode::serialize(&self)
+    }
+
+    pub fn deserialize(bytes: &[u8]) -> Result<Self, bincode::Error> {
+        bincode::deserialize(bytes)
+    }
+
+    pub fn with_code(codeblock: CodeBlock) -> Self {
+        Self {
+            codeblock,
+            labels: vec![],
+        }
+    }
+
+    pub fn code(&self) -> &CodeBlock {
+        &self.codeblock
+    }
+
+    pub fn labels(&self) -> &Vec<(String, usize)> {
+        &self.labels
+    }
+
+    pub fn labels_mut(&mut self) -> &mut Vec<(String, usize)> {
+        &mut self.labels
+    }
+}
+
 impl std::str::FromStr for Instruction {
     type Err = &'static str;
     fn from_str(from: &str) -> Result<Self, Self::Err> {
@@ -159,8 +156,32 @@ impl std::str::FromStr for Instruction {
             "pop" => Ok(Instruction::Pop),
             "pusha" => Ok(Instruction::Pusha),
             "popa" => Ok(Instruction::Popa),
-            _ => Err("not supported"),
+            _ => Err("not an instruction"),
         }
+    }
+}
+
+impl std::fmt::Display for Program {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        let mut it = self.codeblock.iter();
+        let mut offset = 0;
+
+        writeln!(f, "program:")?;
+        while let Some(inx) = it.next() {
+            match inx {
+                Code::Instruction(inx) => {
+                    write!(f, "{:04}: {:?}", offset, inx)?;
+                    offset += 1;
+                    for _ in 0..inx.arguments() {
+                        write!(f, "\t{:?}", it.next().unwrap())?;
+                        offset += 1;
+                    }
+                }
+                _ => write!(f, "????: {:?}", inx)?,
+            }
+            write!(f, "\n")?;
+        }
+        Ok(())
     }
 }
 
