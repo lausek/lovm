@@ -34,7 +34,12 @@ impl Vm {
         self.memory.map(bl, 0);
 
         let len = bl.len();
-        let mut ip = program.labels().get("main").map(|r| *r).unwrap_or(0);
+        let mut ip = program
+            .labels()
+            .iter()
+            .find(|(name, _)| name == "main")
+            .map(|(_, off)| *off)
+            .unwrap_or(0);
 
         self.push_frame(None);
 

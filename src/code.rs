@@ -13,7 +13,7 @@ pub struct Program {
     pub(crate) codeblock: CodeBlock,
     // FIXME: `HashMap` probably is the reason why compiled
     // code files are relatively big in size
-    pub(crate) labels: HashMap<String, usize>,
+    pub(crate) labels: Vec<(String, usize)>,
 }
 
 impl Program {
@@ -28,7 +28,7 @@ impl Program {
     pub fn with_code(codeblock: CodeBlock) -> Self {
         Self {
             codeblock,
-            labels: HashMap::new(),
+            labels: vec![],
         }
     }
 
@@ -36,11 +36,11 @@ impl Program {
         &self.codeblock
     }
 
-    pub fn labels(&self) -> &HashMap<String, usize> {
+    pub fn labels(&self) -> &Vec<(String, usize)> {
         &self.labels
     }
 
-    pub fn labels_mut(&mut self) -> &mut HashMap<String, usize> {
+    pub fn labels_mut(&mut self) -> &mut Vec<(String, usize)> {
         &mut self.labels
     }
 }
