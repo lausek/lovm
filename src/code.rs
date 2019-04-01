@@ -45,6 +45,8 @@ pub enum Instruction {
     And,
     Or,
     Xor,
+    Shl,
+    Shr,
 
     Cmp,
     Jmp,
@@ -76,6 +78,8 @@ impl Instruction {
             | Instruction::And
             | Instruction::Or
             | Instruction::Xor
+            | Instruction::Shl
+            | Instruction::Shr
             | Instruction::Cmp
             | Instruction::Mov => 2,
 
@@ -141,6 +145,8 @@ impl std::str::FromStr for Instruction {
             "and" => Ok(Instruction::And),
             "or" => Ok(Instruction::Or),
             "xor" => Ok(Instruction::Xor),
+            "shl" => Ok(Instruction::Shl),
+            "shr" => Ok(Instruction::Shr),
             "cmp" => Ok(Instruction::Cmp),
             "jmp" => Ok(Instruction::Jmp),
             "jeq" => Ok(Instruction::Jeq),

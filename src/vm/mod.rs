@@ -1,11 +1,12 @@
 pub mod memory;
+pub mod operation;
 pub mod register;
-
-use self::memory::*;
-use self::register::*;
 
 use crate::code::*;
 use crate::value::*;
+
+use self::memory::*;
+use self::register::*;
 
 pub const VM_MEMORY_SIZE: usize = 2400;
 pub const VM_STACK_SIZE: usize = 256;
@@ -66,9 +67,13 @@ impl Vm {
                         | Instruction::Sub
                         | Instruction::Mul
                         | Instruction::Div
+                        | Instruction::Rem
+                        | Instruction::Pow
                         | Instruction::And
                         | Instruction::Or
-                        | Instruction::Xor => {
+                        | Instruction::Xor
+                        | Instruction::Shl
+                        | Instruction::Shr => {
                             let args = take(bl, &mut ip, 2);
                             let op1 = *read(&self, &args[0]);
                             let op2 = *read(&self, &args[1]);
@@ -79,9 +84,13 @@ impl Vm {
                                 Instruction::Sub => op1 - op2,
                                 Instruction::Mul => op1 * op2,
                                 Instruction::Div => op1 / op2,
+                                Instruction::Rem => op1 % op2,
+                                Instruction::Pow => op1.pow(&op2),
                                 Instruction::And => op1 & op2,
                                 Instruction::Or => op1 | op2,
                                 Instruction::Xor => op1 ^ op2,
+                                Instruction::Shl => op1 << op2,
+                                Instruction::Shr => op1 >> op2,
                                 _ => unimplemented!(),
                             };
 
@@ -135,7 +144,6 @@ impl Vm {
                         }
                         Instruction::Pusha => self.push_frame(None),
                         Instruction::Popa => self.pop_frame(None),
-                        _ => println!("not implemented: `{:?}`", inx),
                     }
                 }
                 what => panic!("shall not happen! {:?}", what),
