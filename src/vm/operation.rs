@@ -103,6 +103,19 @@ impl std::ops::Rem for Value {
     }
 }
 
+impl std::ops::Neg for Value {
+    type Output = Value;
+    fn neg(self) -> Self {
+        match self {
+            I(v) => Value::I(-v),
+            U(_) => panic!("cannot negate unsigned number"),
+            I64(v) => Value::I64(-v),
+            U64(_) => panic!("cannot negate unsigned number"),
+            T(v) => Value::T(!v),
+        }
+    }
+}
+
 impl std::ops::Shl for Value {
     type Output = Value;
     fn shl(self, rhs: Self) -> Self {

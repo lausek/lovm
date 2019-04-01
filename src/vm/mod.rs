@@ -69,6 +69,7 @@ impl Vm {
                         | Instruction::Div
                         | Instruction::Rem
                         | Instruction::Pow
+                        | Instruction::Neg
                         | Instruction::And
                         | Instruction::Or
                         | Instruction::Xor
@@ -86,6 +87,7 @@ impl Vm {
                                 Instruction::Div => op1 / op2,
                                 Instruction::Rem => op1 % op2,
                                 Instruction::Pow => op1.pow(&op2),
+                                Instruction::Neg => op1 & op2,
                                 Instruction::And => op1 & op2,
                                 Instruction::Or => op1 | op2,
                                 Instruction::Xor => op1 ^ op2,

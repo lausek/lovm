@@ -42,6 +42,7 @@ pub enum Instruction {
     Div,
     Rem,
     Pow,
+    Neg,
     And,
     Or,
     Xor,
@@ -75,6 +76,7 @@ impl Instruction {
             | Instruction::Div
             | Instruction::Rem
             | Instruction::Pow
+            | Instruction::Neg
             | Instruction::And
             | Instruction::Or
             | Instruction::Xor
@@ -142,6 +144,7 @@ impl std::str::FromStr for Instruction {
             "div" => Ok(Instruction::Div),
             "rem" => Ok(Instruction::Rem),
             "pow" => Ok(Instruction::Pow),
+            "neg" => Ok(Instruction::Neg),
             "and" => Ok(Instruction::And),
             "or" => Ok(Instruction::Or),
             "xor" => Ok(Instruction::Xor),
