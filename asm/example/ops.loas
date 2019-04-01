@@ -1,0 +1,14 @@
+negate:
+    pop B
+    neg B, B
+    push B
+    ret
+
+main:
+    push #10
+    call negate
+    pop A
+
+    push #true
+    call negate
+    pop A

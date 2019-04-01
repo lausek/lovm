@@ -11,6 +11,7 @@ impl Value {
             (U(_), U(_)) => *self,
             (I64(s), U64(_)) => Value::U64(*s as u64),
             (U64(_), U64(_)) => *self,
+            (T(_), T(_)) => *self,
             _ => panic!("cannot coalesce from `{:?}` to `{:?}`", self, value),
         }
     }
