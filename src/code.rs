@@ -16,8 +16,6 @@ pub struct Program {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Code {
     Instruction(Instruction),
-    // TODO: this should be a variant of `Value`
-    Ref(usize),
     Register(Register),
     Value(Value),
 }

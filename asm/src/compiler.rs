@@ -8,6 +8,10 @@ use std::str::FromStr;
 
 pub type CompileResult = Result<Program, String>;
 
+const fn mkref(raw: usize) -> Code {
+    Code::Value(Value::Ref(raw))
+}
+
 // if a label lookup doesn't deliver a result while generating, remember the labels
 // name and the current generation offset for later. after all generation is done, we will
 // go for a final lookup and insert the now existing result at the index on the codeblock.
@@ -71,11 +75,11 @@ impl Compiler {
 
     fn compile_operand(&mut self, op: Operand) -> Result<(), String> {
         // we have to push a placeholder value or the index will become corrupt
-        let mut code = Code::Ref(std::usize::MAX);
+        let mut code = mkref(std::usize::MAX);
 
         match op {
             Operand::Ident(ident) => match self.labels.get_mut(&ident) {
-                Some(LabelOffset::Resolved(off)) => code = Code::Ref(*off),
+                Some(LabelOffset::Resolved(off)) => code = mkref(*off),
                 Some(LabelOffset::Unresolved(positions)) => positions.push(self.codeblock.len()),
                 _ => {
                     self.labels
@@ -102,7 +106,7 @@ impl Compiler {
             // use reverse order to not invalidate indices
             Some(LabelOffset::Unresolved(positions)) => {
                 for pos in positions.into_iter().rev() {
-                    *self.codeblock.get_mut(pos).unwrap() = Code::Ref(off);
+                    *self.codeblock.get_mut(pos).unwrap() = mkref(off);
                 }
                 Ok(())
             }

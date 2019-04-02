@@ -113,6 +113,7 @@ impl std::ops::Neg for Value {
             I64(v) => Value::I64(-v),
             U64(_) => panic!("cannot negate unsigned number"),
             T(v) => Value::T(!v),
+            Ref(_) => panic!("cannot negate unsigned number"),
         }
     }
 }

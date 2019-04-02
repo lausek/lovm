@@ -115,7 +115,7 @@ impl Vm {
 
                             if register(self).is_jmp_needed(inx) {
                                 match &args[0] {
-                                    Code::Ref(r) => ip = *r,
+                                    Code::Value(Value::Ref(r)) => ip = *r,
                                     _ => panic!("invalid jump operand"),
                                 }
                             } else {
@@ -128,7 +128,7 @@ impl Vm {
                             self.push_frame(Some(ip + 1));
                             let args = take(bl, &mut ip, 1);
                             match &args[0] {
-                                Code::Ref(r) => ip = usize::from(*r),
+                                Code::Value(Value::Ref(r)) => ip = *r,
                                 _ => panic!("invalid jump operand"),
                             }
                             continue;
@@ -180,7 +180,7 @@ impl Vm {
 fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
     match code {
         Code::Register(reg) => register_mut(vm)[*reg] = value,
-        Code::Ref(addr) => vm.memory[*addr] = Code::Value(value),
+        Code::Value(Value::Ref(addr)) => vm.memory[*addr] = Code::Value(value),
         _ => unimplemented!(),
     };
 }
@@ -188,7 +188,7 @@ fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
 fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
     match code {
         Code::Register(reg) => &register(vm)[*reg],
-        Code::Ref(addr) => match &vm.memory[*addr] {
+        Code::Value(Value::Ref(addr)) => match &vm.memory[*addr] {
             Code::Value(value) => value,
             code => panic!("unreadable memory accessed: {:?}", code),
         },

@@ -8,8 +8,8 @@ pub enum Value {
     U(u8),
     I64(i64),
     U64(u64),
+    Ref(usize),
     T(bool),
-    // TODO: Usize(u8) needed?
     // TODO: add str?
 }
 
