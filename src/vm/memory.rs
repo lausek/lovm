@@ -2,6 +2,7 @@ use super::*;
 
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub struct VmMemory {
     mem: HashMap<usize, Code>,
 }
@@ -29,6 +30,9 @@ impl std::ops::Index<usize> for VmMemory {
 
 impl std::ops::IndexMut<usize> for VmMemory {
     fn index_mut(&mut self, idx: usize) -> &mut Code {
+        if !self.mem.contains_key(&idx) {
+            self.mem.insert(idx, Code::Value(Value::I(0)));
+        }
         self.mem.get_mut(&idx).unwrap()
     }
 }

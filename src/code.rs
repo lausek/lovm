@@ -74,7 +74,14 @@ pub enum Instruction {
     Jle,
     Jlt,
 
-    Mov,
+    // moving is a complicated topic so we distinguish four cases
+    // where `const` represents a constant numeric value or a register
+    // and `ptr` stands for the value of a register
+    Mov,   // move value from const to const
+    Load,  // move value from ptr   to const
+    Store, // move value from const to ptr
+    Copy,  // move value from ptr   to ptr
+
     Coal,
     Call,
     Ret,
@@ -101,6 +108,9 @@ impl Instruction {
             | Instruction::Shr
             | Instruction::Cmp
             | Instruction::Mov
+            | Instruction::Load
+            | Instruction::Store
+            | Instruction::Copy
             | Instruction::Coal => 2,
 
             Instruction::Inc
@@ -184,6 +194,9 @@ impl std::str::FromStr for Instruction {
             "jle" => Ok(Instruction::Jle),
             "jlt" => Ok(Instruction::Jlt),
             "mov" => Ok(Instruction::Mov),
+            "load" => Ok(Instruction::Load),
+            "store" => Ok(Instruction::Store),
+            "copy" => Ok(Instruction::Copy),
             "call" => Ok(Instruction::Call),
             "coal" => Ok(Instruction::Coal),
             "ret" => Ok(Instruction::Ret),

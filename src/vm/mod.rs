@@ -44,10 +44,33 @@ impl Vm {
                 Code::Instruction(inx) => {
                     println!("{:?}", inx);
                     match inx {
-                        Instruction::Mov => {
+                        Instruction::Mov
+                        | Instruction::Load
+                        | Instruction::Store
+                        | Instruction::Copy => {
                             let args = take(bl, &mut ip, 2);
-                            let val = *read(&self, &args[1]);
-                            write(self, &args[0], val);
+                            let val = match inx {
+                                Instruction::Load | Instruction::Copy => {
+                                    if let Code::Register(reg) = args[1] {
+                                        let addr = register(self)[reg];
+                                        *read(&self, &Code::Value(addr))
+                                    } else {
+                                        panic!("bytecode is invalid")
+                                    }
+                                }
+                                _ => *read(&self, &args[1]),
+                            };
+                            let dest = match inx {
+                                Instruction::Store | Instruction::Copy => {
+                                    if let Code::Register(reg) = args[0] {
+                                        Code::Value(register(self)[reg])
+                                    } else {
+                                        panic!("bytecode is invalid")
+                                    }
+                                }
+                                _ => args[0],
+                            };
+                            write(self, &dest, val);
                         }
                         Instruction::Coal => {
                             let args = take(bl, &mut ip, 2);

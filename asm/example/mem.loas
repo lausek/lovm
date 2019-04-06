@@ -1,0 +1,35 @@
+memset:
+    pop B
+    pop A
+    coal A, #4
+    store A, B
+    ret
+
+fillmem:
+    pop A
+
+    coal A, #4
+    mov D, A
+    store A, #666
+
+    mov C, #0
+    inner:
+        inc C
+        inc A
+        copy A, D
+        cmp C, #10
+        jlt inner
+
+    ret
+
+main:
+    push #1000
+    call fillmem
+
+    mov D, #1000
+    load C, D
+
+    mov var, #2000
+    mov A, var
+
+var:
