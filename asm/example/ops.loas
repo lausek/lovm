@@ -1,6 +1,7 @@
 negate:
     pop B
     neg B, B
+    coal B, #5
     push B
     ret
 

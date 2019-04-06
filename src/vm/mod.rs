@@ -49,6 +49,12 @@ impl Vm {
                             let val = *read(&self, &args[1]);
                             write(self, &args[0], val);
                         }
+                        Instruction::Coal => {
+                            let args = take(bl, &mut ip, 2);
+                            let val = *read(&self, &args[0]);
+                            let ty_idx = usize::from(*read(&self, &args[1]));
+                            write(self, &args[0], val.coalesce(&Value::from_type(ty_idx)));
+                        }
                         Instruction::Inc | Instruction::Dec => {
                             let args = take(bl, &mut ip, 1);
                             let val = *read(&self, &args[0]);

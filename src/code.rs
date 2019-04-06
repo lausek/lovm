@@ -57,6 +57,7 @@ pub enum Instruction {
     Jlt,
 
     Mov,
+    Coal,
     Call,
     Ret,
     Push,
@@ -81,7 +82,8 @@ impl Instruction {
             | Instruction::Shl
             | Instruction::Shr
             | Instruction::Cmp
-            | Instruction::Mov => 2,
+            | Instruction::Mov
+            | Instruction::Coal => 2,
 
             Instruction::Inc
             | Instruction::Dec
@@ -165,6 +167,7 @@ impl std::str::FromStr for Instruction {
             "jlt" => Ok(Instruction::Jlt),
             "mov" => Ok(Instruction::Mov),
             "call" => Ok(Instruction::Call),
+            "coal" => Ok(Instruction::Coal),
             "ret" => Ok(Instruction::Ret),
             "push" => Ok(Instruction::Push),
             "pop" => Ok(Instruction::Pop),

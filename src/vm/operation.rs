@@ -3,6 +3,18 @@ use super::*;
 use self::Value::*;
 
 impl Value {
+    pub fn from_type(idx: usize) -> Value {
+        match idx {
+            1 => Value::I(0),
+            2 => Value::U(0),
+            3 => Value::I64(0),
+            4 => Value::U64(0),
+            5 => Value::Ref(0),
+            6 => Value::T(false),
+            _ => panic!("type index not defined"),
+        }
+    }
+
     pub fn coalesce(&self, value: &Value) -> Value {
         match (self, value) {
             (U(_), I(_)) | (I(_), I(_)) => *self,
