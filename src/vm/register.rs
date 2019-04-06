@@ -15,10 +15,10 @@ pub struct VmRegister {
 impl VmRegister {
     pub fn new() -> Self {
         Self {
-            a: Value::U(0),
-            b: Value::U(0),
-            c: Value::U(0),
-            d: Value::U(0),
+            a: Value::I(0),
+            b: Value::I(0),
+            c: Value::I(0),
+            d: Value::I(0),
             cmp: None,
             ret: None,
         }
