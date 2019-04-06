@@ -128,6 +128,13 @@ impl Program {
     pub fn labels_mut(&mut self) -> &mut Vec<(String, usize)> {
         &mut self.labels
     }
+
+    pub fn entry_point(&self) -> Option<usize> {
+        self.labels()
+            .iter()
+            .find(|(name, _)| name == "main")
+            .map(|(_, off)| *off)
+    }
 }
 
 impl std::str::FromStr for Instruction {
