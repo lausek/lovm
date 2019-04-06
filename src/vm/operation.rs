@@ -2,6 +2,49 @@ use super::*;
 
 use self::Value::*;
 
+// table for whole number values
+macro_rules! iop_table {
+    ($lhs:expr, $rhs:expr, $op:tt) => {
+        match ($lhs, $rhs.cast(&$lhs)) {
+            (I(lhs), I(rhs)) => Value::I($op(lhs, rhs)),
+            (I64(lhs), I64(rhs)) => Value::I64($op(lhs, rhs)),
+            (Ref(lhs), Ref(rhs)) => Value::Ref($op(lhs, rhs)),
+            _ => unimplemented!(),
+        }
+    };
+}
+
+// table for numeric values
+macro_rules! nop_table {
+    ($lhs:expr, $rhs:expr, $op:tt) => {
+        match ($lhs, $rhs.cast(&$lhs)) {
+            (F64(lhs), F64(rhs)) => Value::F64($op(lhs, rhs)),
+            _ => iop_table!($lhs, $rhs, $op),
+        }
+    };
+}
+
+macro_rules! pow {
+    ($lhs:expr, $rhs:expr) => {{
+        let ex = $rhs.abs() as u32;
+        if $rhs.is_negative() {
+            1 / $lhs.pow(ex)
+        } else {
+            $lhs.pow(ex)
+        }
+    }};
+}
+
+macro_rules! powf {
+    ($lhs:expr, $rhs:expr) => {{
+        if $rhs.is_sign_negative() {
+            1. / $lhs.powf(-$rhs)
+        } else {
+            $lhs.powf($rhs)
+        }
+    }};
+}
+
 impl Value {
     pub fn from_type(idx: usize) -> Value {
         match idx {
@@ -175,47 +218,4 @@ impl std::cmp::PartialOrd for Value {
             _ => unimplemented!(),
         }
     }
-}
-
-// table for whole number values
-macro_rules! iop_table {
-    ($lhs:expr, $rhs:expr, $op:tt) => {
-        match ($lhs, $rhs.cast(&$lhs)) {
-            (I(lhs), I(rhs)) => Value::I($op(lhs, rhs)),
-            (I64(lhs), I64(rhs)) => Value::I64($op(lhs, rhs)),
-            (Ref(lhs), Ref(rhs)) => Value::Ref($op(lhs, rhs)),
-            _ => unimplemented!(),
-        }
-    };
-}
-
-// table for numeric values
-macro_rules! nop_table {
-    ($lhs:expr, $rhs:expr, $op:tt) => {
-        match ($lhs, $rhs.cast(&$lhs)) {
-            (F64(lhs), F64(rhs)) => Value::F64($op(lhs, rhs)),
-            _ => iop_table!($lhs, $rhs, $op),
-        }
-    };
-}
-
-macro_rules! pow {
-    ($lhs:expr, $rhs:expr) => {{
-        let ex = $rhs.abs() as u32;
-        if $rhs.is_negative() {
-            1 / $lhs.pow(ex)
-        } else {
-            $lhs.pow(ex)
-        }
-    }};
-}
-
-macro_rules! powf {
-    ($lhs:expr, $rhs:expr) => {{
-        if $rhs.is_sign_negative() {
-            1. / $lhs.powf(-$rhs)
-        } else {
-            $lhs.powf($rhs)
-        }
-    }};
 }

@@ -5,6 +5,24 @@ use crate::value::*;
 
 use serde::{Deserialize, Serialize};
 
+macro_rules! program {
+    {$($inx:expr $(,$reg:ident)* $(,#$c:expr)?;)*} => {{
+        use crate::code::Instruction::*;
+        use crate::code::Register::*;
+        use crate::value::Value::*;
+        let codeblock = vec![$(
+            crate::code::Code::Instruction($inx)
+            $(,
+                crate::code::Code::Register($reg)
+             )*
+            $(,
+                crate::code::Code::Value($c)
+             )?
+        ),*];
+        crate::code::Program::with_code(codeblock)
+    }}
+}
+
 pub type CodeBlock = Vec<Code>;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -200,22 +218,4 @@ impl std::fmt::Display for Program {
         }
         Ok(())
     }
-}
-
-macro_rules! program {
-    {$($inx:expr $(,$reg:ident)* $(,#$c:expr)?;)*} => {{
-        use crate::code::Instruction::*;
-        use crate::code::Register::*;
-        use crate::value::Value::*;
-        let codeblock = vec![$(
-            crate::code::Code::Instruction($inx)
-            $(,
-                crate::code::Code::Register($reg)
-             )*
-            $(,
-                crate::code::Code::Value($c)
-             )?
-        ),*];
-        crate::code::Program::with_code(codeblock)
-    }}
 }
