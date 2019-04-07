@@ -37,7 +37,7 @@ pub fn lex_line(src: &str) -> LexTokens {
 
     for c in src.chars() {
         match c {
-            ':' | '#' | ',' | ' ' => {
+            ':' | '#' | ',' | ' ' | '*' => {
                 if 0 < loc.1 - loc.0 - 1 {
                     let span = (loc.0, loc.1 - 1);
                     let buffer = &src[span.0..span.1].trim();

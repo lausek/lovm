@@ -204,7 +204,12 @@ impl Vm {
 fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
     match code {
         Code::Register(reg) => register_mut(vm)[*reg] = value,
-        Code::Value(Value::Ref(addr)) => vm.memory[*addr] = Code::Value(value),
+        Code::Value(vaddr) => {
+            let addr = usize::from(*vaddr);
+            vm.memory[addr] = Code::Value(value);
+        }
+        // TODO: reactivate this once typing is more efficient
+        //Code::Value(Value::Ref(addr)) => vm.memory[*addr] = Code::Value(value),
         _ => unimplemented!(),
     };
 }

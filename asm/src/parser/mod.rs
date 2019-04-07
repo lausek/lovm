@@ -36,33 +36,20 @@ pub fn parse(src: &str) -> ParseResult {
 
         println!("{:?}", tokens);
 
-        let inx = to_instruction(tokens)?;
+        let inx = into_ast(tokens)?;
         ls.push(inx);
     }
 
     Ok(ls)
 }
 
-fn to_instruction(tokens: LexTokens) -> Result<Ast, String> {
+fn into_ast(tokens: LexTokens) -> Result<Ast, String> {
     let mut it = tokens.into_iter().peekable();
     match it.next() {
         Some(LexToken {
             ty: LexTokenType::Instruction(inx),
             ..
-        }) => match inx.arguments() {
-            2 => {
-                let x1 = take_op(&mut it)?;
-                expect(&mut it, LexTokenType::Punct(','))?;
-                let x2 = take_op(&mut it)?;
-                Ok(Ast::Instruction2(inx, x1, x2))
-            }
-            1 => {
-                let x1 = take_op(&mut it)?;
-                Ok(Ast::Instruction1(inx, x1))
-            }
-            0 => Ok(Ast::Instruction(inx)),
-            _ => unreachable!(),
-        },
+        }) => into_instruction(inx, &mut it),
         Some(LexToken {
             ty: LexTokenType::Ident(label),
             ..
@@ -71,6 +58,66 @@ fn to_instruction(tokens: LexTokens) -> Result<Ast, String> {
             Ok(Ast::Label(label))
         }
         _ => Err("line does not start with instruction".into()),
+    }
+}
+
+fn into_instruction<T>(inx: Instruction, it: &mut std::iter::Peekable<T>) -> Result<Ast, String>
+where
+    T: Iterator<Item = LexToken>,
+{
+    match inx.arguments() {
+        2 => {
+            let x1_deref = if inx == Instruction::Mov {
+                take_deref(it)
+            } else {
+                false
+            };
+            let x1 = take_op(it)?;
+
+            expect(it, LexTokenType::Punct(','))?;
+
+            let x2_deref = if inx == Instruction::Mov {
+                take_deref(it)
+            } else {
+                false
+            };
+            let x2 = take_op(it)?;
+
+            let inx = if inx == Instruction::Mov {
+                match (x1_deref, x2_deref) {
+                    (true, true) => Instruction::Copy,
+                    (false, true) => Instruction::Load,
+                    (true, false) => Instruction::Store,
+                    _ => Instruction::Mov,
+                }
+            } else {
+                inx
+            };
+
+            Ok(Ast::Instruction2(inx, x1, x2))
+        }
+        1 => {
+            let x1 = take_op(it)?;
+            Ok(Ast::Instruction1(inx, x1))
+        }
+        0 => Ok(Ast::Instruction(inx)),
+        _ => unreachable!(),
+    }
+}
+
+fn take_deref<T>(it: &mut std::iter::Peekable<T>) -> bool
+where
+    T: Iterator<Item = LexToken>,
+{
+    match it.peek() {
+        Some(LexToken {
+            ty: LexTokenType::Punct('*'),
+            ..
+        }) => {
+            it.next().unwrap();
+            true
+        }
+        _ => false,
     }
 }
 

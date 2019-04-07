@@ -1,0 +1,7 @@
+main:
+    mov A, #20
+    coal A, #4
+
+    mov *A, #666
+
+    ret
