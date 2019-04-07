@@ -43,12 +43,19 @@ impl Vm {
             match self.memory[ip] {
                 Code::Instruction(inx) => {
                     println!("{:?}", inx);
+
+                    if inx == Instruction::Call {
+                        self.push_frame(Some(ip + 1));
+                    }
+
+                    let argc = inx.arguments();
+                    let args = take(bl, &mut ip, argc);
+
                     match inx {
                         Instruction::Mov
                         | Instruction::Load
                         | Instruction::Store
                         | Instruction::Copy => {
-                            let args = take(bl, &mut ip, 2);
                             let val = match inx {
                                 Instruction::Load | Instruction::Copy => {
                                     if let Code::Register(reg) = args[1] {
@@ -73,13 +80,11 @@ impl Vm {
                             write(self, &dest, val);
                         }
                         Instruction::Coal => {
-                            let args = take(bl, &mut ip, 2);
                             let val = *read(&self, &args[0]);
                             let ty_idx = usize::from(*read(&self, &args[1]));
                             write(self, &args[0], val.cast(&Value::from_type(ty_idx)));
                         }
                         Instruction::Inc | Instruction::Dec => {
-                            let args = take(bl, &mut ip, 1);
                             let val = *read(&self, &args[0]);
                             match inx {
                                 Instruction::Inc => write(self, &args[0], val + Value::I(1)),
@@ -99,7 +104,6 @@ impl Vm {
                         | Instruction::Xor
                         | Instruction::Shl
                         | Instruction::Shr => {
-                            let args = take(bl, &mut ip, 2);
                             let op1 = *read(&self, &args[0]);
                             let op2 = *read(&self, &args[1]);
                             println!("{:?}, {:?}", op1, op2);
@@ -123,7 +127,6 @@ impl Vm {
                             write(self, &args[0], val)
                         }
                         Instruction::Cmp => {
-                            let args = take(bl, &mut ip, 2);
                             let op1 = *read(&self, &args[0]);
                             let op2 = *read(&self, &args[1]);
                             (*register_mut(self)).cmp = op1.partial_cmp(&op2);
@@ -135,8 +138,6 @@ impl Vm {
                         | Instruction::Jgt
                         | Instruction::Jle
                         | Instruction::Jlt => {
-                            let args = take(bl, &mut ip, 1);
-
                             if register(self).is_jmp_needed(inx) {
                                 match &args[0] {
                                     Code::Value(Value::Ref(r)) => ip = *r,
@@ -149,8 +150,6 @@ impl Vm {
                             continue;
                         }
                         Instruction::Call => {
-                            self.push_frame(Some(ip + 1));
-                            let args = take(bl, &mut ip, 1);
                             match &args[0] {
                                 Code::Value(Value::Ref(r)) => ip = *r,
                                 _ => panic!("invalid jump operand"),
@@ -159,13 +158,11 @@ impl Vm {
                         }
                         Instruction::Ret => self.pop_frame(Some(&mut ip)),
                         Instruction::Push => {
-                            let args = take(bl, &mut ip, 1);
                             let val = *read(self, &args[0]);
                             self.code_stack.push(val);
                         }
                         Instruction::Pop => {
                             let val = self.code_stack.pop().expect("nothing to pop");
-                            let args = take(bl, &mut ip, 1);
                             write(self, &args[0], val);
                         }
                         Instruction::Pusha => self.push_frame(None),
