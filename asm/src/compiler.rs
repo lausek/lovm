@@ -45,6 +45,7 @@ impl Compiler {
         for step in ast.into_iter() {
             match step {
                 Ast::Label(label) => self.declare_label(label, self.codeblock.len())?,
+                Ast::Declare(value) => self.declare_value(value)?,
                 Ast::Instruction(inx) => self.codeblock.push(Code::Instruction(inx)),
                 Ast::Instruction1(inx, x1) => {
                     self.codeblock.push(Code::Instruction(inx));
@@ -112,5 +113,11 @@ impl Compiler {
             }
             _ => Ok(()),
         }
+    }
+
+    fn declare_value(&mut self, value: String) -> Result<(), String> {
+        let value = Value::from_str(&value)?;
+        self.codeblock.push(Code::Value(value));
+        Ok(())
     }
 }

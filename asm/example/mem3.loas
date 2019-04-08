@@ -1,0 +1,16 @@
+set:
+    mov my_variable, #666
+    ret
+
+main:
+    call set
+
+    mov D, my_variable
+    coal D, #4
+
+    mov A, *D
+
+    ret
+
+my_variable:
+    dv #0

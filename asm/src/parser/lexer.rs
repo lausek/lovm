@@ -9,7 +9,13 @@ pub type Location = (usize, usize);
 pub enum LexTokenType {
     Ident(String),
     Instruction(Instruction),
+    Internal(InternalInstruction),
     Punct(char),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum InternalInstruction {
+    Declare
 }
 
 #[derive(Clone, Debug)]
@@ -77,6 +83,9 @@ pub fn lex_line(src: &str) -> LexTokens {
 fn to_type(buffer: &str) -> LexTokenType {
     if let Ok(inx) = Instruction::from_str(buffer) {
         return LexTokenType::Instruction(inx);
+    }
+    if buffer == "dv" {
+        return LexTokenType::Internal(InternalInstruction::Declare);
     }
     // TODO: check if `Ident` is lowercase register name (a-d) => return new Register(_) variant then
     LexTokenType::Ident(buffer.to_string())

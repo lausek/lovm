@@ -214,10 +214,12 @@ fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
 fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
     match code {
         Code::Register(reg) => &register(vm)[*reg],
+        /*
         Code::Value(Value::Ref(addr)) => match &vm.memory[*addr] {
             Code::Value(value) => value,
             code => panic!("unreadable memory accessed: {:?}", code),
         },
+        */
         Code::Value(value) => value,
         _ => unimplemented!(),
     }

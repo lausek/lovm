@@ -216,16 +216,16 @@ impl std::fmt::Display for Program {
 
         writeln!(f, "program:")?;
         while let Some(inx) = it.next() {
+            write!(f, "{:04}: {:?}", offset, inx)?;
+            offset += 1;
             match inx {
                 Code::Instruction(inx) => {
-                    write!(f, "{:04}: {:?}", offset, inx)?;
-                    offset += 1;
                     for _ in 0..inx.arguments() {
                         write!(f, "\t{:?}", it.next().unwrap())?;
                         offset += 1;
                     }
                 }
-                _ => write!(f, "????: {:?}", inx)?,
+                _ => {}
             }
             write!(f, "\n")?;
         }
