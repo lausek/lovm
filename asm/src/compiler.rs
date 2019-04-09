@@ -51,8 +51,44 @@ impl Compiler {
                     self.codeblock.push(Code::Instruction(inx));
                     self.compile_operand(x1)?;
                 }
+                Ast::Instruction2(inx, x1, x2) if inx == Instruction::Mov => {
+                    /*
+                    mov a, *b should become:
+                        push b
+                        load
+                        pop a
+                    
+                    mov *a, b should become:
+                        push b
+                        push a
+                        store
+                    
+                    mov *a, *b should become:
+                        push b
+                        load
+                        push a
+                        store
+                    */
+                    if let Operand::Deref(x2) = x2 {
+                        self.push_inx(Instruction::Push);
+                        self.compile_operand(*x2)?;
+                        self.push_inx(Instruction::Load);
+                    } else {
+                        self.push_inx(Instruction::Push);
+                        self.compile_operand(x2)?;
+                    }
+
+                    if let Operand::Deref(x1) = x1 {
+                        self.push_inx(Instruction::Push);
+                        self.compile_operand(*x1)?;
+                        self.push_inx(Instruction::Store);
+                    } else {
+                        self.push_inx(Instruction::Pop);
+                        self.compile_operand(x1)?;
+                    }
+                }
                 Ast::Instruction2(inx, x1, x2) => {
-                    self.codeblock.push(Code::Instruction(inx));
+                    self.push_inx(inx);
                     self.compile_operand(x1)?;
                     self.compile_operand(x2)?;
                 }
@@ -74,6 +110,10 @@ impl Compiler {
         Ok(program)
     }
 
+    fn push_inx(&mut self, inx: Instruction) {
+        self.codeblock.push(Code::Instruction(inx));
+    }
+
     fn compile_operand(&mut self, op: Operand) -> Result<(), String> {
         // we have to push a placeholder value or the index will become corrupt
         let mut code = mkref(std::usize::MAX);
@@ -92,6 +132,7 @@ impl Compiler {
                 Ok(value) => code = Code::Value(value),
                 Err(msg) => return Err(msg),
             },
+            Operand::Deref(_) => unreachable!(),
         }
 
         self.codeblock.push(code);

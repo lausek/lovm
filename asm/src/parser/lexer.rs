@@ -15,7 +15,7 @@ pub enum LexTokenType {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum InternalInstruction {
-    Declare
+    Declare,
 }
 
 #[derive(Clone, Debug)]

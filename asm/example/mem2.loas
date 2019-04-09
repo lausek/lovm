@@ -4,4 +4,6 @@ main:
 
     mov *A, #666
 
+    mov *#21, #667
+
     ret

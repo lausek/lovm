@@ -1,5 +1,4 @@
 // the bytecode definition of lovm
-//
 
 use crate::value::*;
 
@@ -74,13 +73,9 @@ pub enum Instruction {
     Jle,
     Jlt,
 
-    // moving is a complicated topic so we distinguish four cases
-    // where `const` represents a constant numeric value or a register
-    // and `ptr` stands for the value of a register
-    Mov,   // move value from const to const
-    Load,  // move value from ptr   to const
-    Store, // move value from const to ptr
-    Copy,  // move value from ptr   to ptr
+    Mov,
+    Load,  // pops a ref off the stack, leaving the locations value inplace
+    Store, // pops a ref and value off the stack, writing value to location ref
 
     Coal,
     Call,
@@ -108,9 +103,6 @@ impl Instruction {
             | Instruction::Shr
             | Instruction::Cmp
             | Instruction::Mov
-            | Instruction::Load
-            | Instruction::Store
-            | Instruction::Copy
             | Instruction::Coal => 2,
 
             Instruction::Inc
@@ -126,7 +118,11 @@ impl Instruction {
             | Instruction::Push
             | Instruction::Pop => 1,
 
-            Instruction::Ret | Instruction::Pusha | Instruction::Popa => 0,
+            Instruction::Ret
+            | Instruction::Pusha
+            | Instruction::Popa
+            | Instruction::Load
+            | Instruction::Store => 0,
         }
     }
 }
@@ -196,7 +192,6 @@ impl std::str::FromStr for Instruction {
             "mov" => Ok(Instruction::Mov),
             "load" => Ok(Instruction::Load),
             "store" => Ok(Instruction::Store),
-            "copy" => Ok(Instruction::Copy),
             "call" => Ok(Instruction::Call),
             "coal" => Ok(Instruction::Coal),
             "ret" => Ok(Instruction::Ret),

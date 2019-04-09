@@ -16,6 +16,7 @@ pub enum Ast {
 
 #[derive(Clone, Debug)]
 pub enum Operand {
+    Deref(Box<Operand>),
     Register(Register),
     Value(String),
     Ident(String),
@@ -62,13 +63,11 @@ fn into_ast(tokens: LexTokens) -> Result<Ast, String> {
             ty: LexTokenType::Internal(inx),
             ..
         }) => match inx {
-            InternalInstruction::Declare => {
-                match take_op(&mut it)? {
-                    Operand::Value(value) => Ok(Ast::Declare(value)),
-                    _ => panic!("invalid operand for declare"),
-                }
-            }
-        }
+            InternalInstruction::Declare => match take_op(&mut it)? {
+                Operand::Value(value) => Ok(Ast::Declare(value)),
+                _ => panic!("invalid operand for declare"),
+            },
+        },
         _ => Err("line does not start with instruction".into()),
     }
 }
@@ -78,40 +77,30 @@ where
     T: Iterator<Item = LexToken>,
 {
     match inx.arguments() {
-        2 => {
-            let x1_deref = if inx == Instruction::Mov {
-                take_deref(it)
-            } else {
-                false
-            };
-            let x1 = take_op(it)?;
+        2 if inx == Instruction::Mov => {
+            let indirect = take_deref(it);
+            let mut to = take_op(it)?;
+            if indirect {
+                to = Operand::Deref(Box::new(to));
+            }
 
             expect(it, LexTokenType::Punct(','))?;
 
-            let x2_deref = if inx == Instruction::Mov {
-                take_deref(it)
-            } else {
-                false
-            };
+            let indirect = take_deref(it);
+            let mut from = take_op(it)?;
+            if indirect {
+                from = Operand::Deref(Box::new(from));
+            }
+
+            Ok(Ast::Instruction2(inx, to, from))
+        }
+        2 => {
+            let x1 = take_op(it)?;
+            expect(it, LexTokenType::Punct(','))?;
             let x2 = take_op(it)?;
-
-            let inx = if inx == Instruction::Mov {
-                match (x1_deref, x2_deref) {
-                    (true, true) => Instruction::Copy,
-                    (false, true) => Instruction::Load,
-                    (true, false) => Instruction::Store,
-                    _ => Instruction::Mov,
-                }
-            } else {
-                inx
-            };
-
             Ok(Ast::Instruction2(inx, x1, x2))
         }
-        1 => {
-            let x1 = take_op(it)?;
-            Ok(Ast::Instruction1(inx, x1))
-        }
+        1 => Ok(Ast::Instruction1(inx, take_op(it)?)),
         0 => Ok(Ast::Instruction(inx)),
         _ => unreachable!(),
     }
