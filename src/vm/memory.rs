@@ -24,8 +24,6 @@ impl VmMemory {
 impl std::ops::Index<usize> for VmMemory {
     type Output = Code;
     fn index(&self, idx: usize) -> &Code {
-        //println!("{:?}", idx);
-        //println!("{:#?}", self.mem);
         self.mem.get(&idx).unwrap()
     }
 }

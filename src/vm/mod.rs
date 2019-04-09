@@ -13,9 +13,17 @@ pub const VM_STACK_SIZE: usize = 256;
 
 pub type VmResult = Result<(), String>;
 
+#[derive(PartialEq)]
+enum VmState {
+    Initial,
+    Running,
+    Exited,
+}
+
 pub struct Vm {
     memory: VmMemory,
     stack: Vec<VmRegister>,
+    state: VmState,
     code_stack: Vec<Value>,
 }
 
@@ -24,6 +32,7 @@ impl Vm {
         Self {
             memory: VmMemory::new(),
             stack: Vec::with_capacity(VM_STACK_SIZE),
+            state: VmState::Initial,
             code_stack: Vec::with_capacity(VM_STACK_SIZE),
         }
     }
@@ -38,8 +47,9 @@ impl Vm {
         let mut ip = program.entry_point().unwrap_or(0);
 
         self.push_frame(None);
+        self.state = VmState::Running;
 
-        while ip < len {
+        while self.state == VmState::Running && ip < len {
             match self.memory[ip] {
                 Code::Instruction(inx) => {
                     println!("{:?}", inx);
@@ -158,8 +168,6 @@ impl Vm {
                 what => panic!("shall not happen! {:?}", what),
             }
 
-            println!("regs: {:?}", register(self));
-
             ip += 1;
         }
 
@@ -167,20 +175,22 @@ impl Vm {
     }
 
     fn push_frame(&mut self, ret: Option<usize>) {
-        if self.stack.is_empty() {
-            self.stack.push(VmRegister::new());
-        }
         self.stack.push(VmRegister::new());
         register_mut(self).ret = ret;
     }
 
     fn pop_frame(&mut self, ip: Option<&mut usize>) {
         let frame = self.stack.pop().expect("frame to pop");
-        match (ip, frame.ret) {
-            (Some(ip), Some(jump_ip)) => *ip = jump_ip,
-            _ => {}
+
+        if let (Some(ip), Some(jump_ip)) = (ip, frame.ret) {
+            *ip = jump_ip;
         }
-        *register_mut(self) = *self.stack.last().expect("no last frame");
+
+        if self.stack.is_empty() {
+            self.state = VmState::Exited;
+        } else {
+            *register_mut(self) = *self.stack.last().expect("no last frame");
+        }
     }
 }
 
