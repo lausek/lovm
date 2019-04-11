@@ -14,17 +14,17 @@ pub const VM_STACK_SIZE: usize = 256;
 pub type VmResult = Result<(), String>;
 
 #[derive(PartialEq)]
-enum VmState {
+pub(crate) enum VmState {
     Initial,
     Running,
     Exited,
 }
 
 pub struct Vm {
-    memory: VmMemory,
-    state: VmState,
-    stack: Vec<VmRegister>,
-    vstack: Vec<Value>,
+    pub(crate) memory: VmMemory,
+    pub(crate) state: VmState,
+    pub(crate) stack: Vec<VmRegister>,
+    pub(crate) vstack: Vec<Value>,
 }
 
 impl Vm {
