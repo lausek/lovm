@@ -1,4 +1,4 @@
-use lovm::code::*;
+pub use super::*;
 
 use std::str::FromStr;
 
@@ -8,7 +8,7 @@ pub type Location = (usize, usize);
 #[derive(Clone, Debug, PartialEq)]
 pub enum LexTokenType {
     Ident(String),
-    Instruction(Instruction),
+    Keyword(Keyword),
     Internal(InternalInstruction),
     Punct(char),
 }
@@ -81,8 +81,8 @@ pub fn lex_line(src: &str) -> LexTokens {
 }
 
 fn to_type(buffer: &str) -> LexTokenType {
-    if let Ok(inx) = Instruction::from_str(buffer) {
-        return LexTokenType::Instruction(inx);
+    if let Ok(kw) = Keyword::from_str(buffer) {
+        return LexTokenType::Keyword(kw);
     }
     if buffer == "dv" {
         return LexTokenType::Internal(InternalInstruction::Declare);

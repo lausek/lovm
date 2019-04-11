@@ -1,6 +1,8 @@
+mod keyword;
 mod lexer;
 
-use self::lexer::*;
+pub use self::keyword::*;
+pub use self::lexer::*;
 pub use super::*;
 
 pub type ParseResult = Result<Vec<Ast>, String>;
@@ -9,9 +11,9 @@ pub type ParseResult = Result<Vec<Ast>, String>;
 pub enum Ast {
     Label(String),
     Declare(String),
-    Instruction(Instruction),
-    Instruction1(Instruction, Operand),
-    Instruction2(Instruction, Operand, Operand),
+    Statement(Keyword),
+    Statement1(Keyword, Operand),
+    Statement2(Keyword, Operand, Operand),
 }
 
 #[derive(Clone, Debug)]
@@ -49,9 +51,9 @@ fn into_ast(tokens: LexTokens) -> Result<Ast, String> {
     let mut it = tokens.into_iter().peekable();
     match it.next() {
         Some(LexToken {
-            ty: LexTokenType::Instruction(inx),
+            ty: LexTokenType::Keyword(kw),
             ..
-        }) => into_instruction(inx, &mut it),
+        }) => into_statement(kw, &mut it),
         Some(LexToken {
             ty: LexTokenType::Ident(label),
             ..
@@ -72,12 +74,12 @@ fn into_ast(tokens: LexTokens) -> Result<Ast, String> {
     }
 }
 
-fn into_instruction<T>(inx: Instruction, it: &mut std::iter::Peekable<T>) -> Result<Ast, String>
+fn into_statement<T>(kw: Keyword, it: &mut std::iter::Peekable<T>) -> Result<Ast, String>
 where
     T: Iterator<Item = LexToken>,
 {
-    match inx.arguments() {
-        2 if inx == Instruction::Mov => {
+    match kw.arguments() {
+        2 if kw == Keyword::Mov => {
             let indirect = take_deref(it);
             let mut to = take_op(it)?;
             if indirect {
@@ -92,16 +94,16 @@ where
                 from = Operand::Deref(Box::new(from));
             }
 
-            Ok(Ast::Instruction2(inx, to, from))
+            Ok(Ast::Statement2(kw, to, from))
         }
         2 => {
             let x1 = take_op(it)?;
             expect(it, LexTokenType::Punct(','))?;
             let x2 = take_op(it)?;
-            Ok(Ast::Instruction2(inx, x1, x2))
+            Ok(Ast::Statement2(kw, x1, x2))
         }
-        1 => Ok(Ast::Instruction1(inx, take_op(it)?)),
-        0 => Ok(Ast::Instruction(inx)),
+        1 => Ok(Ast::Statement1(kw, take_op(it)?)),
+        0 => Ok(Ast::Statement(kw)),
         _ => unreachable!(),
     }
 }

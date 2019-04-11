@@ -73,7 +73,6 @@ pub enum Instruction {
     Jle,
     Jlt,
 
-    Mov,
     Load,  // pops a ref off the stack, leaving the locations value inplace
     Store, // pops a ref and value off the stack, writing value to location ref
 
@@ -89,21 +88,7 @@ pub enum Instruction {
 impl Instruction {
     pub fn arguments(&self) -> usize {
         match self {
-            Instruction::Add
-            | Instruction::Sub
-            | Instruction::Mul
-            | Instruction::Div
-            | Instruction::Rem
-            | Instruction::Pow
-            | Instruction::Neg
-            | Instruction::And
-            | Instruction::Or
-            | Instruction::Xor
-            | Instruction::Shl
-            | Instruction::Shr
-            | Instruction::Cmp
-            | Instruction::Mov
-            | Instruction::Coal => 2,
+            Instruction::Cmp | Instruction::Coal => 2,
 
             Instruction::Inc
             | Instruction::Dec
@@ -118,7 +103,19 @@ impl Instruction {
             | Instruction::Push
             | Instruction::Pop => 1,
 
-            Instruction::Ret
+            Instruction::Add
+            | Instruction::Sub
+            | Instruction::Mul
+            | Instruction::Div
+            | Instruction::Rem
+            | Instruction::Pow
+            | Instruction::Neg
+            | Instruction::And
+            | Instruction::Or
+            | Instruction::Xor
+            | Instruction::Shl
+            | Instruction::Shr
+            | Instruction::Ret
             | Instruction::Pusha
             | Instruction::Popa
             | Instruction::Load
@@ -160,47 +157,6 @@ impl Program {
             .iter()
             .find(|(name, _)| name == "main")
             .map(|(_, off)| *off)
-    }
-}
-
-impl std::str::FromStr for Instruction {
-    type Err = &'static str;
-    fn from_str(from: &str) -> Result<Self, Self::Err> {
-        match from {
-            "inc" => Ok(Instruction::Inc),
-            "dec" => Ok(Instruction::Dec),
-            "add" => Ok(Instruction::Add),
-            "sub" => Ok(Instruction::Sub),
-            "mul" => Ok(Instruction::Mul),
-            "div" => Ok(Instruction::Div),
-            "rem" => Ok(Instruction::Rem),
-            "pow" => Ok(Instruction::Pow),
-            "neg" => Ok(Instruction::Neg),
-            "and" => Ok(Instruction::And),
-            "or" => Ok(Instruction::Or),
-            "xor" => Ok(Instruction::Xor),
-            "shl" => Ok(Instruction::Shl),
-            "shr" => Ok(Instruction::Shr),
-            "cmp" => Ok(Instruction::Cmp),
-            "jmp" => Ok(Instruction::Jmp),
-            "jeq" => Ok(Instruction::Jeq),
-            "jne" => Ok(Instruction::Jne),
-            "jge" => Ok(Instruction::Jge),
-            "jgt" => Ok(Instruction::Jgt),
-            "jle" => Ok(Instruction::Jle),
-            "jlt" => Ok(Instruction::Jlt),
-            "mov" => Ok(Instruction::Mov),
-            "load" => Ok(Instruction::Load),
-            "store" => Ok(Instruction::Store),
-            "call" => Ok(Instruction::Call),
-            "coal" => Ok(Instruction::Coal),
-            "ret" => Ok(Instruction::Ret),
-            "push" => Ok(Instruction::Push),
-            "pop" => Ok(Instruction::Pop),
-            "pusha" => Ok(Instruction::Pusha),
-            "popa" => Ok(Instruction::Popa),
-            _ => Err("not an instruction"),
-        }
     }
 }
 

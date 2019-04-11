@@ -62,10 +62,6 @@ impl Vm {
                     let args = take(bl, &mut ip, argc);
 
                     match inx {
-                        Instruction::Mov => {
-                            let val = *read(&self, &args[1]);
-                            write(self, &args[0], val);
-                        }
                         Instruction::Load => {
                             let addr = self.code_stack.pop().expect("missing address");
                             self.code_stack.push(*read(&self, &Code::Value(addr)));
@@ -100,8 +96,8 @@ impl Vm {
                         | Instruction::Xor
                         | Instruction::Shl
                         | Instruction::Shr => {
-                            let op1 = *read(&self, &args[0]);
-                            let op2 = *read(&self, &args[1]);
+                            let op1 = self.code_stack.pop().expect("no operand");
+                            let op2 = self.code_stack.pop().expect("no operand");
                             println!("{:?}, {:?}", op1, op2);
 
                             let val = match inx {
@@ -120,7 +116,7 @@ impl Vm {
                                 _ => unimplemented!(),
                             };
 
-                            write(self, &args[0], val)
+                            self.code_stack.push(val);
                         }
                         Instruction::Cmp => {
                             let op1 = *read(&self, &args[0]);
@@ -167,6 +163,8 @@ impl Vm {
                 }
                 what => panic!("shall not happen! {:?}", what),
             }
+
+            println!("{:?}", self.code_stack);
 
             ip += 1;
         }

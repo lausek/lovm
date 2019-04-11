@@ -1,6 +1,6 @@
 pub use super::*;
 
-use self::parser::Ast;
+use self::parser::{Ast, Keyword};
 
 use lovm::value::Value;
 use std::collections::HashMap;
@@ -46,23 +46,23 @@ impl Compiler {
             match step {
                 Ast::Label(label) => self.declare_label(label, self.codeblock.len())?,
                 Ast::Declare(value) => self.declare_value(value)?,
-                Ast::Instruction(inx) => self.codeblock.push(Code::Instruction(inx)),
-                Ast::Instruction1(inx, x1) => {
-                    self.codeblock.push(Code::Instruction(inx));
+                Ast::Statement(kw) => self.codeblock.push(Code::Instruction(kw.into_inx())),
+                Ast::Statement1(kw, x1) => {
+                    self.codeblock.push(Code::Instruction(kw.into_inx()));
                     self.compile_operand(x1)?;
                 }
-                Ast::Instruction2(inx, x1, x2) if inx == Instruction::Mov => {
+                Ast::Statement2(kw, x1, x2) if kw == Keyword::Mov => {
                     /*
                     mov a, *b should become:
                         push b
                         load
                         pop a
-                    
+
                     mov *a, b should become:
                         push b
                         push a
                         store
-                    
+
                     mov *a, *b should become:
                         push b
                         load
@@ -87,11 +87,33 @@ impl Compiler {
                         self.compile_operand(x1)?;
                     }
                 }
-                Ast::Instruction2(inx, x1, x2) => {
-                    self.push_inx(inx);
-                    self.compile_operand(x1)?;
-                    self.compile_operand(x2)?;
-                }
+                Ast::Statement2(kw, x1, x2) => match kw {
+                    Keyword::Add
+                    | Keyword::Sub
+                    | Keyword::Mul
+                    | Keyword::Div
+                    | Keyword::Rem
+                    | Keyword::Pow
+                    | Keyword::Neg
+                    | Keyword::And
+                    | Keyword::Or
+                    | Keyword::Xor
+                    | Keyword::Shl
+                    | Keyword::Shr => {
+                        self.push_inx(Instruction::Push);
+                        self.compile_operand(x2)?;
+                        self.push_inx(Instruction::Push);
+                        self.compile_operand(x1.clone())?;
+                        self.push_inx(kw.into_inx());
+                        self.push_inx(Instruction::Pop);
+                        self.compile_operand(x1)?;
+                    }
+                    _ => {
+                        self.push_inx(kw.into_inx());
+                        self.compile_operand(x1)?;
+                        self.compile_operand(x2)?;
+                    }
+                },
             }
         }
 
