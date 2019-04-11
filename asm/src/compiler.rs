@@ -6,7 +6,7 @@ use lovm::value::Value;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-pub type CompileResult = Result<Program, String>;
+pub type CompileResult = Result<Program, Error>;
 
 const fn mkref(raw: usize) -> Code {
     Code::Value(Value::Ref(raw))
@@ -40,7 +40,7 @@ impl Compiler {
 
     pub fn compile(mut self, src: &str) -> CompileResult {
         let ast = parser::parse(src)?;
-        println!("{:?}", ast);
+        //println!("{:?}", ast);
 
         for step in ast.into_iter() {
             match step {
@@ -52,7 +52,7 @@ impl Compiler {
                         let x1 = Value::from_str(&raw)?;
                         self.codeblock.push(Code::Value(x1));
                     } else {
-                        return Err(format!("`{:?}` is not a value", x1));
+                        return Err(Error::raise(ErrorType::NotAValue, x1));
                     }
                 }
                 Ast::Statement1(kw, x1) => {
@@ -130,7 +130,7 @@ impl Compiler {
             .iter()
             .map(|(ident, loff)| match loff {
                 LabelOffset::Resolved(off) => Ok((ident.clone(), *off)),
-                _ => Err(format!("label `{}` was not declared", ident)),
+                _ => Err(Error::raise(ErrorType::NotDeclared, ident)),
             })
             .collect::<Result<Vec<_>, String>>()?;
 

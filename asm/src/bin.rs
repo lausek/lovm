@@ -20,17 +20,17 @@ fn main() {
         let result = compiler::Compiler::new().compile(src.as_ref());
         match result {
             Ok(program) => {
-                println!("{:?}", program);
+                //println!("{:?}", program);
                 if let Ok(mut out_file) = fs::File::create(out_file_path) {
                     let bytes = program.serialize().unwrap();
                     out_file.write_all(bytes.as_slice()).unwrap();
                 } else {
-                    panic!("cannot create file");
+                    eprintln!("cannot create file");
                 }
             }
-            _ => panic!("{:?}", result),
+            Err(msg) => eprintln!("{}", msg),
         }
     } else {
-        panic!("cannot open program file");
+        eprintln!("cannot open program file");
     }
 }
