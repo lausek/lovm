@@ -22,18 +22,18 @@ enum VmState {
 
 pub struct Vm {
     memory: VmMemory,
-    stack: Vec<VmRegister>,
     state: VmState,
-    code_stack: Vec<Value>,
+    stack: Vec<VmRegister>,
+    vstack: Vec<Value>,
 }
 
 impl Vm {
     pub fn new() -> Self {
         Self {
             memory: VmMemory::new(),
-            stack: Vec::with_capacity(VM_STACK_SIZE),
             state: VmState::Initial,
-            code_stack: Vec::with_capacity(VM_STACK_SIZE),
+            stack: Vec::with_capacity(VM_STACK_SIZE),
+            vstack: Vec::with_capacity(VM_STACK_SIZE),
         }
     }
 }
@@ -63,12 +63,12 @@ impl Vm {
 
                     match inx {
                         Instruction::Load => {
-                            let addr = self.code_stack.pop().expect("missing address");
-                            self.code_stack.push(*read(&self, &Code::Value(addr)));
+                            let addr = self.vstack.pop().expect("missing address");
+                            self.vstack.push(*read(&self, &Code::Value(addr)));
                         }
                         Instruction::Store => {
-                            let addr = self.code_stack.pop().expect("missing address");
-                            let val = self.code_stack.pop().expect("missing value");
+                            let addr = self.vstack.pop().expect("missing address");
+                            let val = self.vstack.pop().expect("missing value");
                             write(self, &Code::Value(addr), val);
                         }
                         Instruction::Coal => {
@@ -96,27 +96,28 @@ impl Vm {
                         | Instruction::Xor
                         | Instruction::Shl
                         | Instruction::Shr => {
-                            let op2 = self.code_stack.pop().expect("no operand");
-                            let op1 = self.code_stack.pop().expect("no operand");
+                            let op2 = self.vstack.pop().expect("no operand");
+                            let op1 = self.vstack.last_mut().expect("no target");
                             println!("{:?}, {:?}", op1, op2);
 
+                            // TODO: deref causes copy when inplace modification would be enough
                             let val = match inx {
-                                Instruction::Add => op1 + op2,
-                                Instruction::Sub => op1 - op2,
-                                Instruction::Mul => op1 * op2,
-                                Instruction::Div => op1 / op2,
-                                Instruction::Rem => op1 % op2,
+                                Instruction::Add => *op1 + op2,
+                                Instruction::Sub => *op1 - op2,
+                                Instruction::Mul => *op1 * op2,
+                                Instruction::Div => *op1 / op2,
+                                Instruction::Rem => *op1 % op2,
                                 Instruction::Pow => op1.pow(&op2),
-                                Instruction::Neg => -op1,
-                                Instruction::And => op1 & op2,
-                                Instruction::Or => op1 | op2,
-                                Instruction::Xor => op1 ^ op2,
-                                Instruction::Shl => op1 << op2,
-                                Instruction::Shr => op1 >> op2,
+                                Instruction::Neg => -*op1,
+                                Instruction::And => *op1 & op2,
+                                Instruction::Or => *op1 | op2,
+                                Instruction::Xor => *op1 ^ op2,
+                                Instruction::Shl => *op1 << op2,
+                                Instruction::Shr => *op1 >> op2,
                                 _ => unimplemented!(),
                             };
 
-                            self.code_stack.push(val);
+                            *op1 = val;
                         }
                         Instruction::Cmp => {
                             let op1 = *read(&self, &args[0]);
@@ -151,10 +152,10 @@ impl Vm {
                         Instruction::Ret => self.pop_frame(Some(&mut ip)),
                         Instruction::Push => {
                             let val = *read(self, &args[0]);
-                            self.code_stack.push(val);
+                            self.vstack.push(val);
                         }
                         Instruction::Pop => {
-                            let val = self.code_stack.pop().expect("nothing to pop");
+                            let val = self.vstack.pop().expect("nothing to pop");
                             write(self, &args[0], val);
                         }
                         Instruction::Pusha => self.push_frame(None),
@@ -164,7 +165,7 @@ impl Vm {
                 what => panic!("shall not happen! {:?}", what),
             }
 
-            println!("{:?}", self.code_stack);
+            println!("{:?}", self.vstack);
 
             ip += 1;
         }
