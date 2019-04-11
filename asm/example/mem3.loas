@@ -9,8 +9,8 @@ main:
     coal D, #4
 
     mov A, *D
+    push A
 
     ret
 
-my_variable:
-    dv #0
+my_variable: dv #0

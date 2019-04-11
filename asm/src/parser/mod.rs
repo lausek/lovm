@@ -41,25 +41,32 @@ pub fn parse(src: &str) -> ParseResult {
         println!("{:?}", tokens);
 
         let inx = into_ast(tokens)?;
-        ls.push(inx);
+        ls.extend(inx);
     }
 
     Ok(ls)
 }
 
-fn into_ast(tokens: LexTokens) -> Result<Ast, String> {
+fn into_ast(tokens: LexTokens) -> Result<Vec<Ast>, String> {
     let mut it = tokens.into_iter().peekable();
     match it.next() {
         Some(LexToken {
             ty: LexTokenType::Keyword(kw),
             ..
-        }) => into_statement(kw, &mut it),
+        }) => into_statement(kw, &mut it).and_then(|ast| Ok(vec![ast])),
         Some(LexToken {
             ty: LexTokenType::Ident(label),
             ..
         }) => {
+            let mut bl = vec![Ast::Label(label)];
             expect(&mut it, LexTokenType::Punct(':'))?;
-            Ok(Ast::Label(label))
+
+            match it.collect::<Vec<_>>() {
+                tokens if !tokens.is_empty() => bl.extend(into_ast(tokens)?),
+                _ => {}
+            }
+
+            Ok(bl)
         }
         _ => Err("line does not start with instruction".into()),
     }

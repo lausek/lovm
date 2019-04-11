@@ -63,8 +63,8 @@ impl Vm {
 
                     match inx {
                         Instruction::Load => {
-                            let addr = self.vstack.pop().expect("missing address");
-                            self.vstack.push(*read(&self, &Code::Value(addr)));
+                            let val = self.vstack.pop().expect("missing address");
+                            self.vstack.push(*read_memory(&self, &val));
                         }
                         Instruction::Store => {
                             let addr = self.vstack.pop().expect("missing address");
@@ -209,14 +209,16 @@ fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
 fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
     match code {
         Code::Register(reg) => &register(vm)[*reg],
-        /*
-        Code::Value(Value::Ref(addr)) => match &vm.memory[*addr] {
-            Code::Value(value) => value,
-            code => panic!("unreadable memory accessed: {:?}", code),
-        },
-        */
         Code::Value(value) => value,
         _ => unimplemented!(),
+    }
+}
+
+fn read_memory<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Value) -> &'read Value {
+    let addr = usize::from(*code);
+    match &vm.memory[addr] {
+        Code::Value(value) => &value,
+        code => panic!("unreadable memory accessed: {:?}", code),
     }
 }
 
