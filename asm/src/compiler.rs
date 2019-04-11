@@ -47,6 +47,14 @@ impl Compiler {
                 Ast::Label(label) => self.declare_label(label, self.codeblock.len())?,
                 Ast::Declare(value) => self.declare_value(value)?,
                 Ast::Statement(kw) => self.codeblock.push(Code::Instruction(kw.into_inx())),
+                Ast::Statement1(kw, x1) if kw == Keyword::Dv => {
+                    if let Operand::Value(raw) = x1 {
+                        let x1 = Value::from_str(&raw)?;
+                        self.codeblock.push(Code::Value(x1));
+                    } else {
+                        return Err(format!("`{:?}` is not a value", x1));
+                    }
+                }
                 Ast::Statement1(kw, x1) => {
                     self.codeblock.push(Code::Instruction(kw.into_inx()));
                     self.compile_operand(x1)?;
@@ -101,9 +109,9 @@ impl Compiler {
                     | Keyword::Shl
                     | Keyword::Shr => {
                         self.push_inx(Instruction::Push);
-                        self.compile_operand(x2)?;
-                        self.push_inx(Instruction::Push);
                         self.compile_operand(x1.clone())?;
+                        self.push_inx(Instruction::Push);
+                        self.compile_operand(x2)?;
                         self.push_inx(kw.into_inx());
                         self.push_inx(Instruction::Pop);
                         self.compile_operand(x1)?;

@@ -96,8 +96,8 @@ impl Vm {
                         | Instruction::Xor
                         | Instruction::Shl
                         | Instruction::Shr => {
-                            let op1 = self.code_stack.pop().expect("no operand");
                             let op2 = self.code_stack.pop().expect("no operand");
+                            let op1 = self.code_stack.pop().expect("no operand");
                             println!("{:?}, {:?}", op1, op2);
 
                             let val = match inx {

@@ -26,8 +26,6 @@ pub enum Keyword {
     Jle,
     Jlt,
 
-    Mov,
-
     Coal,
     Call,
     Ret,
@@ -35,6 +33,10 @@ pub enum Keyword {
     Pop,
     Pusha,
     Popa,
+
+    // not really instructions
+    Dv,
+    Mov,
 }
 
 impl Keyword {
@@ -56,7 +58,8 @@ impl Keyword {
             | Keyword::Cmp
             | Keyword::Coal => 2,
 
-            Keyword::Inc
+            Keyword::Dv
+            | Keyword::Inc
             | Keyword::Dec
             | Keyword::Jmp
             | Keyword::Jeq
@@ -135,7 +138,6 @@ impl std::str::FromStr for Keyword {
             "jgt" => Ok(Keyword::Jgt),
             "jle" => Ok(Keyword::Jle),
             "jlt" => Ok(Keyword::Jlt),
-            "mov" => Ok(Keyword::Mov),
             "call" => Ok(Keyword::Call),
             "coal" => Ok(Keyword::Coal),
             "ret" => Ok(Keyword::Ret),
@@ -143,6 +145,9 @@ impl std::str::FromStr for Keyword {
             "pop" => Ok(Keyword::Pop),
             "pusha" => Ok(Keyword::Pusha),
             "popa" => Ok(Keyword::Popa),
+
+            "dv" => Ok(Keyword::Dv),
+            "mov" => Ok(Keyword::Mov),
             _ => Err("not an keyword"),
         }
     }

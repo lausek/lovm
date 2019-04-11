@@ -61,15 +61,6 @@ fn into_ast(tokens: LexTokens) -> Result<Ast, String> {
             expect(&mut it, LexTokenType::Punct(':'))?;
             Ok(Ast::Label(label))
         }
-        Some(LexToken {
-            ty: LexTokenType::Internal(inx),
-            ..
-        }) => match inx {
-            InternalInstruction::Declare => match take_op(&mut it)? {
-                Operand::Value(value) => Ok(Ast::Declare(value)),
-                _ => panic!("invalid operand for declare"),
-            },
-        },
         _ => Err("line does not start with instruction".into()),
     }
 }
