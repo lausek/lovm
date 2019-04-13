@@ -57,7 +57,7 @@ impl std::fmt::Display for Error {
 pub mod raise {
     use super::*;
 
-    pub fn expected_got<T>(expc: LexTokenType, got: Option<LexToken>) -> Result<T, Error> {
+    pub fn expected_got<T>(expc: TokenType, got: Option<Token>) -> Result<T, Error> {
         let mut err = Error::new(ErrorType::ExpectedGot);
         let got = if let Some(got) = got {
             err.loc = got.loc;
@@ -69,17 +69,19 @@ pub mod raise {
         Err(err.msg(msg))
     }
 
-    pub fn not_a_value<T>(raw: Operand) -> Result<T, Error> {
-        Err(Error::new(ErrorType::NotAValue))
+    pub fn not_a_value<T>(op: Operand) -> Result<T, Error> {
+        let err = Error::new(ErrorType::NotAValue);
+        let msg = format!("`{:?}` cannot be interpreted as value", op);
+        Err(err.msg(msg))
     }
 
-    pub fn not_declared<T>(ident: &LexIdent) -> Result<T, Error> {
+    pub fn not_declared<T>(ident: &Ident) -> Result<T, Error> {
         let err = Error::new(ErrorType::NotDeclared).loc(ident.loc);
         let msg = format!("label `{}` was not declared", ident);
         Err(err.msg(msg))
     }
 
-    pub fn redeclared<T>(ident: &LexIdent) -> Result<T, Error> {
+    pub fn redeclared<T>(ident: &Ident) -> Result<T, Error> {
         let msg = format!("redeclaration of label `{}`", ident);
         Err(Error::new(ErrorType::Redeclared).msg(msg))
     }

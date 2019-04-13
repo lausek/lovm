@@ -1,6 +1,8 @@
+mod ident;
 mod keyword;
 mod lexer;
 
+pub use self::ident::*;
 pub use self::keyword::*;
 pub use self::lexer::*;
 pub use super::*;
@@ -9,7 +11,7 @@ pub type ParseResult = Result<Vec<Ast>, Error>;
 
 #[derive(Clone, Debug)]
 pub enum Ast {
-    Label(LexIdent),
+    Label(Ident),
     Declare(String),
     Statement(Keyword),
     Statement1(Keyword, Operand),
@@ -21,7 +23,7 @@ pub enum Operand {
     Deref(Box<Operand>),
     Register(Register),
     Value(lovm::value::Value),
-    Ident(LexIdent),
+    Ident(Ident),
 }
 
 pub fn parse(src: &str) -> ParseResult {
@@ -47,19 +49,19 @@ pub fn parse(src: &str) -> ParseResult {
     Ok(ls)
 }
 
-fn into_ast(tokens: LexTokens) -> Result<Vec<Ast>, Error> {
+fn into_ast(tokens: Tokens) -> Result<Vec<Ast>, Error> {
     let mut it = tokens.into_iter().peekable();
     match it.next() {
-        Some(LexToken {
-            ty: LexTokenType::Keyword(kw),
+        Some(Token {
+            ty: TokenType::Keyword(kw),
             ..
         }) => into_statement(kw, &mut it).and_then(|ast| Ok(vec![ast])),
-        Some(LexToken {
-            ty: LexTokenType::Ident(ident),
+        Some(Token {
+            ty: TokenType::Ident(ident),
             ..
         }) => {
             let mut bl = vec![Ast::Label(ident)];
-            expect(&mut it, LexTokenType::Punct(':'))?;
+            expect(&mut it, TokenType::Punct(':'))?;
 
             match it.collect::<Vec<_>>() {
                 tokens if !tokens.is_empty() => bl.extend(into_ast(tokens)?),
@@ -74,7 +76,7 @@ fn into_ast(tokens: LexTokens) -> Result<Vec<Ast>, Error> {
 
 fn into_statement<T>(kw: Keyword, it: &mut std::iter::Peekable<T>) -> Result<Ast, Error>
 where
-    T: Iterator<Item = LexToken>,
+    T: Iterator<Item = Token>,
 {
     match kw.arguments() {
         2 if kw == Keyword::Mov => {
@@ -84,7 +86,7 @@ where
                 to = Operand::Deref(Box::new(to));
             }
 
-            expect(it, LexTokenType::Punct(','))?;
+            expect(it, TokenType::Punct(','))?;
 
             let indirect = take_deref(it);
             let mut from = take_op(it)?;
@@ -96,7 +98,7 @@ where
         }
         2 => {
             let x1 = take_op(it)?;
-            expect(it, LexTokenType::Punct(','))?;
+            expect(it, TokenType::Punct(','))?;
             let x2 = take_op(it)?;
             Ok(Ast::Statement2(kw, x1, x2))
         }
@@ -108,11 +110,11 @@ where
 
 fn take_deref<T>(it: &mut std::iter::Peekable<T>) -> bool
 where
-    T: Iterator<Item = LexToken>,
+    T: Iterator<Item = Token>,
 {
     match it.peek() {
-        Some(LexToken {
-            ty: LexTokenType::Punct('*'),
+        Some(Token {
+            ty: TokenType::Punct('*'),
             ..
         }) => {
             it.next().unwrap();
@@ -124,15 +126,15 @@ where
 
 fn take_op<T>(it: &mut std::iter::Peekable<T>) -> Result<Operand, String>
 where
-    T: Iterator<Item = LexToken>,
+    T: Iterator<Item = Token>,
 {
     match it.next() {
-        Some(LexToken {
-            ty: LexTokenType::Punct('#'),
+        Some(Token {
+            ty: TokenType::Punct('#'),
             ..
         }) => match it.next() {
-            Some(LexToken {
-                ty: LexTokenType::Ident(ident),
+            Some(Token {
+                ty: TokenType::Ident(ident),
                 ..
             }) => {
                 use std::str::FromStr;
@@ -141,8 +143,8 @@ where
             }
             _ => Err("expected constant value".into()),
         },
-        Some(LexToken {
-            ty: LexTokenType::Ident(ident),
+        Some(Token {
+            ty: TokenType::Ident(ident),
             ..
         }) => match ident.raw.as_ref() {
             "A" => Ok(Operand::Register(Register::A)),
@@ -155,9 +157,9 @@ where
     }
 }
 
-fn expect<T>(it: &mut T, expc: LexTokenType) -> Result<(), Error>
+fn expect<T>(it: &mut T, expc: TokenType) -> Result<(), Error>
 where
-    T: Iterator<Item = LexToken>,
+    T: Iterator<Item = Token>,
 {
     match it.next() {
         Some(got) if got.ty == expc => Ok(()),

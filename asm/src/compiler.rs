@@ -27,7 +27,7 @@ pub enum LabelOffset {
 
 pub struct Compiler {
     codeblock: CodeBlock,
-    labels: HashMap<LexIdent, LabelOffset>,
+    labels: HashMap<Ident, LabelOffset>,
 }
 
 impl Compiler {
@@ -165,7 +165,7 @@ impl Compiler {
         Ok(())
     }
 
-    fn declare_label(&mut self, label: LexIdent, off: usize) -> Result<(), Error> {
+    fn declare_label(&mut self, label: Ident, off: usize) -> Result<(), Error> {
         match self
             .labels
             .insert(label.clone(), LabelOffset::Resolved(off))
