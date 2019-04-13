@@ -3,11 +3,11 @@ pub use super::*;
 use std::str::FromStr;
 
 pub type LexTokens = Vec<LexToken>;
-pub type Location = (usize, usize);
+pub type Location = (usize, usize, usize);
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum LexTokenType {
-    Ident(String),
+    Ident(LexIdent),
     Keyword(Keyword),
     Punct(char),
 }
@@ -18,18 +18,50 @@ pub struct LexToken {
     pub(crate) ty: LexTokenType,
 }
 
-impl LexToken {
-    pub fn new(loc: Location, src: &str) -> Self {
-        Self {
-            loc,
-            ty: to_type(src),
-        }
+#[derive(Clone, Debug, Eq)]
+pub struct LexIdent {
+    pub(crate) loc: Location,
+    pub(crate) raw: String,
+}
+
+impl LexIdent {
+    pub fn new(loc: Location, raw: String) -> Self {
+        Self { loc, raw }
     }
 }
 
-pub fn lex_line(src: &str) -> LexTokens {
+impl std::fmt::Display for LexIdent {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.raw)
+    }
+}
+
+impl std::cmp::PartialEq for LexIdent {
+    fn eq(&self, other: &LexIdent) -> bool {
+        self.raw == other.raw
+    }
+}
+
+impl std::hash::Hash for LexIdent {
+    fn hash<H: std::hash::Hasher>(&self, h: &mut H) {
+        self.raw.hash(h)
+    }
+}
+
+impl LexToken {
+    pub fn new(loc: Location, src: &str) -> Self {
+        let ty = match Keyword::from_str(src) {
+            Ok(kw) => LexTokenType::Keyword(kw),
+            // TODO: check if `Ident` is lowercase register name (a-d) => return new Register(_) variant then
+            _ => LexTokenType::Ident(LexIdent::new(loc, src.to_string())),
+        };
+        Self { loc, ty }
+    }
+}
+
+pub fn lex_line(ldx: usize, src: &str) -> LexTokens {
     let mut lex = LexTokens::new();
-    let mut loc = (0, 1);
+    let mut loc = (ldx, 0, 1);
 
     if src.is_empty() {
         return lex;
@@ -38,11 +70,11 @@ pub fn lex_line(src: &str) -> LexTokens {
     for c in src.chars() {
         match c {
             ':' | '#' | ',' | ' ' | '*' => {
-                if 0 < loc.1 - loc.0 - 1 {
-                    let span = (loc.0, loc.1 - 1);
+                if 0 < loc.2 - loc.1 - 1 {
+                    let span = (loc.1, loc.2 - 1);
                     let buffer = &src[span.0..span.1].trim();
                     if !buffer.is_empty() {
-                        let tok = LexToken::new(span, buffer);
+                        let tok = LexToken::new((ldx, span.0, span.1), buffer);
                         lex.push(tok);
                     }
                 }
@@ -55,29 +87,21 @@ pub fn lex_line(src: &str) -> LexTokens {
                     });
                 }
 
-                loc.0 = loc.1;
+                loc.1 = loc.2;
             }
             // no punctuation char detected -> just expand buffer
             _ => {}
         }
-        loc.1 += 1;
+        loc.2 += 1;
     }
 
-    loc.1 -= 1;
+    loc.2 -= 1;
 
-    let buffer = &src[loc.0..loc.1].trim();
+    let buffer = &src[loc.1..loc.2].trim();
     if !buffer.is_empty() {
         let tok = LexToken::new(loc, buffer);
         lex.push(tok);
     }
 
     lex
-}
-
-fn to_type(buffer: &str) -> LexTokenType {
-    if let Ok(kw) = Keyword::from_str(buffer) {
-        return LexTokenType::Keyword(kw);
-    }
-    // TODO: check if `Ident` is lowercase register name (a-d) => return new Register(_) variant then
-    LexTokenType::Ident(buffer.to_string())
 }

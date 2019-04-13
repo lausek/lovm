@@ -1,11 +1,13 @@
 negate:
     pop B
     coal B, #4
-    store B, #10
+    mov *B, #10
     push B
     ret
 
 main:
+    call unknown
+
     push #10
     call negate
     pop A

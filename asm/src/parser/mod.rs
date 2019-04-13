@@ -5,11 +5,11 @@ pub use self::keyword::*;
 pub use self::lexer::*;
 pub use super::*;
 
-pub type ParseResult = Result<Vec<Ast>, String>;
+pub type ParseResult = Result<Vec<Ast>, Error>;
 
 #[derive(Clone, Debug)]
 pub enum Ast {
-    Label(String),
+    Label(LexIdent),
     Declare(String),
     Statement(Keyword),
     Statement1(Keyword, Operand),
@@ -20,20 +20,20 @@ pub enum Ast {
 pub enum Operand {
     Deref(Box<Operand>),
     Register(Register),
-    Value(String),
-    Ident(String),
+    Value(lovm::value::Value),
+    Ident(LexIdent),
 }
 
 pub fn parse(src: &str) -> ParseResult {
     let mut ls = vec![];
 
-    for (_ldx, line) in src.lines().enumerate() {
+    for (ldx, line) in src.lines().enumerate() {
         let line = line.split(';').next().unwrap();
         if line.is_empty() {
             continue;
         }
 
-        let tokens = lexer::lex_line(&line);
+        let tokens = lexer::lex_line(ldx, &line);
         if tokens.is_empty() {
             continue;
         }
@@ -47,7 +47,7 @@ pub fn parse(src: &str) -> ParseResult {
     Ok(ls)
 }
 
-fn into_ast(tokens: LexTokens) -> Result<Vec<Ast>, String> {
+fn into_ast(tokens: LexTokens) -> Result<Vec<Ast>, Error> {
     let mut it = tokens.into_iter().peekable();
     match it.next() {
         Some(LexToken {
@@ -55,10 +55,10 @@ fn into_ast(tokens: LexTokens) -> Result<Vec<Ast>, String> {
             ..
         }) => into_statement(kw, &mut it).and_then(|ast| Ok(vec![ast])),
         Some(LexToken {
-            ty: LexTokenType::Ident(label),
+            ty: LexTokenType::Ident(ident),
             ..
         }) => {
-            let mut bl = vec![Ast::Label(label)];
+            let mut bl = vec![Ast::Label(ident)];
             expect(&mut it, LexTokenType::Punct(':'))?;
 
             match it.collect::<Vec<_>>() {
@@ -68,11 +68,11 @@ fn into_ast(tokens: LexTokens) -> Result<Vec<Ast>, String> {
 
             Ok(bl)
         }
-        _ => Err("line does not start with instruction".into()),
+        _ => Err("line does not start with instruction".to_string().into()),
     }
 }
 
-fn into_statement<T>(kw: Keyword, it: &mut std::iter::Peekable<T>) -> Result<Ast, String>
+fn into_statement<T>(kw: Keyword, it: &mut std::iter::Peekable<T>) -> Result<Ast, Error>
 where
     T: Iterator<Item = LexToken>,
 {
@@ -132,31 +132,35 @@ where
             ..
         }) => match it.next() {
             Some(LexToken {
-                ty: LexTokenType::Ident(value),
+                ty: LexTokenType::Ident(ident),
                 ..
-            }) => Ok(Operand::Value(value)),
+            }) => {
+                use std::str::FromStr;
+                let value = lovm::value::Value::from_str(&ident.raw)?;
+                Ok(Operand::Value(value))
+            }
             _ => Err("expected constant value".into()),
         },
         Some(LexToken {
             ty: LexTokenType::Ident(ident),
             ..
-        }) => match ident.as_ref() {
+        }) => match ident.raw.as_ref() {
             "A" => Ok(Operand::Register(Register::A)),
             "B" => Ok(Operand::Register(Register::B)),
             "C" => Ok(Operand::Register(Register::C)),
             "D" => Ok(Operand::Register(Register::D)),
-            _ => Ok(Operand::Ident(ident.clone())),
+            _ => Ok(Operand::Ident(ident)),
         },
         what => Err(format!("unexpected token `{:?}`", what)),
     }
 }
 
-fn expect<T>(it: &mut T, expc: LexTokenType) -> Result<(), String>
+fn expect<T>(it: &mut T, expc: LexTokenType) -> Result<(), Error>
 where
     T: Iterator<Item = LexToken>,
 {
     match it.next() {
         Some(got) if got.ty == expc => Ok(()),
-        got => Err(format!("expected `{:?}`, got `{:?}`", expc, got)),
+        got => raise::expected_got(expc, got.or(it.last())),
     }
 }

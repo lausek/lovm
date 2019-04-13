@@ -13,3 +13,4 @@ name = "lovm_asm_lib"
 
 [dependencies]
 lovm = { path = "../." }
+colored = "1.7.0"

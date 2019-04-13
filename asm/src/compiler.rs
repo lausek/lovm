@@ -27,7 +27,7 @@ pub enum LabelOffset {
 
 pub struct Compiler {
     codeblock: CodeBlock,
-    labels: HashMap<String, LabelOffset>,
+    labels: HashMap<LexIdent, LabelOffset>,
 }
 
 impl Compiler {
@@ -44,15 +44,14 @@ impl Compiler {
 
         for step in ast.into_iter() {
             match step {
-                Ast::Label(label) => self.declare_label(label, self.codeblock.len())?,
+                Ast::Label(ident) => self.declare_label(ident, self.codeblock.len())?,
                 Ast::Declare(value) => self.declare_value(value)?,
                 Ast::Statement(kw) => self.codeblock.push(Code::Instruction(kw.into_inx())),
                 Ast::Statement1(kw, x1) if kw == Keyword::Dv => {
-                    if let Operand::Value(raw) = x1 {
-                        let x1 = Value::from_str(&raw)?;
-                        self.codeblock.push(Code::Value(x1));
+                    if let Operand::Value(value) = x1 {
+                        self.codeblock.push(Code::Value(value));
                     } else {
-                        return Err(Error::raise(ErrorType::NotAValue, x1));
+                        return raise::not_a_value(x1);
                     }
                 }
                 Ast::Statement1(kw, x1) => {
@@ -129,10 +128,10 @@ impl Compiler {
             .labels
             .iter()
             .map(|(ident, loff)| match loff {
-                LabelOffset::Resolved(off) => Ok((ident.clone(), *off)),
-                _ => Err(Error::raise(ErrorType::NotDeclared, ident)),
+                LabelOffset::Resolved(off) => Ok((ident.raw.clone(), *off)),
+                _ => raise::not_declared(ident),
             })
-            .collect::<Result<Vec<_>, String>>()?;
+            .collect::<Result<Vec<_>, Error>>()?;
 
         let mut program = Program::with_code(self.codeblock);
         *program.labels_mut() = labels;
@@ -158,10 +157,7 @@ impl Compiler {
                 }
             },
             Operand::Register(reg) => code = Code::Register(reg),
-            Operand::Value(raw) => match Value::from_str(&raw) {
-                Ok(value) => code = Code::Value(value),
-                Err(msg) => return Err(msg),
-            },
+            Operand::Value(value) => code = Code::Value(value),
             Operand::Deref(_) => unreachable!(),
         }
 
@@ -169,12 +165,12 @@ impl Compiler {
         Ok(())
     }
 
-    fn declare_label(&mut self, label: String, off: usize) -> Result<(), String> {
+    fn declare_label(&mut self, label: LexIdent, off: usize) -> Result<(), Error> {
         match self
             .labels
             .insert(label.clone(), LabelOffset::Resolved(off))
         {
-            Some(LabelOffset::Resolved(_)) => Err(format!("redeclaration of label `{}`", label)),
+            Some(LabelOffset::Resolved(_)) => raise::redeclared(&label),
             // use reverse order to not invalidate indices
             Some(LabelOffset::Unresolved(positions)) => {
                 for pos in positions.into_iter().rev() {
