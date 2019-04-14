@@ -75,45 +75,10 @@ impl Keyword {
             Keyword::Ret | Keyword::Pusha | Keyword::Popa => 0,
         }
     }
-
-    pub fn into_inx(&self) -> Instruction {
-        match self {
-            Keyword::Inc => Instruction::Inc,
-            Keyword::Dec => Instruction::Dec,
-            Keyword::Add => Instruction::Add,
-            Keyword::Sub => Instruction::Sub,
-            Keyword::Mul => Instruction::Mul,
-            Keyword::Div => Instruction::Div,
-            Keyword::Rem => Instruction::Rem,
-            Keyword::Pow => Instruction::Pow,
-            Keyword::Neg => Instruction::Neg,
-            Keyword::And => Instruction::And,
-            Keyword::Or => Instruction::Or,
-            Keyword::Xor => Instruction::Xor,
-            Keyword::Shl => Instruction::Shl,
-            Keyword::Shr => Instruction::Shr,
-            Keyword::Cmp => Instruction::Cmp,
-            Keyword::Jmp => Instruction::Jmp,
-            Keyword::Jeq => Instruction::Jeq,
-            Keyword::Jne => Instruction::Jne,
-            Keyword::Jge => Instruction::Jge,
-            Keyword::Jgt => Instruction::Jgt,
-            Keyword::Jle => Instruction::Jle,
-            Keyword::Jlt => Instruction::Jlt,
-            Keyword::Coal => Instruction::Coal,
-            Keyword::Call => Instruction::Call,
-            Keyword::Ret => Instruction::Ret,
-            Keyword::Push => Instruction::Push,
-            Keyword::Pop => Instruction::Pop,
-            Keyword::Pusha => Instruction::Pusha,
-            Keyword::Popa => Instruction::Popa,
-            _ => panic!("not an instruction"),
-        }
-    }
 }
 
 impl std::str::FromStr for Keyword {
-    type Err = &'static str;
+    type Err = ();
     fn from_str(from: &str) -> Result<Self, Self::Err> {
         match from {
             "inc" => Ok(Keyword::Inc),
@@ -148,7 +113,7 @@ impl std::str::FromStr for Keyword {
 
             "dv" => Ok(Keyword::Dv),
             "mov" => Ok(Keyword::Mov),
-            _ => Err("not an keyword"),
+            _ => Err(()),
         }
     }
 }

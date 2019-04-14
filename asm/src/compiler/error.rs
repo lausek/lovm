@@ -4,8 +4,10 @@ use colored::Colorize;
 
 #[derive(Clone, Debug)]
 pub struct Error {
+    // TODO: should include other `Error`s aswell
     content: Vec<String>,
     loc: Location,
+    // TODO: should rather be an option
     ty: ErrorType,
 }
 
@@ -67,7 +69,7 @@ impl std::fmt::Display for Error {
 pub mod raise {
     use super::*;
 
-    pub fn expect_either_got<T>(expc: Vec<&str>, got: Option<Token>) -> Result<T, Error> {
+    pub fn expected_either_got<T>(expc: &[&str], got: Option<Token>) -> Result<T, Error> {
         let mut err = Error::new(ErrorType::ExpectedGot);
         let got = if let Some(got) = got {
             err.loc = got.loc;

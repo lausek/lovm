@@ -14,9 +14,11 @@ fn main() {
     let mut src = String::new();
     file.read_to_string(&mut src).expect("reading file failed");
 
-    let program = compiler::Compiler::new()
+    let unit = compiler::Compiler::new()
         .compile(src.as_ref())
         .expect("compilation failed");
+
+    let program = into_program(unit);
 
     println!("{}", program);
 

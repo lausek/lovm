@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone, Debug, Eq)]
+#[derive(Clone, Debug, Eq, Default)]
 pub struct Ident {
     pub(crate) loc: Location,
     pub(crate) raw: String,

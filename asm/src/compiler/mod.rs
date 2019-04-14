@@ -46,19 +46,16 @@ impl Compiler {
             match step {
                 Ast::Label(ident) => unit.declare_label(ident, unit.codeblock.len())?,
                 Ast::Declare(value) => unit.declare_value(value)?,
-                Ast::Statement(kw) => unit.codeblock.push(Code::Instruction(kw.into_inx())),
-                Ast::Statement1(kw, x1) if kw == Keyword::Dv => {
-                    if let Operand::Value(value) = x1 {
+                Ast::Statement(stmt) if stmt.kw == Keyword::Dv => match stmt.arg1 {
+                    Some(Operand::Value(value)) => {
                         unit.codeblock.push(Code::Value(value));
-                    } else {
-                        return raise::not_a_value(x1);
                     }
-                }
-                Ast::Statement1(kw, x1) => {
-                    unit.codeblock.push(Code::Instruction(kw.into_inx()));
-                    unit.compile_operand(x1)?;
-                }
-                Ast::Statement2(kw, x1, x2) if kw == Keyword::Mov => {
+                    Some(arg1) => {
+                        return raise::not_a_value(arg1);
+                    }
+                    None => return raise::expected_either_got(&["label", "const"], None),
+                },
+                Ast::Statement(stmt) if stmt.kw == Keyword::Mov => {
                     /*
                     mov a, *b should become:
                         push b
@@ -76,6 +73,8 @@ impl Compiler {
                         push a
                         store
                     */
+                    let x1 = stmt.arg1.unwrap();
+                    let x2 = stmt.arg2.unwrap();
                     if let Operand::Deref(x2) = x2 {
                         unit.push_inx(Instruction::Push);
                         unit.compile_operand(*x2)?;
@@ -94,33 +93,47 @@ impl Compiler {
                         unit.compile_operand(x1)?;
                     }
                 }
-                Ast::Statement2(kw, x1, x2) => match kw {
-                    Keyword::Add
-                    | Keyword::Sub
-                    | Keyword::Mul
-                    | Keyword::Div
-                    | Keyword::Rem
-                    | Keyword::Pow
-                    | Keyword::Neg
-                    | Keyword::And
-                    | Keyword::Or
-                    | Keyword::Xor
-                    | Keyword::Shl
-                    | Keyword::Shr => {
-                        unit.push_inx(Instruction::Push);
-                        unit.compile_operand(x1.clone())?;
-                        unit.push_inx(Instruction::Push);
-                        unit.compile_operand(x2)?;
-                        unit.push_inx(kw.into_inx());
-                        unit.push_inx(Instruction::Pop);
-                        unit.compile_operand(x1)?;
+                // TODO: urgh this looks bad
+                Ast::Statement(stmt) if stmt.arg1.is_none() => {
+                    unit.codeblock.push(Code::Instruction(stmt.inx()))
+                }
+                Ast::Statement(stmt) if stmt.arg1.is_some() && stmt.arg2.is_none() => {
+                    unit.codeblock.push(Code::Instruction(stmt.inx()));
+                    unit.compile_operand(stmt.arg1.unwrap())?;
+                }
+                Ast::Statement(stmt) => {
+                    let inx = stmt.inx();
+                    let kw = stmt.kw;
+                    let x1 = stmt.arg1.unwrap();
+                    let x2 = stmt.arg2.unwrap();
+                    match kw {
+                        Keyword::Add
+                        | Keyword::Sub
+                        | Keyword::Mul
+                        | Keyword::Div
+                        | Keyword::Rem
+                        | Keyword::Pow
+                        | Keyword::Neg
+                        | Keyword::And
+                        | Keyword::Or
+                        | Keyword::Xor
+                        | Keyword::Shl
+                        | Keyword::Shr => {
+                            unit.push_inx(Instruction::Push);
+                            unit.compile_operand(x1.clone())?;
+                            unit.push_inx(Instruction::Push);
+                            unit.compile_operand(x2)?;
+                            unit.push_inx(inx);
+                            unit.push_inx(Instruction::Pop);
+                            unit.compile_operand(x1)?;
+                        }
+                        _ => {
+                            unit.push_inx(inx);
+                            unit.compile_operand(x1)?;
+                            unit.compile_operand(x2)?;
+                        }
                     }
-                    _ => {
-                        unit.push_inx(kw.into_inx());
-                        unit.compile_operand(x1)?;
-                        unit.compile_operand(x2)?;
-                    }
-                },
+                }
             }
         }
 

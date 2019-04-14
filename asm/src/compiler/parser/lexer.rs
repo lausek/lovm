@@ -39,7 +39,12 @@ pub fn lex_line(ldx: usize, src: &str) -> Tokens {
 
     for c in src.chars() {
         match c {
-            ':' | '#' | ',' | ' ' | '*' => {
+            // @ => type argument
+            // : => label postfix
+            // # => contant prefix
+            // * => deref prefix
+            // ... => punctuation
+            '@' | ':' | '#' | '*' | ',' | ' ' => {
                 if 0 < loc.2 - loc.1 - 1 {
                     let span = (loc.1, loc.2 - 1);
                     let buffer = &src[span.0..span.1].trim();

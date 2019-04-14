@@ -1,10 +1,14 @@
 mod ident;
 mod keyword;
 mod lexer;
+mod statement;
+mod ty;
 
 pub use self::ident::*;
 pub use self::keyword::*;
 pub use self::lexer::*;
+pub use self::statement::*;
+pub use self::ty::*;
 pub use super::*;
 
 pub type ParseResult = Result<Vec<Ast>, Error>;
@@ -13,9 +17,7 @@ pub type ParseResult = Result<Vec<Ast>, Error>;
 pub enum Ast {
     Label(Ident),
     Declare(String),
-    Statement(Keyword),
-    Statement1(Keyword, Operand),
-    Statement2(Keyword, Operand, Operand),
+    Statement(Statement),
 }
 
 #[derive(Clone, Debug)]
@@ -68,7 +70,7 @@ fn into_ast(tokens: Tokens) -> Result<Vec<Ast>, Error> {
 
             Ok(bl)
         }
-        what => raise::expect_either_got(vec!["label", "instruction"], what),
+        what => raise::expected_either_got(&["label", "instruction"], what),
     }
 }
 
@@ -76,6 +78,7 @@ fn into_statement<T>(kw: Keyword, it: &mut std::iter::Peekable<T>) -> Result<Ast
 where
     T: Iterator<Item = Token>,
 {
+    let ty = take_type(it);
     match kw.arguments() {
         2 if kw == Keyword::Mov => {
             let indirect = take_deref(it);
@@ -91,17 +94,21 @@ where
             if indirect {
                 from = Operand::Deref(Box::new(from));
             }
-
-            Ok(Ast::Statement2(kw, to, from))
+            let stmt = Statement::from(kw, ty).arg1(to).arg2(from);
+            Ok(Ast::Statement(stmt))
         }
         2 => {
             let x1 = take_op(it)?;
             expect(it, TokenType::Punct(','))?;
             let x2 = take_op(it)?;
-            Ok(Ast::Statement2(kw, x1, x2))
+            let stmt = Statement::from(kw, ty).arg1(x1).arg2(x2);
+            Ok(Ast::Statement(stmt))
         }
-        1 => Ok(Ast::Statement1(kw, take_op(it)?)),
-        0 => Ok(Ast::Statement(kw)),
+        1 => {
+            let stmt = Statement::from(kw, ty).arg1(take_op(it)?);
+            Ok(Ast::Statement(stmt))
+        }
+        0 => Ok(Ast::Statement(Statement::from(kw.into(), ty))),
         _ => unreachable!(),
     }
 }
@@ -152,6 +159,33 @@ where
             _ => Ok(Operand::Ident(ident)),
         },
         what => Err(format!("unexpected token `{:?}`", what)),
+    }
+}
+
+fn take_type<T>(it: &mut std::iter::Peekable<T>) -> Option<Type>
+where
+    T: Iterator<Item = Token>,
+{
+    match it.peek() {
+        Some(Token {
+            ty: TokenType::Punct('@'),
+            ..
+        }) => {
+            use std::str::FromStr;
+            it.next().unwrap();
+            match it.next() {
+                Some(Token {
+                    ty: TokenType::Ident(ident),
+                    ..
+                }) => match Type::from_str(&ident.raw) {
+                    Ok(ty) => Some(ty),
+                    _ => None,
+                },
+                // TODO: should actually raise an error: expect_either_got
+                _ => unimplemented!(),
+            }
+        }
+        _ => None,
     }
 }
 
