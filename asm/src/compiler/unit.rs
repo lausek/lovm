@@ -29,10 +29,14 @@ impl Unit {
         match op {
             Operand::Ident(ident) => match self.labels.get_mut(&ident) {
                 Some(LabelOffset::Resolved(off)) => code = mkref(*off),
-                Some(LabelOffset::Unresolved(positions)) => positions.push(self.codeblock.len()),
+                Some(LabelOffset::Unresolved(positions)) => {
+                    positions.push((ident.clone(), self.codeblock.len()))
+                }
                 _ => {
-                    self.labels
-                        .insert(ident, LabelOffset::Unresolved(vec![self.codeblock.len()]));
+                    self.labels.insert(
+                        ident.clone(),
+                        LabelOffset::Unresolved(vec![(ident.clone(), self.codeblock.len())]),
+                    );
                 }
             },
             Operand::Register(reg) => code = Code::Register(reg),
@@ -52,7 +56,7 @@ impl Unit {
             Some(LabelOffset::Resolved(_)) => raise::redeclared(&label),
             // use reverse order to not invalidate indices
             Some(LabelOffset::Unresolved(positions)) => {
-                for pos in positions.into_iter().rev() {
+                for (_, pos) in positions.into_iter().rev() {
                     *self.codeblock.get_mut(pos).unwrap() = mkref(off);
                 }
                 Ok(())

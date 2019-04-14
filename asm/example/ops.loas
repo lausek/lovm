@@ -12,6 +12,8 @@ main:
     call negate
     pop A
 
+    call unknown
+
     push #true
     call negate
     pop A

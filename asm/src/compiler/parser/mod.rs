@@ -40,8 +40,6 @@ pub fn parse(src: &str) -> ParseResult {
             continue;
         }
 
-        //println!("{:?}", tokens);
-
         let inx = into_ast(tokens)?;
         ls.extend(inx);
     }

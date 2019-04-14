@@ -19,8 +19,8 @@ fn main() {
 
         let result = compiler::Compiler::new().compile(src.as_ref());
         match result {
-            Ok(program) => {
-                //println!("{:?}", program);
+            Ok(unit) => {
+                let program = into_program(unit);
                 if let Ok(mut out_file) = fs::File::create(out_file_path) {
                     let bytes = program.serialize().unwrap();
                     out_file.write_all(bytes.as_slice()).unwrap();

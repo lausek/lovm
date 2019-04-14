@@ -39,6 +39,16 @@ impl Error {
     }
 }
 
+impl std::convert::From<Vec<Self>> for Error {
+    fn from(errs: Vec<Self>) -> Self {
+        let mut new = Self::new(ErrorType::None);
+        for err in errs {
+            new.content.extend(err.content);
+        }
+        new
+    }
+}
+
 impl std::convert::From<String> for Error {
     fn from(msg: String) -> Self {
         Self::new(ErrorType::None).msg(msg)
@@ -48,7 +58,7 @@ impl std::convert::From<String> for Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         for line in self.content.iter() {
-            write!(f, "{}", line)?;
+            writeln!(f, "{}", line)?;
         }
         Ok(())
     }

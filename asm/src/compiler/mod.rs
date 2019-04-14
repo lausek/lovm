@@ -12,7 +12,7 @@ use self::parser::{Ast, Keyword};
 
 use lovm::value::Value;
 use std::collections::HashMap;
-pub type CompileResult = Result<Program, Error>;
+pub type CompileResult = Result<Unit, Error>;
 
 const fn mkref(raw: usize) -> Code {
     Code::Value(Value::Ref(raw))
@@ -28,7 +28,7 @@ pub enum LabelOffset {
     Resolved(usize),
     // the label is still unknown. contains a list of indices where we have
     // to insert the resolved index
-    Unresolved(Vec<usize>),
+    Unresolved(Vec<(Ident, usize)>),
 }
 
 pub struct Compiler {}
@@ -124,18 +124,29 @@ impl Compiler {
             }
         }
 
-        let labels = unit
-            .labels
-            .iter()
-            .map(|(ident, loff)| match loff {
-                LabelOffset::Resolved(off) => Ok((ident.raw.clone(), *off)),
-                _ => raise::not_declared(ident),
-            })
-            .collect::<Result<Vec<_>, Error>>()?;
+        self.check_resolved(&unit)?;
 
-        let mut program = Program::with_code(unit.codeblock);
-        *program.labels_mut() = labels;
+        Ok(unit)
+    }
 
-        Ok(program)
+    fn check_resolved(&self, unit: &Unit) -> Result<(), Error> {
+        let mut errs = vec![];
+
+        for (_, off) in unit.labels.iter() {
+            match off {
+                LabelOffset::Resolved(_) => {}
+                LabelOffset::Unresolved(positions) => {
+                    for (ident, _) in positions.iter() {
+                        errs.push(raise::not_declared::<CompileResult>(ident).err().unwrap());
+                    }
+                }
+            }
+        }
+
+        if errs.is_empty() {
+            Ok(())
+        } else {
+            Err(errs.into())
+        }
     }
 }
