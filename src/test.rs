@@ -16,9 +16,10 @@ macro_rules! test_file {
             let path = format!("./asm/example/{}.loas", stringify!($name));
             let mut vm = lovm::vm::Vm::new();
             let src = read_file(path.as_str());
-            let program = lovm_asm_lib::compiler::Compiler::new()
+            let unit = lovm_asm_lib::compiler::Compiler::new()
                 .compile(src.as_ref())
                 .expect("compilation failed");
+            let program = lovm_asm_lib::into_program(unit);
             vm.run(&program).unwrap();
             $tester(vm);
         }
