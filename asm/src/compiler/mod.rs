@@ -101,6 +101,11 @@ impl Compiler {
                 Ast::Statement(stmt) if stmt.argc() == 1 => {
                     unit.codeblock.push(Code::Instruction(stmt.inx()));
                     unit.compile_operand(stmt.args[0].clone())?;
+                    if let Some(ty) = stmt.ty {
+                        unit.push_inx(Instruction::Coal);
+                        unit.compile_operand(stmt.args[0].clone())?;
+                        unit.codeblock.push(Code::Value(Value::I(ty.into())));
+                    }
                 }
                 Ast::Statement(stmt) => {
                     let inx = stmt.inx();

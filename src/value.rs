@@ -56,7 +56,7 @@ impl std::convert::From<bool> for Value {
 
 impl std::str::FromStr for Value {
     type Err = String;
-    fn from_str(from: &str) -> Result<Value, Self::Err> {
+    fn from_str(from: &str) -> Result<Self, Self::Err> {
         match from {
             "true" => Ok(Value::T(true)),
             "false" => Ok(Value::T(false)),

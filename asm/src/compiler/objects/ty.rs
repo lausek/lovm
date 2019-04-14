@@ -7,6 +7,18 @@ pub enum Type {
     T,
 }
 
+impl Into<i8> for Type {
+    fn into(self) -> i8 {
+        match self {
+            Type::I => 1,
+            Type::I64 => 2,
+            Type::F64 => 3,
+            Type::Ref => 4,
+            Type::T => 5,
+        }
+    }
+}
+
 impl std::str::FromStr for Type {
     type Err = ();
     fn from_str(from: &str) -> Result<Self, Self::Err> {

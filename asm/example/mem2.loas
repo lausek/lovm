@@ -1,9 +1,12 @@
-main:
-    mov A, #20
-    coal A, #4
-
+write:
+    pop@ref A
     mov *A, #666
+    ret
 
-    mov *#21, #667
+main:
+    push #200
+    call write
+
+    mov *#201, #667
 
     ret
