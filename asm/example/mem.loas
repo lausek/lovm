@@ -2,7 +2,7 @@ memset:
     pop B
     pop A
     coal A, #4
-    store A, B
+    mov *A, B
     ret
 
 fillmem:
@@ -10,7 +10,7 @@ fillmem:
 
     coal A, #4
     mov D, A
-    store A, #666
+    mov *A, #666
 
     mov C, #0
     inner:
@@ -26,8 +26,7 @@ main:
     push #1000
     call fillmem
 
-    mov D, #1000
-    load C, D
+    mov D, *#1000
 
     mov var, #2000
     mov A, var
