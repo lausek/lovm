@@ -48,12 +48,12 @@ impl Compiler {
             match step {
                 Ast::Label(ident) => unit.declare_label(ident, unit.codeblock.len())?,
                 Ast::Declare(value) => unit.declare_value(value)?,
-                Ast::Statement(stmt) if stmt.kw == Keyword::Dv => match stmt.arg1 {
+                Ast::Statement(stmt) if stmt.kw == Keyword::Dv => match stmt.args.get(0) {
                     Some(Operand::Value(value)) => {
-                        unit.codeblock.push(Code::Value(value));
+                        unit.codeblock.push(Code::Value(*value));
                     }
-                    Some(arg1) => {
-                        return raise::not_a_value(arg1);
+                    Some(arg) => {
+                        return raise::not_a_value(arg.clone());
                     }
                     None => return raise::expected_either_got(&["label", "const"], None),
                 },
@@ -75,8 +75,8 @@ impl Compiler {
                         push a
                         store
                     */
-                    let x1 = stmt.arg1.unwrap();
-                    let x2 = stmt.arg2.unwrap();
+                    let x1 = stmt.args[0].clone();
+                    let x2 = stmt.args[1].clone();
                     if let Operand::Deref(x2) = x2 {
                         unit.push_inx(Instruction::Push);
                         unit.compile_operand(*x2)?;
@@ -95,19 +95,18 @@ impl Compiler {
                         unit.compile_operand(x1)?;
                     }
                 }
-                // TODO: urgh this looks bad
-                Ast::Statement(stmt) if stmt.arg1.is_none() => {
+                Ast::Statement(stmt) if stmt.argc() == 0 => {
                     unit.codeblock.push(Code::Instruction(stmt.inx()))
                 }
-                Ast::Statement(stmt) if stmt.arg1.is_some() && stmt.arg2.is_none() => {
+                Ast::Statement(stmt) if stmt.argc() == 1 => {
                     unit.codeblock.push(Code::Instruction(stmt.inx()));
-                    unit.compile_operand(stmt.arg1.unwrap())?;
+                    unit.compile_operand(stmt.args[0].clone())?;
                 }
                 Ast::Statement(stmt) => {
                     let inx = stmt.inx();
                     let kw = stmt.kw;
-                    let x1 = stmt.arg1.unwrap();
-                    let x2 = stmt.arg2.unwrap();
+                    let x1 = stmt.args[0].clone();
+                    let x2 = stmt.args[1].clone();
                     match kw {
                         Keyword::Add
                         | Keyword::Sub

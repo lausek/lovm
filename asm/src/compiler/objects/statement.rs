@@ -2,19 +2,17 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct Statement {
+    pub(crate) args: Vec<Operand>,
     pub(crate) kw: Keyword,
     pub(crate) ty: Option<Type>,
-    pub(crate) arg1: Option<Operand>,
-    pub(crate) arg2: Option<Operand>,
 }
 
 impl Statement {
     pub fn from(kw: Keyword, ty: Option<Type>) -> Self {
         Self {
+            args: vec![],
             kw,
             ty,
-            arg1: None,
-            arg2: None,
         }
     }
 
@@ -23,14 +21,13 @@ impl Statement {
         self
     }
 
-    pub fn arg1(mut self, arg1: Operand) -> Self {
-        self.arg1 = Some(arg1);
+    pub fn arg(mut self, arg: Operand) -> Self {
+        self.args.push(arg);
         self
     }
 
-    pub fn arg2(mut self, arg2: Operand) -> Self {
-        self.arg2 = Some(arg2);
-        self
+    pub fn argc(&self) -> usize {
+        self.args.len()
     }
 }
 

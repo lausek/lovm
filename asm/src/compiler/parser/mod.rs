@@ -87,18 +87,18 @@ where
             if indirect {
                 from = Operand::Deref(Box::new(from));
             }
-            let stmt = Statement::from(kw, ty).arg1(to).arg2(from);
+            let stmt = Statement::from(kw, ty).arg(to).arg(from);
             Ok(Ast::Statement(stmt))
         }
         2 => {
             let x1 = take_op(it)?;
             expect(it, TokenType::Punct(','))?;
             let x2 = take_op(it)?;
-            let stmt = Statement::from(kw, ty).arg1(x1).arg2(x2);
+            let stmt = Statement::from(kw, ty).arg(x1).arg(x2);
             Ok(Ast::Statement(stmt))
         }
         1 => {
-            let stmt = Statement::from(kw, ty).arg1(take_op(it)?);
+            let stmt = Statement::from(kw, ty).arg(take_op(it)?);
             Ok(Ast::Statement(stmt))
         }
         0 => Ok(Ast::Statement(Statement::from(kw.into(), ty))),
