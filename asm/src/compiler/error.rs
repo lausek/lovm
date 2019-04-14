@@ -67,6 +67,18 @@ impl std::fmt::Display for Error {
 pub mod raise {
     use super::*;
 
+    pub fn expect_either_got<T>(expc: Vec<&str>, got: Option<Token>) -> Result<T, Error> {
+        let mut err = Error::new(ErrorType::ExpectedGot);
+        let got = if let Some(got) = got {
+            err.loc = got.loc;
+            format!("`{:?}`", got.ty)
+        } else {
+            "nothing".to_string()
+        };
+        let msg = format!("expected `{:?}`, got {}", expc, got);
+        Err(err.msg(msg))
+    }
+
     pub fn expected_got<T>(expc: TokenType, got: Option<Token>) -> Result<T, Error> {
         let mut err = Error::new(ErrorType::ExpectedGot);
         let got = if let Some(got) = got {

@@ -10,6 +10,11 @@ impl Ident {
     pub fn new(loc: Location, raw: String) -> Self {
         Self { loc, raw }
     }
+
+    pub fn is_register(&self) -> bool {
+        use std::str::FromStr;
+        Register::from_str(&self.raw).is_ok()
+    }
 }
 
 impl std::fmt::Display for Ident {

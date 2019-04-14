@@ -16,7 +16,7 @@ fillmem:
     inner:
         inc C
         inc A
-        copy A, D
+        mov *A, *D
         cmp C, #10
         jlt inner
 

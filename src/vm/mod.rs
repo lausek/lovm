@@ -162,7 +162,7 @@ impl Vm {
                         Instruction::Popa => self.pop_frame(None),
                     }
                 }
-                what => panic!("shall not happen! {:?}", what),
+                what => panic!("non-executable code reached {:?}", what),
             }
 
             println!("{:?}", self.vstack);

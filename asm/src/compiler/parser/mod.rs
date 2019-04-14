@@ -57,7 +57,7 @@ fn into_ast(tokens: Tokens) -> Result<Vec<Ast>, Error> {
         Some(Token {
             ty: TokenType::Ident(ident),
             ..
-        }) => {
+        }) if !ident.is_register() => {
             let mut bl = vec![Ast::Label(ident)];
             expect(&mut it, TokenType::Punct(':'))?;
 
@@ -68,7 +68,7 @@ fn into_ast(tokens: Tokens) -> Result<Vec<Ast>, Error> {
 
             Ok(bl)
         }
-        _ => Err("line does not start with instruction".to_string().into()),
+        what => raise::expect_either_got(vec!["label", "instruction"], what),
     }
 }
 
