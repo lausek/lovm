@@ -1,16 +1,15 @@
 set:
-    mov my_variable, #666
+    mov my_variable, #1111
     ret
 
 main:
     call set
 
-    mov D, my_variable
-    coal D, #4
+    mov@ref D, my_variable
 
     mov A, *D
     push A
 
     ret
 
-my_variable: dv #0
+my_variable: dv #2000
