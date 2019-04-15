@@ -103,7 +103,7 @@ pub enum Instruction {
 impl Instruction {
     pub fn arguments(&self) -> usize {
         match self {
-            Instruction::Cmp | Instruction::Coal => 2,
+            Instruction::Coal => 2,
 
             Instruction::Inc
             | Instruction::Dec
@@ -118,7 +118,8 @@ impl Instruction {
             | Instruction::Push
             | Instruction::Pop => 1,
 
-            Instruction::Add
+            Instruction::Cmp
+            | Instruction::Add
             | Instruction::Sub
             | Instruction::Mul
             | Instruction::Div

@@ -120,8 +120,8 @@ impl Vm {
                             *op1 = val;
                         }
                         Instruction::Cmp => {
-                            let op1 = *read(&self, &args[0]);
-                            let op2 = *read(&self, &args[1]);
+                            let op2 = self.vstack.pop().expect("missing op2");
+                            let op1 = self.vstack.pop().expect("missing op1");
                             (*register_mut(self)).cmp = op1.partial_cmp(&op2);
                         }
                         Instruction::Jmp

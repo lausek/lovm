@@ -68,6 +68,13 @@ impl Compiler {
                 }
                 None => return raise::expected_either_got(&["label", "const"], None),
             },
+            Keyword::Cmp => {
+                unit.push_inx(Instruction::Push);
+                unit.compile_operand(stmt.args[0].clone())?;
+                unit.push_inx(Instruction::Push);
+                unit.compile_operand(stmt.args[1].clone())?;
+                unit.push_inx(stmt.inx());
+            }
             Keyword::Mov => {
                 /*
                 mov a, *b should become:
