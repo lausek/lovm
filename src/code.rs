@@ -34,6 +34,8 @@ pub struct Program {
 pub enum Code {
     Instruction(Instruction),
     Register(Register),
+    // TODO: allow direct access to the `n-usize`s element of vstack
+    // Stack(usize),
     Value(Value),
 }
 

@@ -48,66 +48,71 @@ impl Compiler {
             match step {
                 Ast::Label(ident) => unit.declare_label(ident, unit.codeblock.len())?,
                 Ast::Declare(value) => unit.declare_value(value)?,
-                Ast::Statement(stmt) if stmt.kw == Keyword::Dv => match stmt.args.get(0) {
-                    Some(Operand::Value(value)) => {
-                        unit.codeblock.push(Code::Value(*value));
-                    }
-                    Some(arg) => {
-                        return raise::not_a_value(arg.clone());
-                    }
-                    None => return raise::expected_either_got(&["label", "const"], None),
-                },
-                Ast::Statement(stmt) if stmt.kw == Keyword::Mov => {
-                    /*
-                    mov a, *b should become:
-                        push b
-                        load
-                        pop a
+                Ast::Statement(stmt) => self.compile_statement(stmt, &mut unit)?,
+            }
+        }
 
-                    mov *a, b should become:
-                        push b
-                        push a
-                        store
+        self.check_resolved(&unit)?;
 
-                    mov *a, *b should become:
-                        push b
-                        load
-                        push a
-                        store
-                    */
-                    let x1 = stmt.args[0].clone();
-                    let x2 = stmt.args[1].clone();
-                    if let Operand::Deref(x2) = x2 {
-                        unit.push_inx(Instruction::Push);
-                        unit.compile_operand(*x2)?;
-                        unit.push_inx(Instruction::Load);
-                    } else {
-                        unit.push_inx(Instruction::Push);
-                        unit.compile_operand(x2)?;
-                    }
+        Ok(unit)
+    }
 
-                    if let Operand::Deref(x1) = x1 {
-                        unit.push_inx(Instruction::Push);
-                        unit.compile_operand(*x1)?;
-                        unit.push_inx(Instruction::Store);
-                    } else {
-                        unit.push_inx(Instruction::Pop);
-                        unit.compile_operand(x1)?;
-                    }
+    fn compile_statement(&self, stmt: Statement, unit: &mut Unit) -> Result<(), Error> {
+        match stmt.kw {
+            Keyword::Dv => match stmt.args.get(0) {
+                Some(Operand::Value(value)) => {
+                    unit.codeblock.push(Code::Value(*value));
                 }
-                Ast::Statement(stmt) if stmt.argc() == 0 => {
-                    unit.codeblock.push(Code::Instruction(stmt.inx()))
+                Some(arg) => {
+                    return raise::not_a_value(arg.clone());
                 }
-                Ast::Statement(stmt) if stmt.argc() == 1 => {
+                None => return raise::expected_either_got(&["label", "const"], None),
+            },
+            Keyword::Mov => {
+                /*
+                mov a, *b should become:
+                    push b
+                    load
+                    pop a
+
+                mov *a, b should become:
+                    push b
+                    push a
+                    store
+
+                mov *a, *b should become:
+                    push b
+                    load
+                    push a
+                    store
+                */
+                let x1 = stmt.args[0].clone();
+                let x2 = stmt.args[1].clone();
+                if let Operand::Deref(x2) = x2 {
+                    unit.push_inx(Instruction::Push);
+                    unit.compile_operand(*x2)?;
+                    unit.push_inx(Instruction::Load);
+                } else {
+                    unit.push_inx(Instruction::Push);
+                    unit.compile_operand(x2)?;
+                }
+
+                if let Operand::Deref(x1) = x1 {
+                    unit.push_inx(Instruction::Push);
+                    unit.compile_operand(*x1)?;
+                    unit.push_inx(Instruction::Store);
+                } else {
+                    unit.push_inx(Instruction::Pop);
+                    unit.compile_operand(x1)?;
+                }
+            }
+            _ => match stmt.argc() {
+                0 => unit.codeblock.push(Code::Instruction(stmt.inx())),
+                1 => {
                     unit.codeblock.push(Code::Instruction(stmt.inx()));
                     unit.compile_operand(stmt.args[0].clone())?;
-                    if let Some(ty) = stmt.ty {
-                        unit.push_inx(Instruction::Coal);
-                        unit.compile_operand(stmt.args[0].clone())?;
-                        unit.codeblock.push(Code::Value(Value::I(ty.into())));
-                    }
                 }
-                Ast::Statement(stmt) => {
+                _n => {
                     let inx = stmt.inx();
                     let kw = stmt.kw;
                     let x1 = stmt.args[0].clone();
@@ -133,19 +138,28 @@ impl Compiler {
                             unit.push_inx(Instruction::Pop);
                             unit.compile_operand(x1)?;
                         }
+                        // TODO: remove; only used by cmp and coal
                         _ => {
                             unit.push_inx(inx);
                             unit.compile_operand(x1)?;
                             unit.compile_operand(x2)?;
+                            self.cast_type(stmt.ty, stmt.args[0].clone(), unit)?;
                         }
                     }
                 }
-            }
+            },
         }
 
-        self.check_resolved(&unit)?;
+        Ok(())
+    }
 
-        Ok(unit)
+    fn cast_type(&self, ty: Option<Type>, op: Operand, unit: &mut Unit) -> Result<(), Error> {
+        if let Some(ty) = ty {
+            unit.push_inx(Instruction::Coal);
+            unit.compile_operand(op)?;
+            unit.codeblock.push(Code::Value(Value::I(ty.into())));
+        }
+        Ok(())
     }
 
     fn check_resolved(&self, unit: &Unit) -> Result<(), Error> {

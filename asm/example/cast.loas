@@ -1,0 +1,6 @@
+main:
+    mov@ref A, #20
+    push A
+    pop@f64 A
+    push A
+    ret
