@@ -6,9 +6,8 @@ memset:
     ret
 
 fillmem:
-    pop A
+    pop@ref A
 
-    coal A, #4
     mov D, A
     mov *A, #666
 
@@ -31,4 +30,16 @@ main:
     mov var, #2000
     mov A, var
 
-var:
+    mov A, #1000
+    mov C, #0
+    loop:
+        inc C
+        mov B, *A
+        push B
+        inc A
+        cmp C, #10
+        jle loop
+
+    int #10
+
+var: dv #0

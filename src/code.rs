@@ -4,6 +4,8 @@ use crate::value::*;
 
 use serde::{Deserialize, Serialize};
 
+/*
+TODO: remove; replaced by lovm_asm_lib
 macro_rules! program {
     {$($inx:expr $(,$reg:ident)* $(,#$c:expr)?;)*} => {{
         use crate::code::Instruction::*;
@@ -21,6 +23,7 @@ macro_rules! program {
         crate::code::Program::with_code(codeblock)
     }}
 }
+*/
 
 pub type CodeBlock = Vec<Code>;
 

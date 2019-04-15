@@ -52,7 +52,15 @@ test_file!(
     })
 );
 
-test_file!(mem, (|_| { Ok(()) }));
+test_file!(
+    mem,
+    (|vm| {
+        use lovm::code::Code;
+        use lovm::value::Value;
+
+        Ok(())
+    })
+);
 
 test_file!(
     mem2,
