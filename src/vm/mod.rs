@@ -72,9 +72,9 @@ impl Vm {
                             write(self, &Code::Value(addr), val);
                         }
                         Instruction::Coal => {
-                            let val = *read(&self, &args[0]);
-                            let ty_idx = usize::from(*read(&self, &args[1]));
-                            write(self, &args[0], val.cast(&Value::from_type(ty_idx)));
+                            let ty_idx = usize::from(*read(&self, &args[0]));
+                            let val = self.vstack.last_mut().expect("no value");
+                            *val = val.cast(&Value::from_type(ty_idx));
                         }
                         Instruction::Inc | Instruction::Dec => {
                             let val = *read(&self, &args[0]);

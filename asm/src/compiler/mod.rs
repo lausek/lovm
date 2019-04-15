@@ -73,7 +73,15 @@ impl Compiler {
                 unit.compile_operand(stmt.args[0].clone())?;
                 unit.push_inx(Instruction::Push);
                 unit.compile_operand(stmt.args[1].clone())?;
-                unit.push_inx(stmt.inx());
+                unit.push_inx(Instruction::Cmp);
+            }
+            Keyword::Coal => {
+                unit.push_inx(Instruction::Push);
+                unit.compile_operand(stmt.args[0].clone())?;
+                unit.push_inx(Instruction::Coal);
+                unit.compile_operand(stmt.args[1].clone())?;
+                unit.push_inx(Instruction::Pop);
+                unit.compile_operand(stmt.args[0].clone())?;
             }
             Keyword::Mov => {
                 /*
@@ -145,16 +153,10 @@ impl Compiler {
                             unit.push_inx(Instruction::Pop);
                             unit.compile_operand(x1)?;
                         }
-                        // TODO: remove; only used by cmp and coal
-                        _ => {
-                            unit.push_inx(inx);
-                            unit.compile_operand(x1)?;
-                            unit.compile_operand(x2)?;
-                            self.cast_type(stmt.ty, stmt.args[0].clone(), unit)?;
-                        }
+                        _ => unreachable!(),
                     }
                 }
-            },
+            }
         }
 
         Ok(())
