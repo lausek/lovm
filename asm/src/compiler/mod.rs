@@ -156,7 +156,7 @@ impl Compiler {
                         _ => unreachable!(),
                     }
                 }
-            }
+            },
         }
 
         Ok(())

@@ -58,6 +58,7 @@ impl Statement {
             Keyword::Jlt => Instruction::Jlt,
             Keyword::Coal => Instruction::Coal,
             Keyword::Call => Instruction::Call,
+            Keyword::Int => Instruction::Int,
             Keyword::Ret => Instruction::Ret,
             Keyword::Push => Instruction::Push,
             Keyword::Pop => Instruction::Pop,

@@ -1,10 +1,11 @@
+pub mod interrupt;
 pub mod memory;
 pub mod operation;
 pub mod register;
 
-use crate::code::*;
-use crate::value::*;
+use super::*;
 
+use self::interrupt::*;
 use self::memory::*;
 use self::register::*;
 
@@ -14,27 +15,33 @@ pub const VM_STACK_SIZE: usize = 256;
 pub type VmResult = Result<(), String>;
 
 #[derive(PartialEq)]
-pub(crate) enum VmState {
+pub enum VmState {
     Initial,
     Running,
     Exited,
 }
 
 pub struct Vm {
-    pub(crate) memory: VmMemory,
-    pub(crate) state: VmState,
-    pub(crate) stack: Vec<VmRegister>,
-    pub(crate) vstack: Vec<Value>,
+    interrupts: Interrupts,
+    pub memory: VmMemory,
+    pub state: VmState,
+    pub stack: Vec<VmRegister>,
+    pub vstack: Vec<Value>,
 }
 
 impl Vm {
     pub fn new() -> Self {
         Self {
+            interrupts: Interrupts::new(),
             memory: VmMemory::new(),
             state: VmState::Initial,
             stack: Vec::with_capacity(VM_STACK_SIZE),
             vstack: Vec::with_capacity(VM_STACK_SIZE),
         }
+    }
+
+    pub fn interrupts_mut(&mut self) -> &mut Interrupts {
+        &mut self.interrupts
     }
 }
 
@@ -70,6 +77,13 @@ impl Vm {
                             let addr = self.vstack.pop().expect("missing address");
                             let val = self.vstack.pop().expect("missing value");
                             write(self, &Code::Value(addr), val);
+                        }
+                        Instruction::Int => {
+                            let idx = usize::from(*read(&self, &args[0]));
+                            match self.interrupts.get(idx) {
+                                Some(irh) => irh(self)?,
+                                _ => return Err(format!("interrupt {} not defined", idx)),
+                            }
                         }
                         Instruction::Coal => {
                             let ty_idx = usize::from(*read(&self, &args[0]));

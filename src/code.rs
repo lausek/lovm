@@ -30,7 +30,7 @@ pub struct Program {
     pub(crate) labels: Vec<(String, usize)>,
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Code {
     Instruction(Instruction),
     Register(Register),
@@ -39,7 +39,7 @@ pub enum Code {
     Value(Value),
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 #[repr(u8)]
 pub enum Register {
     A,
@@ -93,6 +93,7 @@ pub enum Instruction {
 
     Coal,
     Call,
+    Int,
     Ret,
     Push,
     Pop,
@@ -103,7 +104,8 @@ pub enum Instruction {
 impl Instruction {
     pub fn arguments(&self) -> usize {
         match self {
-            Instruction::Coal
+            Instruction::Int
+            | Instruction::Coal
             | Instruction::Inc
             | Instruction::Dec
             | Instruction::Jmp

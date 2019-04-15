@@ -13,6 +13,7 @@ macro_rules! test_file {
     ($name:ident, $tester:tt) => {
         #[test]
         fn $name() {
+            use lovm::vm::interrupt::Interrupt;
             let path = format!("./asm/example/{}.loas", stringify!($name));
             let mut vm = lovm::vm::Vm::new();
             let src = read_file(path.as_str());
@@ -20,22 +21,52 @@ macro_rules! test_file {
                 .compile(src.as_ref())
                 .expect("compilation failed");
             let program = lovm_asm_lib::into_program(unit);
+
+            vm.interrupts_mut()
+                .set(Interrupt::Dbg as usize, Some($tester));
+
             vm.run(&program).unwrap();
-            $tester(vm);
         }
     };
 }
 
-test_file!(basic, (|_| {}));
+test_file!(basic, (|_| { Ok(()) }));
 
-test_file!(call, (|_| {}));
+test_file!(call, (|_| { Ok(()) }));
 
-test_file!(fib, (|_| {}));
+test_file!(
+    fib,
+    (|vm| {
+        use lovm::code::Code;
+        use lovm::value::Value;
 
-test_file!(mem, (|_| {}));
+        let result3 = vm.vstack.pop().expect("no result3");
+        let result2 = vm.vstack.pop().expect("no result2");
+        let result1 = vm.vstack.pop().expect("no result1");
 
-test_file!(mem2, (|_| {}));
+        assert_eq!(result3, Value::I64(21));
+        assert_eq!(result2, Value::I64(1));
+        assert_eq!(result1, Value::I64(0));
 
-test_file!(mem3, (|_| {}));
+        Ok(())
+    })
+);
 
-test_file!(ops, (|_| {}));
+test_file!(mem, (|_| { Ok(()) }));
+
+test_file!(
+    mem2,
+    (|vm| {
+        use lovm::code::Code;
+        use lovm::value::Value;
+
+        assert_eq!(vm.memory[200], Code::Value(Value::I64(666)));
+        assert_eq!(vm.memory[201], Code::Value(Value::I64(667)));
+
+        Ok(())
+    })
+);
+
+test_file!(mem3, (|_| { Ok(()) }));
+
+test_file!(ops, (|_| { Ok(()) }));

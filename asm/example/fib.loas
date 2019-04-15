@@ -33,12 +33,12 @@ fib:
 main:
     push #0
     call fib
-    pop A
 
     push #1
     call fib
-    pop A
 
     push #8
     call fib
-    pop A
+
+    ; enter debug
+    int #10

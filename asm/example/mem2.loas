@@ -8,5 +8,8 @@ main:
     call write
 
     mov *#201, #667
+    
+    ; enter debug
+    int #10
 
     ret
