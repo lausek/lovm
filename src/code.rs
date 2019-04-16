@@ -94,7 +94,7 @@ pub enum Instruction {
     Load,  // pops a ref off the stack, leaving the locations value inplace
     Store, // pops a ref and value off the stack, writing value to location ref
 
-    Coal,
+    Cast,
     Call,
     Int,
     Ret,
@@ -108,7 +108,7 @@ impl Instruction {
     pub fn arguments(&self) -> usize {
         match self {
             Instruction::Int
-            | Instruction::Coal
+            | Instruction::Cast
             | Instruction::Inc
             | Instruction::Dec
             | Instruction::Jmp

@@ -85,7 +85,7 @@ impl Vm {
                                 _ => return Err(format!("interrupt {} not defined", idx)),
                             }
                         }
-                        Instruction::Coal => {
+                        Instruction::Cast => {
                             let ty_idx = usize::from(*read(&self, &args[0]));
                             let val = self.vstack.last_mut().expect("no value");
                             *val = val.cast(&Value::from_type(ty_idx));

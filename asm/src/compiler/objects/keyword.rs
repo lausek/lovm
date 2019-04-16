@@ -26,7 +26,7 @@ pub enum Keyword {
     Jle,
     Jlt,
 
-    Coal,
+    Cast,
     Call,
     Int,
     Ret,
@@ -57,7 +57,7 @@ impl Keyword {
             | Keyword::Shl
             | Keyword::Shr
             | Keyword::Cmp
-            | Keyword::Coal => 2,
+            | Keyword::Cast => 2,
 
             Keyword::Dv
             | Keyword::Inc
@@ -106,7 +106,7 @@ impl std::str::FromStr for Keyword {
             "jle" => Ok(Keyword::Jle),
             "jlt" => Ok(Keyword::Jlt),
             "call" => Ok(Keyword::Call),
-            "coal" => Ok(Keyword::Coal),
+            "cast" => Ok(Keyword::Cast),
             "int" => Ok(Keyword::Int),
             "ret" => Ok(Keyword::Ret),
             "push" => Ok(Keyword::Push),

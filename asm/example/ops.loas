@@ -1,6 +1,6 @@
 write_42:
     pop B
-    coal B, #4
+    cast B, #4
     mov *B, #42
     ret
 

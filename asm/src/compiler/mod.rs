@@ -76,10 +76,10 @@ impl Compiler {
                 unit.compile_operand(stmt.args[1].clone())?;
                 unit.push_inx(Instruction::Cmp);
             }
-            Keyword::Coal => {
+            Keyword::Cast => {
                 unit.push_inx(Instruction::Push);
                 unit.compile_operand(stmt.args[0].clone())?;
-                unit.push_inx(Instruction::Coal);
+                unit.push_inx(Instruction::Cast);
                 unit.compile_operand(stmt.args[1].clone())?;
                 unit.push_inx(Instruction::Pop);
                 unit.compile_operand(stmt.args[0].clone())?;
@@ -114,7 +114,7 @@ impl Compiler {
                 }
 
                 if let Some(ty) = stmt.ty {
-                    unit.push_inx(Instruction::Coal);
+                    unit.push_inx(Instruction::Cast);
                     unit.codeblock
                         .push(Code::Value(Value::I(ty.clone().into())));
                 }
@@ -129,7 +129,7 @@ impl Compiler {
                 }
             }
             _ => match stmt.argc() {
-                // TODO: coal@ref could be used as shorthand for push <>; coal #5
+                // TODO: cast@ref could be used as shorthand for push <>; cast #5
                 0 => unit.codeblock.push(Code::Instruction(stmt.inx())),
                 1 => {
                     unit.codeblock.push(Code::Instruction(stmt.inx()));
@@ -158,7 +158,7 @@ impl Compiler {
                             unit.compile_operand(x1.clone())?;
 
                             if let Some(ty) = stmt.ty {
-                                unit.push_inx(Instruction::Coal);
+                                unit.push_inx(Instruction::Cast);
                                 unit.codeblock
                                     .push(Code::Value(Value::I(ty.clone().into())));
                             }

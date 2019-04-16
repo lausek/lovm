@@ -1,7 +1,7 @@
 memset:
     pop B
     pop@ref A
-    ; coal A, #4
+    ; cast A, #4
     mov *A, B
     ret
 
