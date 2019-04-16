@@ -61,6 +61,7 @@ impl Compiler {
         match stmt.kw {
             Keyword::Dv => match stmt.args.get(0) {
                 Some(Operand::Value(value)) => {
+                    // TODO: allow static type casting here
                     unit.codeblock.push(Code::Value(*value));
                 }
                 Some(arg) => {
@@ -112,6 +113,12 @@ impl Compiler {
                     unit.compile_operand(x2)?;
                 }
 
+                if let Some(ty) = stmt.ty {
+                    unit.push_inx(Instruction::Coal);
+                    unit.codeblock
+                        .push(Code::Value(Value::I(ty.clone().into())));
+                }
+
                 if let Operand::Deref(x1) = x1 {
                     unit.push_inx(Instruction::Push);
                     unit.compile_operand(*x1)?;
@@ -122,6 +129,7 @@ impl Compiler {
                 }
             }
             _ => match stmt.argc() {
+                // TODO: coal@ref could be used as shorthand for push <>; coal #5
                 0 => unit.codeblock.push(Code::Instruction(stmt.inx())),
                 1 => {
                     unit.codeblock.push(Code::Instruction(stmt.inx()));
@@ -145,11 +153,24 @@ impl Compiler {
                         | Keyword::Xor
                         | Keyword::Shl
                         | Keyword::Shr => {
+                            // push arg1
                             unit.push_inx(Instruction::Push);
                             unit.compile_operand(x1.clone())?;
+
+                            if let Some(ty) = stmt.ty {
+                                unit.push_inx(Instruction::Coal);
+                                unit.codeblock
+                                    .push(Code::Value(Value::I(ty.clone().into())));
+                            }
+
+                            // push arg2
                             unit.push_inx(Instruction::Push);
                             unit.compile_operand(x2)?;
+
+                            // opcode
                             unit.push_inx(inx);
+
+                            // restore value to target register
                             unit.push_inx(Instruction::Pop);
                             unit.compile_operand(x1)?;
                         }
@@ -159,15 +180,6 @@ impl Compiler {
             },
         }
 
-        Ok(())
-    }
-
-    fn cast_type(&self, ty: Option<Type>, op: Operand, unit: &mut Unit) -> Result<(), Error> {
-        if let Some(ty) = ty {
-            unit.push_inx(Instruction::Coal);
-            unit.compile_operand(op)?;
-            unit.codeblock.push(Code::Value(Value::I(ty.into())));
-        }
         Ok(())
     }
 

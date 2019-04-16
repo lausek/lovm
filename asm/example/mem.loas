@@ -42,4 +42,6 @@ main:
 
     int #10
 
+    ret
+
 var: dv #0

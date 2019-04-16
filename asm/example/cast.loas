@@ -1,6 +1,12 @@
 main:
     mov@ref A, #20
-    push A
-    pop@f64 A
-    push A
+
+    push #10
+    pop@f64 B
+
+    mov C, B
+    add@i64 C, #20
+
+    int #10
+
     ret

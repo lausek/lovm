@@ -4,12 +4,12 @@ use std::cmp;
 
 #[derive(Clone, Copy, Debug)]
 pub struct VmRegister {
-    a: Value,
-    b: Value,
-    c: Value,
-    d: Value,
-    pub(super) cmp: Option<cmp::Ordering>,
-    pub(super) ret: Option<usize>,
+    pub a: Value,
+    pub b: Value,
+    pub c: Value,
+    pub d: Value,
+    pub cmp: Option<cmp::Ordering>,
+    pub ret: Option<usize>,
 }
 
 impl VmRegister {

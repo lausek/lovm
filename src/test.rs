@@ -78,3 +78,21 @@ test_file!(
 test_file!(mem3, (|_| { Ok(()) }));
 
 test_file!(ops, (|_| { Ok(()) }));
+
+test_file!(
+    cast,
+    (|vm| {
+        use lovm::code::Code;
+        use lovm::value::Value;
+
+        let reg = vm.stack.last().unwrap();
+        println!("{:?}", reg);
+        assert!(false);
+
+        assert_eq!(reg.a, Value::Ref(20));
+        assert_eq!(reg.b, Value::F64(10.));
+        assert_eq!(reg.c, Value::I(30));
+
+        Ok(())
+    })
+);
