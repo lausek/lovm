@@ -7,26 +7,29 @@ pub struct Error {
     // TODO: should include other `Error`s aswell
     content: Vec<String>,
     loc: Location,
-    // TODO: should rather be an option
-    ty: ErrorType,
+    ty: Option<ErrorType>,
 }
 
 #[derive(Clone, Debug)]
 pub enum ErrorType {
     ExpectedGot,
-    None,
     NotAValue,
     NotDeclared,
     Redeclared,
 }
 
 impl Error {
-    pub fn new(ty: ErrorType) -> Self {
+    pub fn new() -> Self {
         Self {
             content: vec![],
             loc: (0, 0, 0),
-            ty,
+            ty: None,
         }
+    }
+
+    pub fn ty(mut self, ty: ErrorType) -> Self {
+        self.ty = Some(ty);
+        self
     }
 
     pub fn msg(mut self, msg: String) -> Self {
@@ -43,7 +46,7 @@ impl Error {
 
 impl std::convert::From<Vec<Self>> for Error {
     fn from(errs: Vec<Self>) -> Self {
-        let mut new = Self::new(ErrorType::None);
+        let mut new = Self::new();
         for err in errs {
             new.content.extend(err.content);
         }
@@ -53,7 +56,7 @@ impl std::convert::From<Vec<Self>> for Error {
 
 impl std::convert::From<String> for Error {
     fn from(msg: String) -> Self {
-        Self::new(ErrorType::None).msg(msg)
+        Self::new().msg(msg)
     }
 }
 
@@ -70,7 +73,7 @@ pub mod raise {
     use super::*;
 
     pub fn expected_either_got<T>(expc: &[&str], got: Option<Token>) -> Result<T, Error> {
-        let mut err = Error::new(ErrorType::ExpectedGot);
+        let mut err = Error::new().ty(ErrorType::ExpectedGot);
         let got = if let Some(got) = got {
             err.loc = got.loc;
             format!("`{:?}`", got.ty)
@@ -82,7 +85,7 @@ pub mod raise {
     }
 
     pub fn expected_got<T>(expc: TokenType, got: Option<Token>) -> Result<T, Error> {
-        let mut err = Error::new(ErrorType::ExpectedGot);
+        let mut err = Error::new().ty(ErrorType::ExpectedGot);
         let got = if let Some(got) = got {
             err.loc = got.loc;
             format!("`{:?}`", got.ty)
@@ -94,19 +97,19 @@ pub mod raise {
     }
 
     pub fn not_a_value<T>(op: Operand) -> Result<T, Error> {
-        let err = Error::new(ErrorType::NotAValue);
+        let err = Error::new().ty(ErrorType::NotAValue);
         let msg = format!("`{:?}` cannot be interpreted as value", op);
         Err(err.msg(msg))
     }
 
     pub fn not_declared<T>(ident: &Ident) -> Result<T, Error> {
-        let err = Error::new(ErrorType::NotDeclared).loc(ident.loc);
+        let err = Error::new().ty(ErrorType::NotDeclared).loc(ident.loc);
         let msg = format!("label `{}` was not declared", ident);
         Err(err.msg(msg))
     }
 
     pub fn redeclared<T>(ident: &Ident) -> Result<T, Error> {
         let msg = format!("redeclaration of label `{}`", ident);
-        Err(Error::new(ErrorType::Redeclared).msg(msg))
+        Err(Error::new().ty(ErrorType::Redeclared).msg(msg))
     }
 }

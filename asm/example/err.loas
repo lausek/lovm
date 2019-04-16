@@ -1,0 +1,6 @@
+main:
+    call unknown
+
+    call unknown
+
+    ret
