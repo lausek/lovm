@@ -7,6 +7,10 @@ main:
     mov C, B
     add@i64 C, #20
 
+    mov D, *value
+
     int #10
 
     ret
+
+value: dv@t #0

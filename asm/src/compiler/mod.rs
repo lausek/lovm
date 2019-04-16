@@ -61,8 +61,12 @@ impl Compiler {
         match stmt.kw {
             Keyword::Dv => match stmt.args.get(0) {
                 Some(Operand::Value(value)) => {
-                    // TODO: allow static type casting here
-                    unit.codeblock.push(Code::Value(*value));
+                    let value = if let Some(ty) = stmt.ty {
+                        value.cast(&Value::from_type(ty.into()))
+                    } else {
+                        value.clone()
+                    };
+                    unit.codeblock.push(Code::Value(value));
                 }
                 Some(arg) => {
                     return raise::not_a_value(arg.clone());

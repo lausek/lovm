@@ -19,6 +19,13 @@ impl Into<i8> for Type {
     }
 }
 
+impl Into<usize> for Type {
+    fn into(self) -> usize {
+        let x: i8 = self.into();
+        x as usize
+    }
+}
+
 impl std::str::FromStr for Type {
     type Err = ();
     fn from_str(from: &str) -> Result<Self, Self::Err> {
