@@ -19,7 +19,7 @@ impl std::convert::From<Value> for usize {
             I64(n) => n as usize,
             F64(n) => n as usize,
             Ref(n) => n,
-            _ => unimplemented!(),
+            T(t) => if t {1} else {0},
         }
     }
 }

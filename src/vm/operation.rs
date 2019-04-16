@@ -83,6 +83,7 @@ impl Value {
             (Ref(_), Ref(_)) => *self,
             (T(t), Ref(_)) => Value::Ref(if *t { 1 } else { 0 }),
 
+            (T(_), T(_)) => *self,
             (v, T(_)) => match usize::from(*v) {
                 0 => Value::T(false),
                 1 => Value::T(true),
@@ -202,7 +203,7 @@ impl std::cmp::PartialEq for Value {
             (F64(lhs), F64(rhs)) => *lhs == rhs,
             (Ref(lhs), Ref(rhs)) => *lhs == rhs,
             (T(lhs), T(rhs)) => *lhs == rhs,
-            _ => unimplemented!(),
+            _ => unreachable!(),
         }
     }
 }
@@ -215,7 +216,7 @@ impl std::cmp::PartialOrd for Value {
             (F64(lhs), F64(rhs)) => lhs.partial_cmp(&rhs),
             (Ref(lhs), Ref(rhs)) => Some(lhs.cmp(&rhs)),
             (T(lhs), T(rhs)) => Some(lhs.cmp(&rhs)),
-            _ => unimplemented!(),
+            _ => unreachable!(),
         }
     }
 }

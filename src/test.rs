@@ -54,10 +54,7 @@ test_file!(
 
 test_file!(
     mem,
-    (|vm| {
-        use lovm::code::Code;
-        use lovm::value::Value;
-
+    (|_vm| {
         Ok(())
     })
 );
@@ -82,16 +79,15 @@ test_file!(ops, (|_| { Ok(()) }));
 test_file!(
     cast,
     (|vm| {
-        use lovm::code::Code;
         use lovm::value::Value;
 
         let reg = vm.stack.last().unwrap();
-        println!("{:?}", reg);
-        assert!(false);
 
+        // TODO: add type checks here
         assert_eq!(reg.a, Value::Ref(20));
         assert_eq!(reg.b, Value::F64(10.));
         assert_eq!(reg.c, Value::I(30));
+        assert_eq!(reg.d, Value::T(false));
 
         Ok(())
     })
