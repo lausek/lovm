@@ -17,7 +17,6 @@ use lovm::value::Value;
 use std::collections::HashMap;
 
 pub type CompileResult = Result<Unit, Error>;
-pub type Macro = Box<fn(&mut Unit) -> Result<(), Error>>;
 
 const fn mkref(raw: usize) -> Code {
     Code::Value(Value::Ref(raw))
@@ -37,7 +36,7 @@ pub enum LabelOffset {
 }
 
 pub struct Compiler {
-    macs: HashMap<&'static str, Macro>,
+    macs: MacroTable,
     unit: Option<Unit>,
 }
 
