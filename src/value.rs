@@ -2,7 +2,7 @@ use self::Value::*;
 
 use serde::{Deserialize, Serialize};
 
-// TODO: add Str(usize); contains index into StringPool
+// WIP:  add Str(usize); contains index into StringPool
 //          - requires a new component of Program containing the string
 //              constants for preallocation
 // TODO: add Obj(usize); contains index into ObjectPool
@@ -14,6 +14,8 @@ pub enum Value {
     F64(f64),
     Ref(usize),
     T(bool),
+    C(char),
+    Str(usize),
 }
 
 impl std::convert::From<Value> for usize {
@@ -30,6 +32,8 @@ impl std::convert::From<Value> for usize {
                     0
                 }
             }
+            C(c) => c as usize,
+            Str(n) => n,
         }
     }
 }

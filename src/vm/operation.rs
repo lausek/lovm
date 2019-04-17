@@ -53,6 +53,8 @@ impl Value {
             3 => Value::F64(0.),
             4 => Value::Ref(0),
             5 => Value::T(false),
+            6 => Value::C('0'),
+            7 => Value::Str(0),
             _ => panic!("type index not defined"),
         }
     }
@@ -63,25 +65,40 @@ impl Value {
             (I64(n), I(_)) => Value::I(*n as i8),
             (F64(n), I(_)) => Value::I(*n as i8),
             (Ref(n), I(_)) => Value::I(*n as i8),
+            (C(c), I(_)) => Value::I(*c as i8),
             (T(t), I(_)) => Value::I(if *t { 1 } else { 0 }),
 
             (I(n), I64(_)) => Value::I64(*n as i64),
             (I64(_), I64(_)) => *self,
             (F64(n), I64(_)) => Value::I64(*n as i64),
             (Ref(n), I64(_)) => Value::I64(*n as i64),
+            (C(c), I64(_)) => Value::I64(*c as i64),
             (T(t), I64(_)) => Value::I64(if *t { 1 } else { 0 }),
 
             (I(n), F64(_)) => Value::F64(*n as f64),
             (I64(n), F64(_)) => Value::F64(*n as f64),
             (F64(_), F64(_)) => *self,
             (Ref(n), F64(_)) => Value::F64(*n as f64),
+            (C(c), F64(_)) => Value::F64((*c as i64) as f64),
             (T(t), F64(_)) => Value::F64(if *t { 1. } else { 0. }),
 
             (I(n), Ref(_)) => Value::Ref(*n as usize),
             (I64(n), Ref(_)) => Value::Ref(*n as usize),
             (F64(n), Ref(_)) => Value::Ref(*n as usize),
             (Ref(_), Ref(_)) => *self,
+            (C(c), Ref(_)) => Value::Ref(*c as usize),
             (T(t), Ref(_)) => Value::Ref(if *t { 1 } else { 0 }),
+
+            (I(n), C(_)) => Value::C((*n as u8) as char),
+            (I64(n), C(_)) => Value::C((*n as u8) as char),
+            (F64(n), C(_)) => Value::C((*n as u8) as char),
+            (Ref(n), C(_)) => Value::C((*n as u8) as char),
+            (C(_), C(_)) => *self,
+            (T(t), C(_)) => Value::C(if *t { 't' } else { 'f' }),
+
+            (Str(_), Str(_)) => *self,
+            (Str(_), _) => panic!("no implicit casting from string"),
+            (_, Str(_)) => panic!("no implicit casting to string"),
 
             (T(_), T(_)) => *self,
             (v, T(_)) => match usize::from(*v) {
@@ -145,8 +162,9 @@ impl std::ops::Neg for Value {
             I(v) => Value::I(-v),
             I64(v) => Value::I64(-v),
             F64(v) => Value::F64(-v),
-            Ref(_) => panic!("cannot negate unsigned number"),
             T(v) => Value::T(!v),
+            C(_) => panic!("cannot negate char"),
+            Ref(_) | Str(_) => panic!("cannot negate unsigned number"),
         }
     }
 }

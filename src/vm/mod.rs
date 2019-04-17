@@ -2,12 +2,16 @@ pub mod interrupt;
 pub mod memory;
 pub mod operation;
 pub mod register;
+pub mod str;
 
 use super::*;
 
 use self::interrupt::*;
 use self::memory::*;
 use self::register::*;
+use self::str::*;
+
+pub use std::collections::HashMap;
 
 pub const VM_MEMORY_SIZE: usize = 2400;
 pub const VM_STACK_SIZE: usize = 256;
@@ -26,6 +30,7 @@ pub struct Vm {
     pub memory: VmMemory,
     pub state: VmState,
     pub stack: Vec<VmRegister>,
+    pub str_pool: VmStrPool,
     pub vstack: Vec<Value>,
 }
 
@@ -36,6 +41,7 @@ impl Vm {
             memory: VmMemory::new(),
             state: VmState::Initial,
             stack: Vec::with_capacity(VM_STACK_SIZE),
+            str_pool: VmStrPool::new(),
             vstack: Vec::with_capacity(VM_STACK_SIZE),
         }
     }
