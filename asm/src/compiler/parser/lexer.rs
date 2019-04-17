@@ -10,6 +10,7 @@ pub enum TokenType {
     Ident(Ident),
     Keyword(Keyword),
     Punct(char),
+    SoftPunct,
 }
 
 #[derive(Clone, Debug)]
@@ -30,11 +31,11 @@ impl Token {
 }
 
 pub fn lex_line(ldx: usize, src: &str) -> Tokens {
-    let mut lex = Tokens::new();
+    let mut toks = Tokens::new();
     let mut loc = (ldx, 0, 1);
 
     if src.is_empty() {
-        return lex;
+        return toks;
     }
 
     for c in src.chars() {
@@ -51,13 +52,19 @@ pub fn lex_line(ldx: usize, src: &str) -> Tokens {
                     let buffer = &src[span.0..span.1].trim();
                     if !buffer.is_empty() {
                         let tok = Token::new((ldx, span.0, span.1), buffer);
-                        lex.push(tok);
+                        toks.push(tok);
                     }
+                    loc.1 = span.1;
                 }
 
                 // whitespace isn't real punctuation
-                if c != ' ' {
-                    lex.push(Token {
+                if c == ' ' {
+                    toks.push(Token {
+                        loc,
+                        ty: TokenType::SoftPunct,
+                    });
+                } else {
+                    toks.push(Token {
                         loc,
                         ty: TokenType::Punct(c),
                     });
@@ -73,11 +80,44 @@ pub fn lex_line(ldx: usize, src: &str) -> Tokens {
 
     loc.2 -= 1;
 
+    // TODO: trim probably not needed
     let buffer = &src[loc.1..loc.2].trim();
     if !buffer.is_empty() {
         let tok = Token::new(loc, buffer);
-        lex.push(tok);
+        toks.push(tok);
     }
 
-    lex
+    merge_softpunct(&mut toks);
+
+    toks
+}
+
+fn merge_softpunct(toks: &mut Tokens) {
+    let mut last_soft: Option<Token> = None;
+    let mut new_toks = vec![];
+
+    for t in toks.drain(..) {
+        println!("{:?}", last_soft);
+        match t {
+            Token {
+                ty: TokenType::SoftPunct,
+                loc,
+                ..
+            } => {
+                if let Some(last_soft) = &mut last_soft {
+                    last_soft.loc.2 = loc.2;
+                } else {
+                    last_soft = Some(t);
+                }
+            }
+            _ => {
+                if let Some(last_soft) = last_soft.take() {
+                    new_toks.push(last_soft);
+                }
+                new_toks.push(t);
+            }
+        }
+    }
+
+    *toks = new_toks;
 }

@@ -1,5 +1,5 @@
 ; reserve 8 static params
-.skip #8
+.skip       #8
 func:
     ret
 
