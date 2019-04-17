@@ -1,11 +1,13 @@
 pub use super::*;
 
 pub mod error;
+mod mac;
 mod objects;
 mod parser;
 mod unit;
 
 pub use self::error::*;
+pub use self::mac::*;
 pub use self::objects::*;
 pub use self::parser::*;
 pub use self::unit::*;
@@ -15,7 +17,7 @@ use lovm::value::Value;
 use std::collections::HashMap;
 
 pub type CompileResult = Result<Unit, Error>;
-pub type Macro = fn(&mut Unit) -> Result<(), Error>;
+pub type Macro = Box<fn(&mut Unit) -> Result<(), Error>>;
 
 const fn mkref(raw: usize) -> Code {
     Code::Value(Value::Ref(raw))
@@ -41,12 +43,10 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn new() -> Self {
-        let mut new = Self {
-            macs: HashMap::new(),
+        Self {
+            macs: default_macros(),
             unit: None,
-        };
-        new.macs.insert("skip", |_c| Ok(()));
-        new
+        }
     }
 
     pub fn compile(&mut self, src: &str) -> CompileResult {
