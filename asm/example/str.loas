@@ -1,0 +1,4 @@
+my_string: dv "hello \" world"
+
+main:
+    ret

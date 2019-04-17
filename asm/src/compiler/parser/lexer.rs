@@ -9,6 +9,7 @@ pub type Location = (usize, usize, usize);
 pub enum TokenType {
     Ident(Ident),
     Keyword(Keyword),
+    Str(String),
     Punct(char),
 }
 
@@ -29,15 +30,16 @@ impl Token {
     }
 }
 
-pub fn lex_line(ldx: usize, src: &str) -> Tokens {
+pub fn lex_line(ldx: usize, src: &str) -> Result<Tokens, Error> {
     let mut lex = Tokens::new();
     let mut loc = (ldx, 0, 1);
 
     if src.is_empty() {
-        return lex;
+        return Ok(lex);
     }
 
-    for c in src.chars() {
+    let mut it = src.chars().peekable();
+    while let Some(c) = it.next() {
         match c {
             // @ => type argument
             // : => label postfix
@@ -64,6 +66,14 @@ pub fn lex_line(ldx: usize, src: &str) -> Tokens {
 
                 loc.1 = loc.2;
             }
+            '"' => {
+                // TODO: add location
+                let s = take_string(&mut it)?;
+                lex.push(Token {
+                    loc: (0, 0, 0),
+                    ty: TokenType::Str(s),
+                });
+            }
             // no punctuation char detected -> just expand buffer
             _ => {}
         }
@@ -78,5 +88,25 @@ pub fn lex_line(ldx: usize, src: &str) -> Tokens {
         lex.push(tok);
     }
 
-    lex
+    Ok(lex)
+}
+
+fn take_string<T>(it: &mut std::iter::Peekable<T>) -> Result<String, Error>
+where
+    T: Iterator<Item = char>,
+{
+    let mut s = String::new();
+    let mut escaped = false;
+    while let Some(c) = it.next() {
+        match c {
+            '\\' if !escaped => {
+                escaped = true;
+                continue;
+            }
+            '"' if !escaped => return Ok(s),
+            _ => s.push(c),
+        }
+        escaped = false;
+    }
+    raise::unclosed_string()
 }

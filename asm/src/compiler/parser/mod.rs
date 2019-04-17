@@ -17,6 +17,7 @@ pub enum Ast {
 pub enum Operand {
     Deref(Box<Operand>),
     Register(Register),
+    Str(String),
     Value(lovm::value::Value),
     Ident(Ident),
 }
@@ -30,7 +31,7 @@ pub fn parse(src: &str) -> ParseResult {
             continue;
         }
 
-        let tokens = lexer::lex_line(ldx, &line);
+        let tokens = lexer::lex_line(ldx, &line)?;
         if tokens.is_empty() {
             continue;
         }

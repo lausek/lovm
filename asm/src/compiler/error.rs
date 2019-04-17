@@ -16,6 +16,7 @@ pub enum ErrorType {
     NotAValue,
     NotDeclared,
     Redeclared,
+    UnclosedString,
 }
 
 impl Error {
@@ -111,5 +112,11 @@ pub mod raise {
     pub fn redeclared<T>(ident: &Ident) -> Result<T, Error> {
         let msg = format!("redeclaration of label `{}`", ident);
         Err(Error::new().ty(ErrorType::Redeclared).msg(msg))
+    }
+
+    pub fn unclosed_string<T>() -> Result<T, Error> {
+        // TODO: add correct message here
+        let msg = format!("string was not closed");
+        Err(Error::new().ty(ErrorType::UnclosedString).msg(msg))
     }
 }

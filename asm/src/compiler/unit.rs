@@ -41,6 +41,11 @@ impl Unit {
             },
             Operand::Register(reg) => code = Code::Register(reg),
             Operand::Value(value) => code = Code::Value(value),
+            Operand::Str(_s) => {
+                // TODO: write s as bytes in consequtive order to memory
+                // TODO: insert reference to string pool here
+                unimplemented!();
+            }
             Operand::Deref(_) => unreachable!(),
         }
 
