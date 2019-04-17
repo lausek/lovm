@@ -25,8 +25,7 @@ pub enum VmState {
     Exited,
 }
 
-pub struct Vm {
-    interrupts: Interrupts,
+pub struct VmData {
     pub memory: VmMemory,
     pub state: VmState,
     pub stack: Vec<VmRegister>,
@@ -34,15 +33,28 @@ pub struct Vm {
     pub vstack: Vec<Value>,
 }
 
-impl Vm {
+impl VmData {
     pub fn new() -> Self {
         Self {
-            interrupts: Interrupts::new(),
             memory: VmMemory::new(),
             state: VmState::Initial,
             stack: Vec::with_capacity(VM_STACK_SIZE),
             str_pool: VmStrPool::new(),
             vstack: Vec::with_capacity(VM_STACK_SIZE),
+        }
+    }
+}
+
+pub struct Vm {
+    interrupts: Interrupts,
+    pub data: VmData,
+}
+
+impl Vm {
+    pub fn new() -> Self {
+        Self {
+            interrupts: Interrupts::default(),
+            data: VmData::new(),
         }
     }
 
@@ -54,18 +66,18 @@ impl Vm {
 impl Vm {
     pub fn run(&mut self, program: &Program) -> VmResult {
         let bl = &program.codeblock;
-        self.memory.map(bl, 0);
+        self.data.memory.map(bl, 0);
 
         let len = bl.len();
         let mut ip = program.entry_point().unwrap_or(0);
 
         self.push_frame(None);
-        self.state = VmState::Running;
+        self.data.state = VmState::Running;
 
-        while self.state == VmState::Running && ip < len {
-            match self.memory[ip] {
+        while self.data.state == VmState::Running && ip < len {
+            match self.data.memory[ip] {
                 Code::Instruction(inx) => {
-                    println!("{:?}", inx);
+                    //println!("{:?}", inx);
 
                     if inx == Instruction::Call {
                         self.push_frame(Some(ip + 1));
@@ -76,25 +88,25 @@ impl Vm {
 
                     match inx {
                         Instruction::Load => {
-                            let val = self.vstack.pop().expect("missing address");
-                            self.vstack.push(*read_memory(&self, &val));
+                            let val = self.data.vstack.pop().expect("missing address");
+                            self.data.vstack.push(*read_memory(&self, &val));
                         }
                         Instruction::Store => {
-                            let addr = self.vstack.pop().expect("missing address");
-                            let val = self.vstack.pop().expect("missing value");
+                            let addr = self.data.vstack.pop().expect("missing address");
+                            let val = self.data.vstack.pop().expect("missing value");
                             write(self, &Code::Value(addr), val);
                         }
                         Instruction::Int => {
                             let idx = usize::from(*read(&self, &args[0]));
                             if let Some(irh) = self.interrupts.get(idx) {
-                                //irh(self)?;
+                                irh(&mut self.data)?;
                             } else {
                                 return Err(format!("interrupt {} not defined", idx));
                             }
                         }
                         Instruction::Cast => {
                             let ty_idx = usize::from(*read(&self, &args[0]));
-                            let val = self.vstack.last_mut().expect("no value");
+                            let val = self.data.vstack.last_mut().expect("no value");
                             *val = val.cast(&Value::from_type(ty_idx));
                         }
                         Instruction::Inc | Instruction::Dec => {
@@ -117,9 +129,9 @@ impl Vm {
                         | Instruction::Xor
                         | Instruction::Shl
                         | Instruction::Shr => {
-                            let op2 = self.vstack.pop().expect("no operand");
-                            let op1 = self.vstack.last_mut().expect("no target");
-                            println!("{:?}, {:?}", op1, op2);
+                            let op2 = self.data.vstack.pop().expect("no operand");
+                            let op1 = self.data.vstack.last_mut().expect("no target");
+                            //println!("{:?}, {:?}", op1, op2);
 
                             // TODO: deref causes copy when inplace modification would be enough
                             let val = match inx {
@@ -141,9 +153,9 @@ impl Vm {
                             *op1 = val;
                         }
                         Instruction::Cmp => {
-                            let op2 = self.vstack.pop().expect("missing op2");
-                            let op1 = self.vstack.pop().expect("missing op1");
-                            (*register_mut(self)).cmp = op1.partial_cmp(&op2);
+                            let op2 = self.data.vstack.pop().expect("missing op2");
+                            let op1 = self.data.vstack.pop().expect("missing op1");
+                            (*register_mut(&mut self.data)).cmp = op1.partial_cmp(&op2);
                         }
                         Instruction::Jmp
                         | Instruction::Jeq
@@ -152,7 +164,7 @@ impl Vm {
                         | Instruction::Jgt
                         | Instruction::Jle
                         | Instruction::Jlt => {
-                            if register(self).is_jmp_needed(inx) {
+                            if register(&self.data).is_jmp_needed(inx) {
                                 match &args[0] {
                                     Code::Value(Value::Ref(r)) => ip = *r,
                                     _ => panic!("invalid jump operand"),
@@ -173,10 +185,10 @@ impl Vm {
                         Instruction::Ret => self.pop_frame(Some(&mut ip)),
                         Instruction::Push => {
                             let val = *read(self, &args[0]);
-                            self.vstack.push(val);
+                            self.data.vstack.push(val);
                         }
                         Instruction::Pop => {
-                            let val = self.vstack.pop().expect("nothing to pop");
+                            let val = self.data.vstack.pop().expect("nothing to pop");
                             write(self, &args[0], val);
                         }
                         Instruction::Pusha => self.push_frame(None),
@@ -186,7 +198,7 @@ impl Vm {
                 what => panic!("non-executable code reached {:?}", what),
             }
 
-            println!("{:?}", self.vstack);
+            //println!("{:?}", self.data.vstack);
 
             ip += 1;
         }
@@ -195,31 +207,31 @@ impl Vm {
     }
 
     fn push_frame(&mut self, ret: Option<usize>) {
-        self.stack.push(VmRegister::new());
-        register_mut(self).ret = ret;
+        self.data.stack.push(VmRegister::new());
+        register_mut(&mut self.data).ret = ret;
     }
 
     fn pop_frame(&mut self, ip: Option<&mut usize>) {
-        let frame = self.stack.pop().expect("frame to pop");
+        let frame = self.data.stack.pop().expect("frame to pop");
 
         if let (Some(ip), Some(jump_ip)) = (ip, frame.ret) {
             *ip = jump_ip;
         }
 
-        if self.stack.is_empty() {
-            self.state = VmState::Exited;
+        if self.data.stack.is_empty() {
+            self.data.state = VmState::Exited;
         } else {
-            *register_mut(self) = *self.stack.last().expect("no last frame");
+            *register_mut(&mut self.data) = *self.data.stack.last().expect("no last frame");
         }
     }
 }
 
 fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
     match code {
-        Code::Register(reg) => register_mut(vm)[*reg] = value,
+        Code::Register(reg) => register_mut(&mut vm.data)[*reg] = value,
         Code::Value(vaddr) => {
             let addr = usize::from(*vaddr);
-            vm.memory[addr] = Code::Value(value);
+            vm.data.memory[addr] = Code::Value(value);
         }
         // TODO: reactivate this once typing is more efficient
         //Code::Value(Value::Ref(addr)) => vm.memory[*addr] = Code::Value(value),
@@ -229,7 +241,7 @@ fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
 
 fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
     match code {
-        Code::Register(reg) => &register(vm)[*reg],
+        Code::Register(reg) => &register(&vm.data)[*reg],
         Code::Value(value) => value,
         _ => unimplemented!(),
     }
@@ -237,7 +249,7 @@ fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
 
 fn read_memory<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Value) -> &'read Value {
     let addr = usize::from(*code);
-    match &vm.memory[addr] {
+    match &vm.data.memory[addr] {
         Code::Value(value) => &value,
         code => panic!("unreadable memory accessed: {:?}", code),
     }
@@ -249,10 +261,10 @@ fn take<'bl>(bl: &'bl [Code], ip: &mut usize, n: usize) -> &'bl [Code] {
     view
 }
 
-fn register(vm: &Vm) -> &VmRegister {
+fn register(vm: &VmData) -> &VmRegister {
     vm.stack.last().expect("no last frame")
 }
 
-fn register_mut(vm: &mut Vm) -> &mut VmRegister {
+fn register_mut(vm: &mut VmData) -> &mut VmRegister {
     vm.stack.last_mut().expect("no last frame")
 }
