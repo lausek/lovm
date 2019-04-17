@@ -86,9 +86,10 @@ impl Vm {
                         }
                         Instruction::Int => {
                             let idx = usize::from(*read(&self, &args[0]));
-                            match self.interrupts.get(idx) {
-                                Some(irh) => irh(self)?,
-                                _ => return Err(format!("interrupt {} not defined", idx)),
+                            if let Some(irh) = self.interrupts.get(idx) {
+                                //irh(self)?;
+                            } else {
+                                return Err(format!("interrupt {} not defined", idx));
                             }
                         }
                         Instruction::Cast => {
