@@ -8,8 +8,10 @@ pub type ParseResult = Result<Vec<Ast>, Error>;
 
 #[derive(Clone, Debug)]
 pub enum Ast {
-    Label(Ident),
     Declare(String),
+    Label(Ident),
+    // TODO: add arguments
+    Macro(Ident),
     Statement(Statement),
 }
 
@@ -49,6 +51,10 @@ fn into_ast(tokens: Tokens) -> Result<Vec<Ast>, Error> {
             ty: TokenType::Keyword(kw),
             ..
         }) => into_statement(kw, &mut it).and_then(|ast| Ok(vec![ast])),
+        Some(Token {
+            ty: TokenType::Punct('.'),
+            ..
+        }) => into_macro(&mut it).and_then(|ast| Ok(vec![ast])),
         Some(Token {
             ty: TokenType::Ident(ident),
             ..
@@ -103,6 +109,19 @@ where
         }
         0 => Ok(Ast::Statement(Statement::from(kw.into(), ty))),
         _ => unreachable!(),
+    }
+}
+
+fn into_macro<T>(it: &mut std::iter::Peekable<T>) -> Result<Ast, Error>
+where
+    T: Iterator<Item = Token>,
+{
+    match it.next() {
+        Some(Token {
+            ty: TokenType::Ident(ident),
+            ..
+        }) => Ok(Ast::Macro(ident.clone())),
+        got => raise::expected_either_got(&vec!["label"], got),
     }
 }
 

@@ -1,5 +1,9 @@
 #![feature(bind_by_move_pattern_guards)]
 
+// TODO: implement local labels (prefix char _, eg _inner)
+// TODO: implement lexing for SoftPunct (alias for combined whitespace; allows for prefix check if wo\ SoftPunct)
+// WIP: implement macros (prefix char ., eg .skip)
+
 pub mod compiler;
 
 pub use self::compiler::*;

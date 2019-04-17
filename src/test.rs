@@ -52,12 +52,7 @@ test_file!(
     })
 );
 
-test_file!(
-    mem,
-    (|_vm| {
-        Ok(())
-    })
-);
+test_file!(mem, (|_vm| { Ok(()) }));
 
 test_file!(
     mem2,
