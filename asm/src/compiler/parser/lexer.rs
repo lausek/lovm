@@ -11,6 +11,7 @@ pub enum TokenType {
     Keyword(Keyword),
     Str(String),
     Punct(char),
+    SoftPunct,
 }
 
 #[derive(Clone, Debug)]
@@ -31,11 +32,11 @@ impl Token {
 }
 
 pub fn lex_line(ldx: usize, src: &str) -> Result<Tokens, Error> {
-    let mut lex = Tokens::new();
+    let mut toks = Tokens::new();
     let mut loc = (ldx, 0, 1);
 
     if src.is_empty() {
-        return Ok(lex);
+        return Ok(toks);
     }
 
     let mut it = src.chars().peekable();
@@ -45,20 +46,27 @@ pub fn lex_line(ldx: usize, src: &str) -> Result<Tokens, Error> {
             // : => label postfix
             // # => contant prefix
             // * => deref prefix
+            // . => macro prefix
             // ... => punctuation
-            '@' | ':' | '#' | '*' | ',' | ' ' => {
+            '@' | ':' | '#' | '*' | '.' | ',' | ' ' => {
                 if 0 < loc.2 - loc.1 - 1 {
                     let span = (loc.1, loc.2 - 1);
                     let buffer = &src[span.0..span.1].trim();
                     if !buffer.is_empty() {
                         let tok = Token::new((ldx, span.0, span.1), buffer);
-                        lex.push(tok);
+                        toks.push(tok);
                     }
+                    loc.1 = span.1;
                 }
 
                 // whitespace isn't real punctuation
-                if c != ' ' {
-                    lex.push(Token {
+                if c == ' ' {
+                    toks.push(Token {
+                        loc,
+                        ty: TokenType::SoftPunct,
+                    });
+                } else {
+                    toks.push(Token {
                         loc,
                         ty: TokenType::Punct(c),
                     });
@@ -69,7 +77,7 @@ pub fn lex_line(ldx: usize, src: &str) -> Result<Tokens, Error> {
             '"' => {
                 // TODO: add location
                 let s = take_string(&mut it)?;
-                lex.push(Token {
+                toks.push(Token {
                     loc: (0, 0, 0),
                     ty: TokenType::Str(s),
                 });
@@ -82,13 +90,45 @@ pub fn lex_line(ldx: usize, src: &str) -> Result<Tokens, Error> {
 
     loc.2 -= 1;
 
+    // TODO: trim probably not needed
     let buffer = &src[loc.1..loc.2].trim();
     if !buffer.is_empty() {
         let tok = Token::new(loc, buffer);
-        lex.push(tok);
+        toks.push(tok);
     }
 
-    Ok(lex)
+    merge_softpunct(&mut toks);
+
+    Ok(toks)
+}
+
+fn merge_softpunct(toks: &mut Tokens) {
+    let mut last_soft: Option<Token> = None;
+    let mut new_toks = vec![];
+
+    for t in toks.drain(..) {
+        match t {
+            Token {
+                ty: TokenType::SoftPunct,
+                loc,
+                ..
+            } => {
+                if let Some(last_soft) = &mut last_soft {
+                    last_soft.loc.2 = loc.2;
+                } else {
+                    last_soft = Some(t);
+                }
+            }
+            _ => {
+                if let Some(last_soft) = last_soft.take() {
+                    new_toks.push(last_soft);
+                }
+                new_toks.push(t);
+            }
+        }
+    }
+
+    *toks = new_toks;
 }
 
 fn take_string<T>(it: &mut std::iter::Peekable<T>) -> Result<String, Error>
