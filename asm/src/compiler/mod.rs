@@ -20,6 +20,14 @@ const fn mkref(raw: usize) -> Code {
     Code::Value(Value::Ref(raw))
 }
 
+fn embed_string(s: &str, cb: &mut Vec<Code>) {
+    for b in s.bytes() {
+        cb.push(Code::Value(Value::I(b as i8)));
+    }
+    // null terminator
+    cb.push(Code::Value(Value::I(0)));
+}
+
 // if a label lookup doesn't deliver a result while generating, remember the labels
 // name and the current generation offset for later. after all generation is done, we will
 // go for a final lookup and insert the now existing result at the index on the codeblock.
@@ -60,6 +68,7 @@ impl Compiler {
     fn compile_statement(&self, stmt: Statement, unit: &mut Unit) -> Result<(), Error> {
         match stmt.kw {
             Keyword::Dv => match stmt.args.get(0) {
+                Some(Operand::Str(s)) => embed_string(s, &mut unit.codeblock),
                 Some(Operand::Value(value)) => {
                     let value = if let Some(ty) = stmt.ty {
                         value.cast(&Value::from_type(ty.into()))

@@ -41,10 +41,13 @@ impl Unit {
             },
             Operand::Register(reg) => code = Code::Register(reg),
             Operand::Value(value) => code = Code::Value(value),
-            Operand::Str(_s) => {
+            Operand::Str(s) => {
                 // TODO: write s as bytes in consequtive order to memory
                 // TODO: insert reference to string pool here
-                unimplemented!();
+                for c in s.bytes() {
+                    self.codeblock.push(Code::Value(Value::I(c as i8)));
+                }
+                return Ok(());
             }
             Operand::Deref(_) => unreachable!(),
         }

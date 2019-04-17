@@ -1,4 +1,7 @@
 my_string: dv "hello \" world"
 
 main:
+    mov A, *my_string
+    push A
+    push my_string
     ret

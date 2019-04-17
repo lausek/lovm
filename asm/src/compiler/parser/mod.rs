@@ -152,6 +152,10 @@ where
             "D" => Ok(Operand::Register(Register::D)),
             _ => Ok(Operand::Ident(ident)),
         },
+        Some(Token {
+            ty: TokenType::Str(s),
+            ..
+        }) => Ok(Operand::Str(s)),
         what => Err(format!("unexpected token `{:?}`", what)),
     }
 }
