@@ -2,6 +2,11 @@ use self::Value::*;
 
 use serde::{Deserialize, Serialize};
 
+// TODO: add Str(usize); contains index into StringPool
+//          - requires a new component of Program containing the string
+//              constants for preallocation
+// TODO: add Obj(usize); contains index into ObjectPool
+
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Value {
     I(i8),
@@ -9,7 +14,6 @@ pub enum Value {
     F64(f64),
     Ref(usize),
     T(bool),
-    // TODO: add str?
 }
 
 impl std::convert::From<Value> for usize {
@@ -19,7 +23,13 @@ impl std::convert::From<Value> for usize {
             I64(n) => n as usize,
             F64(n) => n as usize,
             Ref(n) => n,
-            T(t) => if t {1} else {0},
+            T(t) => {
+                if t {
+                    1
+                } else {
+                    0
+                }
+            }
         }
     }
 }
