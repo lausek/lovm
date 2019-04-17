@@ -59,8 +59,8 @@ impl Compiler {
                 match step {
                     Ast::Declare(value) => unit.declare_value(value)?,
                     Ast::Label(ident) => unit.declare_label(ident, unit.codeblock.len())?,
-                    Ast::Macro(ident) => match self.macs.get(&ident.raw.as_ref()) {
-                        Some(mac) => mac(unit)?,
+                    Ast::Macro(ident, args) => match self.macs.get(&ident.raw.as_ref()) {
+                        Some(mac) => mac(unit, args)?,
                         _ => unreachable!(),
                     },
                     Ast::Statement(stmt) => unit.compile_statement(stmt)?,

@@ -10,8 +10,7 @@ pub type ParseResult = Result<Vec<Ast>, Error>;
 pub enum Ast {
     Declare(String),
     Label(Ident),
-    // TODO: add arguments
-    Macro(Ident),
+    Macro(Ident, Vec<Operand>),
     Statement(Statement),
 }
 
@@ -120,7 +119,7 @@ where
         Some(Token {
             ty: TokenType::Ident(ident),
             ..
-        }) => Ok(Ast::Macro(ident.clone())),
+        }) => Ok(Ast::Macro(ident.clone(), take_ops(it)?)),
         got => raise::expected_either_got(&vec!["label"], got),
     }
 }
@@ -139,6 +138,24 @@ where
         }
         _ => false,
     }
+}
+
+fn take_ops<T>(it: &mut std::iter::Peekable<T>) -> Result<Vec<Operand>, String>
+where
+    T: Iterator<Item = Token>,
+{
+    let mut ops = vec![];
+    loop {
+        ops.push(take_op(it)?);
+        match it.peek() {
+            Some(Token {
+                ty: TokenType::Punct(','),
+                ..
+            }) => {}
+            _ => break,
+        }
+    }
+    Ok(ops)
 }
 
 fn take_op<T>(it: &mut std::iter::Peekable<T>) -> Result<Operand, String>

@@ -1,6 +1,6 @@
 use super::*;
 
-pub type Macro = &'static dyn Fn(&mut Unit) -> Result<(), Error>;
+pub type Macro = &'static dyn Fn(&mut Unit, Vec<Operand>) -> Result<(), Error>;
 pub type MacroTable = HashMap<&'static str, Macro>;
 
 pub fn default_macros() -> MacroTable {
@@ -9,6 +9,13 @@ pub fn default_macros() -> MacroTable {
     macs
 }
 
-fn skip(_unit: &mut Unit) -> Result<(), Error> {
+fn skip(unit: &mut Unit, args: Vec<Operand>) -> Result<(), Error> {
+    let n = match &args[0] {
+        Operand::Value(value) => usize::from(*value),
+        _ => unreachable!(),
+    };
+    for _ in 0..n {
+        unit.codeblock.push(Code::Value(Value::I(0)));
+    }
     Ok(())
 }

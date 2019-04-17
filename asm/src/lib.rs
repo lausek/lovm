@@ -2,7 +2,7 @@
 
 // TODO: implement local labels (prefix char _, eg _inner)
 // TODO: implement lexing for SoftPunct (alias for combined whitespace; allows for prefix check if wo\ SoftPunct)
-// WIP: implement macros (prefix char ., eg .skip)
+// DONE: implement macros (prefix char ., eg .skip)
 
 pub mod compiler;
 
