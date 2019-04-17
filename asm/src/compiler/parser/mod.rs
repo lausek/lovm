@@ -45,11 +45,15 @@ pub fn parse(src: &str) -> ParseResult {
 
 fn into_ast(tokens: Tokens) -> Result<Vec<Ast>, Error> {
     let mut it = tokens.into_iter().peekable();
+    take_softpunct(&mut it);
     match it.next() {
         Some(Token {
             ty: TokenType::Keyword(kw),
             ..
-        }) => into_statement(kw, &mut it).and_then(|ast| Ok(vec![ast])),
+        }) => {
+            take_softpunct(&mut it);
+            into_statement(kw, &mut it).and_then(|ast| Ok(vec![ast]))
+        }
         Some(Token {
             ty: TokenType::Punct('.'),
             ..
@@ -60,6 +64,7 @@ fn into_ast(tokens: Tokens) -> Result<Vec<Ast>, Error> {
         }) if !ident.is_register() => {
             let mut bl = vec![Ast::Label(ident)];
             expect(&mut it, TokenType::Punct(':'))?;
+            take_softpunct(&mut it);
 
             match it.collect::<Vec<_>>() {
                 tokens if !tokens.is_empty() => bl.extend(into_ast(tokens)?),
@@ -77,6 +82,9 @@ where
     T: Iterator<Item = Token>,
 {
     let ty = take_type(it);
+
+    take_softpunct(it);
+
     match kw.arguments() {
         2 if kw == Keyword::Mov => {
             let indirect = take_deref(it);
@@ -85,7 +93,7 @@ where
                 to = Operand::Deref(Box::new(to));
             }
 
-            expect(it, TokenType::Punct(','))?;
+            take_separator(it)?;
 
             let indirect = take_deref(it);
             let mut from = take_op(it)?;
@@ -97,7 +105,7 @@ where
         }
         2 => {
             let x1 = take_op(it)?;
-            expect(it, TokenType::Punct(','))?;
+            take_separator(it)?;
             let x2 = take_op(it)?;
             let stmt = Statement::from(kw, ty).arg(x1).arg(x2);
             Ok(Ast::Statement(stmt))
@@ -119,8 +127,34 @@ where
         Some(Token {
             ty: TokenType::Ident(ident),
             ..
-        }) => Ok(Ast::Macro(ident.clone(), take_ops(it)?)),
+        }) => {
+            take_softpunct(it);
+            Ok(Ast::Macro(ident.clone(), take_ops(it)?))
+        }
         got => raise::expected_either_got(&vec!["label"], got),
+    }
+}
+
+fn take_separator<T>(it: &mut std::iter::Peekable<T>) -> Result<(), Error>
+where
+    T: Iterator<Item = Token>,
+{
+    take_softpunct(it);
+    expect(it, TokenType::Punct(','))?;
+    take_softpunct(it);
+    Ok(())
+}
+
+fn take_softpunct<T>(it: &mut std::iter::Peekable<T>)
+where
+    T: Iterator<Item = Token>,
+{
+    if let Some(Token {
+        ty: TokenType::SoftPunct,
+        ..
+    }) = it.peek()
+    {
+        it.next().unwrap();
     }
 }
 
@@ -147,11 +181,14 @@ where
     let mut ops = vec![];
     loop {
         ops.push(take_op(it)?);
+        take_softpunct(it);
         match it.peek() {
             Some(Token {
                 ty: TokenType::Punct(','),
                 ..
-            }) => {}
+            }) => {
+                take_softpunct(it);
+            }
             _ => break,
         }
     }

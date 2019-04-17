@@ -97,7 +97,6 @@ fn merge_softpunct(toks: &mut Tokens) {
     let mut new_toks = vec![];
 
     for t in toks.drain(..) {
-        println!("{:?}", last_soft);
         match t {
             Token {
                 ty: TokenType::SoftPunct,
