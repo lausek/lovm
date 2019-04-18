@@ -16,6 +16,13 @@ use lovm::value::Value;
 
 use std::collections::HashMap;
 
+// TODO: fix offsets of included programs
+//       1. collect all static strings into a big section at program end
+//       2. label resolvement must change to be totally lazily
+//          - no LabelOffset::Resolved anymore
+//       3. insert Str(_) or Ref(_) to resolve labels at end of compilation
+// TODO: add `.export <name>` macro to decide which label should be exported
+
 pub type CompileResult = Result<Unit, Error>;
 
 const fn mkref(raw: usize) -> Code {
@@ -56,9 +63,12 @@ impl Compiler {
         }
     }
 
-    pub fn compile(&mut self, src: &str) -> CompileResult {
-        self.unit = Some(Unit::from(src.to_string()));
+    pub fn compile_path(&mut self, src: &str, path: String) -> CompileResult {
+        self.unit = Some(Unit::from_path(src.to_string(), path));
+        self.compile()
+    }
 
+    pub fn compile(&mut self) -> CompileResult {
         {
             let unit = self.unit.as_mut().unwrap();
             let ast = parser::parse(&unit.src)?;

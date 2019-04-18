@@ -6,14 +6,25 @@ use std::str::FromStr;
 pub struct Unit {
     pub(crate) codeblock: CodeBlock,
     pub(crate) labels: HashMap<Ident, LabelOffset>,
+    pub(crate) path: Option<String>,
     pub(crate) src: String,
 }
 
 impl Unit {
+    pub fn from_path(src: String, path: String) -> Self {
+        Self {
+            codeblock: CodeBlock::new(),
+            labels: HashMap::new(),
+            path: Some(path),
+            src,
+        }
+    }
+
     pub fn from(src: String) -> Self {
         Self {
             codeblock: CodeBlock::new(),
             labels: HashMap::new(),
+            path: None,
             src,
         }
     }
@@ -133,7 +144,8 @@ impl Unit {
                 }
             }
             _ => match stmt.argc() {
-                // TODO: cast@ref could be used as shorthand for push <>; cast #5
+                // TODO: add `ret@i <stack_last>` for typed return (?)
+                // TODO: cast@ref could be used as shorthand for `push <stack_last>; cast #5`
                 0 => self.codeblock.push(Code::Instruction(stmt.inx())),
                 1 => {
                     self.codeblock.push(Code::Instruction(stmt.inx()));

@@ -18,7 +18,7 @@ macro_rules! test_file {
             let mut vm = lovm::vm::Vm::new();
             let src = read_file(path.as_str());
             let unit = lovm_asm_lib::compiler::Compiler::new()
-                .compile(src.as_ref())
+                .compile_path(src.as_ref(), path)
                 .expect("compilation failed");
             let program = lovm_asm_lib::into_program(unit);
 

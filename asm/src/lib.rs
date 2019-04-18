@@ -10,6 +10,25 @@ pub use self::compiler::*;
 
 pub use lovm::code::*;
 
+use std::fs;
+use std::io::Read;
+
+pub fn compile_file(path: &str) -> Result<Program, Error> {
+    println!("{}", path);
+    if let Ok(mut in_file) = fs::File::open(path) {
+        let mut src = String::new();
+        in_file
+            .read_to_string(&mut src)
+            .expect("cannot read program file");
+
+        compiler::Compiler::new()
+            .compile_path(src.as_ref(), path.to_string())
+            .map(|unit| into_program(unit))
+    } else {
+        Err(Error::new().msg("cannot open program file".to_string()))
+    }
+}
+
 pub fn into_program(unit: Unit) -> Program {
     let mut program = Program::with_code(unit.codeblock);
 

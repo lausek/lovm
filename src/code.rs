@@ -29,8 +29,8 @@ pub type CodeBlock = Vec<Code>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Program {
-    pub(crate) codeblock: CodeBlock,
-    pub(crate) labels: Vec<(String, usize)>,
+    pub codeblock: CodeBlock,
+    pub labels: Vec<(String, usize)>,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
