@@ -8,7 +8,6 @@ pub type ParseResult = Result<Vec<Ast>, Error>;
 
 #[derive(Clone, Debug)]
 pub enum Ast {
-    Declare(String),
     Label(Ident),
     Macro(Ident, Vec<Operand>),
     Statement(Statement),

@@ -1,3 +1,4 @@
+main:
 mov A, #10      ; set A to 10
 mov B, #20      ; set B to 20
 add A, B        ; A = 30
@@ -9,3 +10,4 @@ loop:
     cmp C, #10
     jne loop
 popa
+ret

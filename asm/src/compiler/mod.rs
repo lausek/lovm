@@ -67,7 +67,6 @@ impl Compiler {
 
         for step in ast.into_iter() {
             match step {
-                Ast::Declare(value) => unit.declare_value(value)?,
                 Ast::Label(ident) => unit.declare_label(ident, unit.codeblock.len())?,
                 Ast::Macro(ident, args) => match self.macs.get(&ident.raw.as_ref()) {
                     Some(mac) => mac(unit, args)?,
