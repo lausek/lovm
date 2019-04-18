@@ -13,7 +13,7 @@ pub use lovm::code::*;
 use std::fs;
 use std::io::Read;
 
-pub fn compile_file(path: &str) -> Result<Program, Error> {
+pub fn compile_file(path: &str) -> Result<Unit, Error> {
     println!("{}", path);
     if let Ok(mut in_file) = fs::File::open(path) {
         let mut src = String::new();
@@ -21,9 +21,9 @@ pub fn compile_file(path: &str) -> Result<Program, Error> {
             .read_to_string(&mut src)
             .expect("cannot read program file");
 
-        compiler::Compiler::new()
-            .compile_path(src.as_ref(), path.to_string())
-            .map(|unit| into_program(unit))
+        let mut compiler = compiler::Compiler::new();
+        compiler.compile_path(src.as_ref(), path.to_string())?;
+        compiler.finish()
     } else {
         Err(Error::new().msg("cannot open program file".to_string()))
     }

@@ -8,6 +8,7 @@ pub struct Unit {
     pub(crate) labels: HashMap<Ident, Label>,
     pub(crate) path: Option<String>,
     pub(crate) src: String,
+    pub(crate) sub_units: Vec<Unit>,
 }
 
 impl Unit {
@@ -17,6 +18,7 @@ impl Unit {
             labels: HashMap::new(),
             path: Some(path),
             src,
+            sub_units: vec![],
         }
     }
 
@@ -26,6 +28,7 @@ impl Unit {
             labels: HashMap::new(),
             path: None,
             src,
+            sub_units: vec![],
         }
     }
 
@@ -44,7 +47,7 @@ impl Unit {
                     let label = Label::new().location(&ident, self.codeblock.len());
                     self.labels.insert(ident.clone(), label);
                 }
-            }
+            },
             Operand::Register(reg) => code = Code::Register(reg),
             Operand::Value(value) => code = Code::Value(value),
             Operand::Str(s) => {
@@ -211,4 +214,57 @@ impl Unit {
         self.codeblock.push(Code::Value(value));
         Ok(())
     }
+
+    pub fn link(&mut self) -> Result<(), Error> {
+        let mut errs = vec![];
+        println!("linking {:?}", self.path);
+        println!("sub_units {:#?}", self.sub_units);
+
+        let mut link_offset = self.codeblock.len();
+
+        for sub_unit in self.sub_units.iter_mut() {
+            sub_unit.labels.iter_mut().for_each(|(_, label)| {
+                label.decl.as_mut().unwrap().1 += link_offset;
+            });
+            sub_unit.link()?;
+            self.codeblock.extend(sub_unit.codeblock.clone());
+            merge_labels(&mut self.labels, &sub_unit.labels)?;
+            link_offset = self.codeblock.len();
+        }
+
+        for (_, label) in self.labels.iter() {
+            if let Some((_, off)) = label.decl {
+                for (_, idx) in label.locations.iter().rev() {
+                    *self.codeblock.get_mut(*idx).unwrap() = Code::Value(Value::Ref(off));
+                }
+            } else {
+                for (ident, _) in label.locations.iter() {
+                    errs.push(raise::not_declared::<CompileResult>(ident).err().unwrap());
+                }
+            }
+        }
+
+        if errs.is_empty() {
+            Ok(())
+        } else {
+            Err(errs.into())
+        }
+    }
+}
+
+fn merge_labels(
+    ctx: &mut HashMap<Ident, Label>,
+    scope: &HashMap<Ident, Label>,
+) -> Result<(), Error> {
+    for (key, value) in scope.iter() {
+        match ctx.get_mut(&key) {
+            // FIXME: raise `redeclared`
+            Some(label) if label.decl.is_none() && value.decl.is_some() => {
+                label.decl = value.decl.clone();
+            }
+            Some(_) => panic!("label {:?} redeclared", key),
+            _ => {}
+        }
+    }
+    Ok(())
 }

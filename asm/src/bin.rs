@@ -12,7 +12,8 @@ fn main() {
     let out_file_path = args.next().unwrap_or("a.out".to_string());
 
     match compile_file(&in_file_path) {
-        Ok(program) => {
+        Ok(unit) => {
+            let program = into_program(unit);
             if let Ok(mut out_file) = fs::File::create(out_file_path) {
                 let bytes = program.serialize().unwrap();
                 out_file.write_all(bytes.as_slice()).unwrap();

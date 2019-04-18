@@ -5,38 +5,40 @@ pub type MacroTable = HashMap<&'static str, Macro>;
 
 pub fn default_macros() -> MacroTable {
     let mut macs = MacroTable::new();
+    macs.insert("export", &export);
     macs.insert("include", &include);
     macs.insert("skip", &skip);
     macs
 }
 
-fn include(_unit: &mut Unit, _args: Vec<Operand>) -> Result<(), Error> {
-    // TODO: waiting for compiler
-    /*
-    use std::path::Path;
-    if let Some(Operand::Str(path)) = args.get(0) {
-        let parent = Path::new(&unit.path).parent().unwrap().display();
-        let path = format!("{}/{}", parent, path);
-        let mut program = crate::compile_file(&path)?;
-        let link_off = unit.codeblock.len();
-        unit.codeblock.extend(program.code());
-
-        for (ident, off) in program.labels().iter() {
-            let ident = Ident::new((0, 0, 0), ident.clone());
-            match unit.labels.get(&ident) {
-                Some(LabelOffset::Resolved(_)) => panic!("label already exists in super program"),
-                Some(LabelOffset::Unresolved(positions)) => {
-                    for (_, pos) in positions.iter().rev() {
-                        *unit.codeblock.get_mut(*pos).unwrap() = mkref(link_off + *off);
-                    }
-                }
-                _ => {
-                    unit.labels.insert(ident, LabelOffset::Resolved(link_off + *off));
-                }
+fn export(unit: &mut Unit, args: Vec<Operand>) -> Result<(), Error> {
+    if let Some(Operand::Ident(ident)) = args.get(0) {
+        match unit.labels.get_mut(&ident) {
+            Some(label) => label.public = true,
+            _ => {
+                let mut label = Label::new();
+                label.public = true;
+                unit.labels.insert(ident.clone(), label);
             }
         }
+        Ok(())
+    } else {
+        unimplemented!()
     }
-    */
+}
+
+fn include(unit: &mut Unit, args: Vec<Operand>) -> Result<(), Error> {
+    use std::path::Path;
+    if let Some(Operand::Str(path)) = args.get(0) {
+        let parent_path = unit.path.as_ref().unwrap().clone();
+        let parent = Path::new(&parent_path).parent().unwrap().display();
+        let path = format!("{}/{}", parent, path);
+        let extern_unit = crate::compile_file(&path)?;
+        unit.sub_units.push(extern_unit);
+    } else {
+        // TODO: raise `expected_got` here
+        unimplemented!();
+    }
     Ok(())
 }
 

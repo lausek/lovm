@@ -69,7 +69,7 @@ impl Vm {
         self.data.memory.map(bl, 0);
 
         let len = bl.len();
-        let mut ip = program.entry_point().unwrap_or(0);
+        let mut ip = program.entry_point().expect("no entry point");
 
         self.push_frame(None);
         self.data.state = VmState::Running;
