@@ -39,7 +39,6 @@ test_file!(call, (|_| { Ok(()) }));
 test_file!(
     fib,
     (|vm| {
-        use lovm::code::Code;
         use lovm::value::Value;
 
         let result3 = vm.vstack.pop().expect("no result3");
@@ -89,3 +88,5 @@ test_file!(
         Ok(())
     })
 );
+
+test_file!(str, (|_| { Ok(()) }));
