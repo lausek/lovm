@@ -1,5 +1,7 @@
 ; the fibonacci function implemented in loas
 
+.include "std.loas"
+
 fib_n:
     sub D, #1
     push D
@@ -30,15 +32,20 @@ fib:
     push D
     ret
 
-main:
+main: ret
     push #0
     call fib
+    call println
 
     push #1
     call fib
+    call println
 
     push #8
     call fib
+    call println
 
     ; enter debug
     int #10
+
+    ret

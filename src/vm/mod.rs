@@ -77,7 +77,9 @@ impl Vm {
         while self.data.state == VmState::Running && ip < len {
             match self.data.memory[ip] {
                 Code::Instruction(inx) => {
-                    //println!("{:?}", inx);
+                    if cfg!(debug_assertions) {
+                        println!("{}: {:?}", ip, inx);
+                    }
 
                     if inx == Instruction::Call {
                         self.push_frame(Some(ip + 1));
@@ -131,7 +133,9 @@ impl Vm {
                         | Instruction::Shr => {
                             let op2 = self.data.vstack.pop().expect("no operand");
                             let op1 = self.data.vstack.last_mut().expect("no target");
-                            //println!("{:?}, {:?}", op1, op2);
+                            if cfg!(debug_assertions) {
+                                println!("{:?}, {:?}", op1, op2);
+                            }
 
                             // TODO: deref causes copy when inplace modification would be enough
                             let val = match inx {
@@ -198,7 +202,9 @@ impl Vm {
                 what => panic!("non-executable code reached {:?}", what),
             }
 
-            //println!("{:?}", self.data.vstack);
+            if cfg!(debug_assertions) {
+                println!("{:?}", self.data.vstack);
+            }
 
             ip += 1;
         }
@@ -251,7 +257,7 @@ fn read_memory<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Value) -> &'read Val
     let addr = usize::from(*code);
     match &vm.data.memory[addr] {
         Code::Value(value) => &value,
-        code => panic!("unreadable memory accessed: {:?}", code),
+        code => panic!("unreadable memory accessed: {:?}, addr {}", code, addr),
     }
 }
 

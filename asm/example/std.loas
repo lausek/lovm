@@ -1,14 +1,29 @@
+.export nl
+nl: dv@c #22
+
 .export print
-print:
+prints:
     pop@ref A
     inner:
         mov C, *A
         cmp C, #0
         jeq done
         push C
-        int #20
+        call print
         pop C
         inc A
         jmp inner
     done:
+    ret
+
+print:
+    int #20
+    ret
+
+println:
+    int #20
+    mov A, *nl
+    push A
+    int #20
+    pop A
     ret

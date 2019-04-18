@@ -217,8 +217,8 @@ impl Unit {
 
     pub fn link(&mut self) -> Result<(), Error> {
         let mut errs = vec![];
-        println!("linking {:?}", self.path);
-        println!("sub_units {:#?}", self.sub_units);
+        //println!("linking {:?}", self.path);
+        //println!("sub_units {:#?}", self.sub_units);
 
         let mut link_offset = self.codeblock.len();
 

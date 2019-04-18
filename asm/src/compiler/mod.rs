@@ -30,8 +30,8 @@ const fn mkref(raw: usize) -> Code {
 }
 
 fn embed_string(s: &str, cb: &mut Vec<Code>) {
-    for b in s.bytes() {
-        cb.push(Code::Value(Value::I(b as i8)));
+    for c in s.chars() {
+        cb.push(Code::Value(Value::C(c)));
     }
     // null terminator
     cb.push(Code::Value(Value::I(0)));

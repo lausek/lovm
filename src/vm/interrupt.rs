@@ -28,6 +28,7 @@ impl Interrupts {
 impl std::default::Default for Interrupts {
     fn default() -> Self {
         let mut ints = Interrupts::new();
+        ints.set(Interrupt::Dbg as usize, Some(&dbg));
         ints.set(Interrupt::Put as usize, Some(&put));
         ints
     }
@@ -35,7 +36,10 @@ impl std::default::Default for Interrupts {
 
 fn put(data: &mut VmData) -> VmResult {
     let v = data.vstack.last().expect("no operand");
-    let b = usize::from(*v) as u8;
-    print!("{}", b as char);
+    print!("{}", v.to_string());
+    Ok(())
+}
+
+fn dbg(_data: &mut VmData) -> VmResult {
     Ok(())
 }
