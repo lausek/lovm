@@ -37,19 +37,6 @@ fn embed_string(s: &str, cb: &mut Vec<Code>) {
     cb.push(Code::Value(Value::I(0)));
 }
 
-// if a label lookup doesn't deliver a result while generating, remember the labels
-// name and the current generation offset for later. after all generation is done, we will
-// go for a final lookup and insert the now existing result at the index on the codeblock.
-#[derive(Clone, Debug)]
-pub enum LabelOffset {
-    // the label already occurred while compiling the program; this contains
-    // its offset inside the codeblock
-    Resolved(usize),
-    // the label is still unknown. contains a list of indices where we have
-    // to insert the resolved index
-    Unresolved(Vec<(Ident, usize)>),
-}
-
 pub struct Compiler {
     macs: MacroTable,
     unit: Option<Unit>,
@@ -85,7 +72,7 @@ impl Compiler {
                 }
             }
 
-            self.check_resolved()?;
+            self.link()?;
         }
 
         let unit = self.unit.take().unwrap();
@@ -93,17 +80,19 @@ impl Compiler {
         Ok(unit)
     }
 
-    fn check_resolved(&self) -> Result<(), Error> {
-        let unit = self.unit.as_ref().unwrap();
+    fn link(&mut self) -> Result<(), Error> {
+        let unit = self.unit.as_mut().unwrap();
         let mut errs = vec![];
 
-        for (_, off) in unit.labels.iter() {
-            match off {
-                LabelOffset::Resolved(_) => {}
-                LabelOffset::Unresolved(positions) => {
-                    for (ident, _) in positions.iter() {
-                        errs.push(raise::not_declared::<CompileResult>(ident).err().unwrap());
-                    }
+        for (_, label) in unit.labels.iter() {
+            if let Some((_, off)) = label.decl {
+                // TODO: do insert magic
+                for (_, idx) in label.locations.iter().rev() {
+                    *unit.codeblock.get_mut(*idx).unwrap() = Code::Value(Value::Ref(off));
+                }
+            } else {
+                for (ident, _) in label.locations.iter() {
+                    errs.push(raise::not_declared::<CompileResult>(ident).err().unwrap());
                 }
             }
         }

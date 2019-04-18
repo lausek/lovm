@@ -35,9 +35,9 @@ pub fn into_program(unit: Unit) -> Program {
     *program.labels_mut() = unit
         .labels
         .iter()
-        .map(|(ident, off)| match off {
-            LabelOffset::Resolved(off) => (ident.raw.clone(), *off),
-            _ => unreachable!(),
+        .filter_map(|(ident, label)| match label.is_exported() {
+            true => Some((ident.raw.clone(), label.decl.as_ref().unwrap().1)),
+            _ => None,
         })
         .collect::<Vec<_>>();
 

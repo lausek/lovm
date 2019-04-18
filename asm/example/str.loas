@@ -1,7 +1,19 @@
 my_string: dv "hello \" world"
 
 ; .include "std.loas"
-print: ret
+print:
+    pop@ref A
+    inner:
+        mov C, *A
+        cmp C, #0
+        jeq done
+        push C
+        int #20
+        pop C
+        inc A
+        jmp inner
+    done:
+    ret
 
 main:
     push my_string

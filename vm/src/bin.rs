@@ -15,11 +15,12 @@ fn main() {
     file.read_to_string(&mut src).expect("reading file failed");
 
     let unit = compiler::Compiler::new()
-        .compile(src.as_ref(), path)
+        .compile_path(src.as_ref(), path)
         .expect("compilation failed");
 
     let program = into_program(unit);
 
+    println!("{:?}", program.labels);
     println!("{}", program);
 
     vm.run(&program).unwrap();
