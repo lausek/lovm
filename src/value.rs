@@ -85,18 +85,3 @@ impl std::str::FromStr for Value {
         }
     }
 }
-
-impl std::string::ToString for Value {
-    fn to_string(&self) -> String {
-        match self {
-            Value::I(n) => format!("{}", n),
-            Value::I64(n) => format!("{}", n),
-            Value::F64(n) => format!("{}", n),
-            Value::Ref(n) => format!("{}", n),
-            Value::T(t) => format!("{}", t),
-            Value::C(c) => format!("{}", c),
-            // TODO: requires vm.str_pool
-            Value::Str(_) => unimplemented!(),
-        }
-    }
-}

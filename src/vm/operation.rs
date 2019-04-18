@@ -59,6 +59,18 @@ impl Value {
         }
     }
 
+    pub fn to_string(&self, data: &VmData) -> String {
+        match self {
+            Value::I(n) => format!("{}", n),
+            Value::I64(n) => format!("{}", n),
+            Value::F64(n) => format!("{}", n),
+            Value::Ref(n) => format!("{}", n),
+            Value::T(t) => format!("{}", t),
+            Value::C(c) => format!("{}", c),
+            Value::Str(handle) => data.str_pool.get(handle).unwrap().clone(),
+        }
+    }
+
     pub fn cast(&self, value: &Value) -> Value {
         match (self, value) {
             (I(_), I(_)) => *self,

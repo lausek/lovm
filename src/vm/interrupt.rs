@@ -36,7 +36,7 @@ impl std::default::Default for Interrupts {
 
 fn put(data: &mut VmData) -> VmResult {
     let v = data.vstack.last().expect("no operand");
-    print!("{}", v.to_string());
+    print!("{}", v.to_string(data));
     Ok(())
 }
 
