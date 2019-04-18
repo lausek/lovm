@@ -1,5 +1,5 @@
 .export nl
-nl: dv@c #22
+nl: dv@c #10
 
 .export print
 prints:

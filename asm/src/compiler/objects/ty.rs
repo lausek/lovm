@@ -5,6 +5,8 @@ pub enum Type {
     F64,
     Ref,
     T,
+    C,
+    Str,
 }
 
 impl Into<i8> for Type {
@@ -15,6 +17,8 @@ impl Into<i8> for Type {
             Type::F64 => 3,
             Type::Ref => 4,
             Type::T => 5,
+            Type::C => 6,
+            Type::Str => 7,
         }
     }
 }
@@ -35,6 +39,8 @@ impl std::str::FromStr for Type {
             "f64" => Ok(Type::F64),
             "ref" => Ok(Type::Ref),
             "t" => Ok(Type::T),
+            "c" => Ok(Type::C),
+            "str" => Ok(Type::Str),
             _ => Err(()),
         }
     }

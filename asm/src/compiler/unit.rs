@@ -1,7 +1,5 @@
 use super::*;
 
-use std::str::FromStr;
-
 #[derive(Clone, Debug)]
 pub struct Unit {
     pub(crate) codeblock: CodeBlock,
@@ -206,12 +204,6 @@ impl Unit {
                 self.labels.insert(ident, label);
             }
         }
-        Ok(())
-    }
-
-    pub fn declare_value(&mut self, value: String) -> Result<(), String> {
-        let value = Value::from_str(&value)?;
-        self.codeblock.push(Code::Value(value));
         Ok(())
     }
 
