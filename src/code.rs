@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 //
 // the use of registers is therefore dropped in favor of a more dynamic and flexible
 // data management.
-// 
+//
 // pub struct CodeObject {
 //     consts: Vec<Value>,
 //     local: Vec<Value>,

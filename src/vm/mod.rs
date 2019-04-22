@@ -1,14 +1,14 @@
+pub mod frame;
 pub mod interrupt;
 pub mod memory;
 pub mod operation;
-pub mod register;
 pub mod str;
 
 use super::*;
 
+use self::frame::*;
 use self::interrupt::*;
 use self::memory::*;
-use self::register::*;
 use self::str::*;
 
 pub use std::collections::HashMap;
@@ -28,7 +28,7 @@ pub enum VmState {
 pub struct VmData {
     pub memory: VmMemory,
     pub state: VmState,
-    pub stack: Vec<VmRegister>,
+    pub stack: Vec<VmFrame>,
     pub str_pool: VmStrPool,
     pub vstack: Vec<Value>,
 }
@@ -213,7 +213,7 @@ impl Vm {
     }
 
     fn push_frame(&mut self, ret: Option<usize>) {
-        self.data.stack.push(VmRegister::new());
+        self.data.stack.push(VmFrame::new());
         register_mut(&mut self.data).ret = ret;
     }
 
@@ -267,10 +267,10 @@ fn take<'bl>(bl: &'bl [Code], ip: &mut usize, n: usize) -> &'bl [Code] {
     view
 }
 
-fn register(vm: &VmData) -> &VmRegister {
+fn register(vm: &VmData) -> &VmFrame {
     vm.stack.last().expect("no last frame")
 }
 
-fn register_mut(vm: &mut VmData) -> &mut VmRegister {
+fn register_mut(vm: &mut VmData) -> &mut VmFrame {
     vm.stack.last_mut().expect("no last frame")
 }

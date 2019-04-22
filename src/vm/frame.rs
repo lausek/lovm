@@ -2,11 +2,8 @@ use super::*;
 
 use std::cmp;
 
-// TODO: rename `VmRegister` to `VmFrame`
-//          - add vector for local variables
-
 #[derive(Clone, Copy, Debug)]
-pub struct VmRegister {
+pub struct VmFrame {
     pub a: Value,
     pub b: Value,
     pub c: Value,
@@ -15,7 +12,7 @@ pub struct VmRegister {
     pub ret: Option<usize>,
 }
 
-impl VmRegister {
+impl VmFrame {
     pub fn new() -> Self {
         Self {
             a: Value::I(0),
@@ -47,7 +44,7 @@ impl VmRegister {
     }
 }
 
-impl std::ops::Index<Register> for VmRegister {
+impl std::ops::Index<Register> for VmFrame {
     type Output = Value;
     fn index(&self, idx: Register) -> &Value {
         match idx {
@@ -59,7 +56,7 @@ impl std::ops::Index<Register> for VmRegister {
     }
 }
 
-impl std::ops::IndexMut<Register> for VmRegister {
+impl std::ops::IndexMut<Register> for VmFrame {
     fn index_mut(&mut self, idx: Register) -> &mut Value {
         match idx {
             Register::A => &mut self.a,
