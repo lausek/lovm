@@ -12,12 +12,42 @@ use serde::{Deserialize, Serialize};
 // the use of registers is therefore dropped in favor of a more dynamic and flexible
 // data management.
 //
-// pub struct CodeObject {
-//     consts: Vec<Value>,
-//     local: Vec<Value>,
-//     extern: Vec<Value>,
-//     code: Vec<Code>,
-// }
+// for grouping `CodeObjects` into units, a `Module` structure is used. it basically contains
+// a list of identifiers next to their correspoding `CodeObject` (possible sig: Vec<(Ident, CodeObject)>).
+//
+// for the generation of lovm programs a library (WIP: module name) is exported.
+
+pub type Name = String;
+pub type CodeBlock = Vec<Code>;
+
+pub type CodeObject = Space<CodeBlock>;
+pub type Module = Space<Vec<(Name, CodeBlock)>>;
+pub type Program = Module;
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Space<T>
+where
+    T: std::default::Default,
+{
+    consts: Vec<Value>,
+    locals: Vec<Name>,
+    globals: Vec<Name>,
+    inner: T,
+}
+
+impl<T> Space<T>
+where
+    T: std::default::Default,
+{
+    fn new() -> Self {
+        Self {
+            consts: vec![],
+            locals: vec![],
+            globals: vec![],
+            inner: T::default(),
+        }
+    }
+}
 
 // TODO: modifications for support of constant values
 //          - new instruction `Loadc`, loads a constant value onto the stack
@@ -43,14 +73,6 @@ macro_rules! program {
     }}
 }
 */
-
-pub type CodeBlock = Vec<Code>;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Program {
-    pub code: CodeBlock,
-    pub labels: Vec<(String, usize)>,
-}
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Code {
@@ -161,7 +183,7 @@ impl Instruction {
     }
 }
 
-impl Program {
+impl Module {
     pub fn serialize(&self) -> Result<Vec<u8>, bincode::Error> {
         bincode::serialize(&self)
     }
@@ -171,22 +193,35 @@ impl Program {
     }
 
     pub fn with_code(code: CodeBlock) -> Self {
-        Self {
-            code,
-            labels: vec![],
-        }
+        let mut new = Self::new();
+        new.inner = vec![("main".into(), code)];
+        new
     }
 
     pub fn code(&self) -> &CodeBlock {
-        &self.code
+        self.inner
+            .iter()
+            .find(|(name, _)| name == "main")
+            .map(|(_, code)| code)
+            .unwrap()
     }
 
+    pub fn slots<T>(&self) -> &T {
+        unimplemented!()
+    }
+
+    pub fn slots_mut<T>(&mut self) -> &mut T {
+        unimplemented!()
+    }
+
+    // TODO: `labels_*` functions will be dropped as they were meant for static linking (not supported anymore)
+    /*
     pub fn labels(&self) -> &Vec<(String, usize)> {
-        &self.labels
+        unimplemented!()
     }
 
     pub fn labels_mut(&mut self) -> &mut Vec<(String, usize)> {
-        &mut self.labels
+        unimplemented!()
     }
 
     pub fn entry_point(&self) -> Option<usize> {
@@ -195,11 +230,12 @@ impl Program {
             .find(|(name, _)| name == "main")
             .map(|(_, off)| *off)
     }
+    */
 }
 
 impl std::fmt::Display for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        let mut it = self.code.iter();
+        let mut it = self.code().iter();
         let mut offset = 0;
 
         writeln!(f, "program:")?;

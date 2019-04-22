@@ -32,6 +32,9 @@ pub fn compile_file(path: &str) -> Result<Unit, Error> {
 pub fn into_program(unit: Unit) -> Program {
     let mut program = Program::with_code(unit.code);
 
+// TODO: this doesn't work anymore due to the new memory management concept. waiting for
+// generator library...
+/*
     *program.labels_mut() = unit
         .labels
         .iter()
@@ -40,6 +43,7 @@ pub fn into_program(unit: Unit) -> Program {
             _ => None,
         })
         .collect::<Vec<_>>();
+*/
 
     program
 }

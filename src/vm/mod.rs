@@ -13,6 +13,8 @@ use self::str::*;
 
 pub use std::collections::HashMap;
 
+// TODO: rename `vm` to `runtime` to avoid name conflicts with vm binary (?)
+
 pub const VM_MEMORY_SIZE: usize = 2400;
 pub const VM_STACK_SIZE: usize = 256;
 
@@ -65,17 +67,16 @@ impl Vm {
 
 impl Vm {
     pub fn run(&mut self, program: &Program) -> VmResult {
-        let bl = &program.code;
-        self.data.memory.map(bl, 0);
-
+        // loads the programs main function
+        let bl = &program.code();
         let len = bl.len();
-        let mut ip = program.entry_point().expect("no entry point");
+        let mut ip = 0;
 
         self.push_frame(None);
         self.data.state = VmState::Running;
 
         while self.data.state == VmState::Running && ip < len {
-            match self.data.memory[ip] {
+            match bl[ip] {
                 Code::Instruction(inx) => {
                     if cfg!(debug_assertions) {
                         println!("{}: {:?}", ip, inx);
