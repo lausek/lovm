@@ -4,6 +4,21 @@ use crate::value::*;
 
 use serde::{Deserialize, Serialize};
 
+// a `CodeObject` is an executable bytecode unit. it holds the local constant values,
+// local identifiers, and extern (or global) identifiers. this allows a clear separation
+// of data and logic, aswell as a flattening of the bytecode structure due to the
+// usement of standardized indexing types (e.g. Loadc(1) loads consts[1] onto the stack).
+//
+// the use of registers is therefore dropped in favor of a more dynamic and flexible
+// data management.
+// 
+// pub struct CodeObject {
+//     consts: Vec<Value>,
+//     local: Vec<Value>,
+//     extern: Vec<Value>,
+//     code: Vec<Code>,
+// }
+
 // TODO: modifications for support of constant values
 //          - new instruction `Loadc`, loads a constant value onto the stack
 //          - add new constant vector to `Program`
