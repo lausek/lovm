@@ -2,6 +2,9 @@ use super::*;
 
 use std::cmp;
 
+// TODO: rename `VmRegister` to `VmFrame`
+//          - add vector for local variables
+
 #[derive(Clone, Copy, Debug)]
 pub struct VmRegister {
     pub a: Value,

@@ -2,10 +2,9 @@ use self::Value::*;
 
 use serde::{Deserialize, Serialize};
 
-// WIP:  add Str(usize); contains index into StringPool
-//          - requires a new component of Program containing the string
-//              constants for preallocation
-// TODO: add Obj(usize); contains index into ObjectPool
+// TODO: change type of `Value::Str(_)` to a String type
+//       that can be passed around easily over a StringPool (smth. like Rc<String> or Cow<String>)
+// TODO: implement Objects; stored in ObjectPool (requires well-designed memory layout)
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Value {
@@ -15,7 +14,7 @@ pub enum Value {
     Ref(usize),
     T(bool),
     C(char),
-    Str(String),
+    Str(usize),
 }
 
 impl std::convert::From<Value> for usize {

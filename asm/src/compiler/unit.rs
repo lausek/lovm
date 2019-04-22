@@ -38,6 +38,8 @@ impl Unit {
         // we have to push a placeholder value or the index will become corrupt
         let mut code = mkref(std::usize::MAX);
 
+        // TODO: put operand into constant pool if it doesn't exist yet
+
         match op {
             Operand::Ident(ident) => match self.labels.get_mut(&ident) {
                 Some(label) => label.locations.push((ident.clone(), self.code.len())),
@@ -49,8 +51,6 @@ impl Unit {
             Operand::Register(reg) => code = Code::Register(reg),
             Operand::Value(value) => code = Code::Value(value),
             Operand::Str(s) => {
-                // TODO: write s as bytes in consequtive order to memory
-                // TODO: insert reference to string pool here
                 for c in s.bytes() {
                     self.code.push(Code::Value(Value::I(c as i8)));
                 }

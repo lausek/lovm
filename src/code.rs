@@ -4,6 +4,10 @@ use crate::value::*;
 
 use serde::{Deserialize, Serialize};
 
+// TODO: modifications for support of constant values
+//          - new instruction `Loadc`, loads a constant value onto the stack
+//          - add new constant vector to `Program`
+
 /*
 TODO: remove; replaced by lovm_asm_lib
 macro_rules! program {
@@ -30,7 +34,6 @@ pub type CodeBlock = Vec<Code>;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Program {
     pub code: CodeBlock,
-    pub consts: Vec<Value>,
     pub labels: Vec<(String, usize)>,
 }
 
@@ -90,7 +93,6 @@ pub enum Instruction {
     Jle,
     Jlt,
 
-    Loadc, // loads a constant value onto the stack
     Load,  // pops a ref off the stack, leaving the locations value inplace
     Store, // pops a ref and value off the stack, writing value to location ref
 
