@@ -30,7 +30,7 @@ pub fn compile_file(path: &str) -> Result<Unit, Error> {
 }
 
 pub fn into_program(unit: Unit) -> Program {
-    let mut program = Program::with_code(unit.codeblock);
+    let mut program = Program::with_code(unit.code);
 
     *program.labels_mut() = unit
         .labels

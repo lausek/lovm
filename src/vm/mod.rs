@@ -65,7 +65,7 @@ impl Vm {
 
 impl Vm {
     pub fn run(&mut self, program: &Program) -> VmResult {
-        let bl = &program.codeblock;
+        let bl = &program.code;
         self.data.memory.map(bl, 0);
 
         let len = bl.len();

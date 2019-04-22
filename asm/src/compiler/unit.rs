@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct Unit {
-    pub(crate) codeblock: CodeBlock,
+    pub(crate) code: CodeBlock,
     pub(crate) labels: HashMap<Ident, Label>,
     pub(crate) path: Option<String>,
     pub(crate) src: String,
@@ -12,7 +12,7 @@ pub struct Unit {
 impl Unit {
     pub fn from_path(src: String, path: String) -> Self {
         Self {
-            codeblock: CodeBlock::new(),
+            code: CodeBlock::new(),
             labels: HashMap::new(),
             path: Some(path),
             src,
@@ -22,7 +22,7 @@ impl Unit {
 
     pub fn from(src: String) -> Self {
         Self {
-            codeblock: CodeBlock::new(),
+            code: CodeBlock::new(),
             labels: HashMap::new(),
             path: None,
             src,
@@ -31,7 +31,7 @@ impl Unit {
     }
 
     pub fn push_inx(&mut self, inx: Instruction) {
-        self.codeblock.push(Code::Instruction(inx));
+        self.code.push(Code::Instruction(inx));
     }
 
     pub fn compile_operand(&mut self, op: Operand) -> Result<(), String> {
@@ -40,9 +40,9 @@ impl Unit {
 
         match op {
             Operand::Ident(ident) => match self.labels.get_mut(&ident) {
-                Some(label) => label.locations.push((ident.clone(), self.codeblock.len())),
+                Some(label) => label.locations.push((ident.clone(), self.code.len())),
                 _ => {
-                    let label = Label::new().location(&ident, self.codeblock.len());
+                    let label = Label::new().location(&ident, self.code.len());
                     self.labels.insert(ident.clone(), label);
                 }
             },
@@ -52,28 +52,28 @@ impl Unit {
                 // TODO: write s as bytes in consequtive order to memory
                 // TODO: insert reference to string pool here
                 for c in s.bytes() {
-                    self.codeblock.push(Code::Value(Value::I(c as i8)));
+                    self.code.push(Code::Value(Value::I(c as i8)));
                 }
                 return Ok(());
             }
             Operand::Deref(_) => unreachable!(),
         }
 
-        self.codeblock.push(code);
+        self.code.push(code);
         Ok(())
     }
 
     pub fn compile_statement(&mut self, stmt: Statement) -> Result<(), Error> {
         match stmt.kw {
             Keyword::Dv => match stmt.args.get(0) {
-                Some(Operand::Str(s)) => embed_string(s, &mut self.codeblock),
+                Some(Operand::Str(s)) => embed_string(s, &mut self.code),
                 Some(Operand::Value(value)) => {
                     let value = if let Some(ty) = stmt.ty {
                         value.cast(&Value::from_type(ty.into()))
                     } else {
                         value.clone()
                     };
-                    self.codeblock.push(Code::Value(value));
+                    self.code.push(Code::Value(value));
                 }
                 Some(arg) => {
                     return raise::not_a_value(arg.clone());
@@ -126,7 +126,7 @@ impl Unit {
 
                 if let Some(ty) = stmt.ty {
                     self.push_inx(Instruction::Cast);
-                    self.codeblock
+                    self.code
                         .push(Code::Value(Value::I(ty.clone().into())));
                 }
 
@@ -142,9 +142,9 @@ impl Unit {
             _ => match stmt.argc() {
                 // TODO: add `ret@i <stack_last>` for typed return (?)
                 // TODO: cast@ref could be used as shorthand for `push <stack_last>; cast #5`
-                0 => self.codeblock.push(Code::Instruction(stmt.inx())),
+                0 => self.code.push(Code::Instruction(stmt.inx())),
                 1 => {
-                    self.codeblock.push(Code::Instruction(stmt.inx()));
+                    self.code.push(Code::Instruction(stmt.inx()));
                     self.compile_operand(stmt.args[0].clone())?;
                 }
                 _n => {
@@ -171,7 +171,7 @@ impl Unit {
 
                             if let Some(ty) = stmt.ty {
                                 self.push_inx(Instruction::Cast);
-                                self.codeblock
+                                self.code
                                     .push(Code::Value(Value::I(ty.clone().into())));
                             }
 
@@ -212,22 +212,22 @@ impl Unit {
         //println!("linking {:?}", self.path);
         //println!("sub_units {:#?}", self.sub_units);
 
-        let mut link_offset = self.codeblock.len();
+        let mut link_offset = self.code.len();
 
         for sub_unit in self.sub_units.iter_mut() {
             sub_unit.labels.iter_mut().for_each(|(_, label)| {
                 label.decl.as_mut().unwrap().1 += link_offset;
             });
             sub_unit.link()?;
-            self.codeblock.extend(sub_unit.codeblock.clone());
+            self.code.extend(sub_unit.code.clone());
             merge_labels(&mut self.labels, &sub_unit.labels)?;
-            link_offset = self.codeblock.len();
+            link_offset = self.code.len();
         }
 
         for (_, label) in self.labels.iter() {
             if let Some((_, off)) = label.decl {
                 for (_, idx) in label.locations.iter().rev() {
-                    *self.codeblock.get_mut(*idx).unwrap() = Code::Value(Value::Ref(off));
+                    *self.code.get_mut(*idx).unwrap() = Code::Value(Value::Ref(off));
                 }
             } else {
                 for (ident, _) in label.locations.iter() {

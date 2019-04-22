@@ -15,7 +15,7 @@ pub enum Value {
     Ref(usize),
     T(bool),
     C(char),
-    Str(usize),
+    Str(String),
 }
 
 impl std::convert::From<Value> for usize {
@@ -33,7 +33,7 @@ impl std::convert::From<Value> for usize {
                 }
             }
             C(c) => c as usize,
-            Str(n) => n,
+            Str(_) => unimplemented!(),
         }
     }
 }

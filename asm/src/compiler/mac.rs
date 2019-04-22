@@ -48,7 +48,7 @@ fn skip(unit: &mut Unit, args: Vec<Operand>) -> Result<(), Error> {
         _ => unreachable!(),
     };
     for _ in 0..n {
-        unit.codeblock.push(Code::Value(Value::I(0)));
+        unit.code.push(Code::Value(Value::I(0)));
     }
     Ok(())
 }

@@ -11,7 +11,7 @@ macro_rules! program {
         use crate::code::Instruction::*;
         use crate::code::Register::*;
         use crate::value::Value::*;
-        let codeblock = vec![$(
+        let code = vec![$(
             crate::code::Code::Instruction($inx)
             $(,
                 crate::code::Code::Register($reg)
@@ -20,7 +20,7 @@ macro_rules! program {
                 crate::code::Code::Value($c)
              )?
         ),*];
-        crate::code::Program::with_code(codeblock)
+        crate::code::Program::with_code(code)
     }}
 }
 */
@@ -29,7 +29,8 @@ pub type CodeBlock = Vec<Code>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Program {
-    pub codeblock: CodeBlock,
+    pub code: CodeBlock,
+    pub consts: Vec<Value>,
     pub labels: Vec<(String, usize)>,
 }
 
@@ -37,8 +38,6 @@ pub struct Program {
 pub enum Code {
     Instruction(Instruction),
     Register(Register),
-    // TODO: allow direct access to the `n-usize`s element of vstack
-    // Stack(usize),
     Value(Value),
 }
 
@@ -91,6 +90,7 @@ pub enum Instruction {
     Jle,
     Jlt,
 
+    Loadc, // loads a constant value onto the stack
     Load,  // pops a ref off the stack, leaving the locations value inplace
     Store, // pops a ref and value off the stack, writing value to location ref
 
@@ -153,15 +153,15 @@ impl Program {
         bincode::deserialize(bytes)
     }
 
-    pub fn with_code(codeblock: CodeBlock) -> Self {
+    pub fn with_code(code: CodeBlock) -> Self {
         Self {
-            codeblock,
+            code,
             labels: vec![],
         }
     }
 
     pub fn code(&self) -> &CodeBlock {
-        &self.codeblock
+        &self.code
     }
 
     pub fn labels(&self) -> &Vec<(String, usize)> {
@@ -182,7 +182,7 @@ impl Program {
 
 impl std::fmt::Display for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        let mut it = self.codeblock.iter();
+        let mut it = self.code.iter();
         let mut offset = 0;
 
         writeln!(f, "program:")?;
