@@ -9,10 +9,10 @@ use self::Value::*;
 // table for whole number values
 macro_rules! iop_table {
     ($lhs:expr, $rhs:expr, $op:tt) => {
-        match ($lhs, $rhs.cast(&$lhs)) {
-            (I(lhs), I(rhs)) => Value::I($op(lhs, rhs)),
-            (I64(lhs), I64(rhs)) => Value::I64($op(lhs, rhs)),
-            (Ref(lhs), Ref(rhs)) => Value::Ref($op(lhs, rhs)),
+        match (&$lhs, $rhs.cast(&$lhs)) {
+            (I(lhs), I(rhs)) => Value::I($op(lhs.clone(), rhs.clone())),
+            (I64(lhs), I64(rhs)) => Value::I64($op(lhs.clone(), rhs.clone())),
+            (Ref(lhs), Ref(rhs)) => Value::Ref($op(lhs.clone(), rhs).clone()),
             _ => unimplemented!(),
         }
     };
@@ -21,8 +21,8 @@ macro_rules! iop_table {
 // table for numeric values
 macro_rules! nop_table {
     ($lhs:expr, $rhs:expr, $op:tt) => {
-        match ($lhs, $rhs.cast(&$lhs)) {
-            (F64(lhs), F64(rhs)) => Value::F64($op(lhs, rhs)),
+        match (&$lhs, $rhs.cast(&$lhs)) {
+            (F64(lhs), F64(rhs)) => Value::F64($op(lhs.clone(), rhs.clone())),
             _ => iop_table!($lhs, $rhs, $op),
         }
     };
@@ -58,7 +58,7 @@ impl Value {
             4 => Value::Ref(0),
             5 => Value::T(false),
             6 => Value::C('0'),
-            7 => Value::Str(0),
+            7 => Value::Str(String::new()),
             _ => panic!("type index not defined"),
         }
     }
@@ -78,7 +78,7 @@ impl Value {
 
     pub fn cast(&self, value: &Value) -> Value {
         match (self, value) {
-            (I(_), I(_)) => *self,
+            (I(_), I(_)) => self.clone(),
             (I64(n), I(_)) => Value::I(*n as i8),
             (F64(n), I(_)) => Value::I(*n as i8),
             (Ref(n), I(_)) => Value::I(*n as i8),
@@ -86,7 +86,7 @@ impl Value {
             (T(t), I(_)) => Value::I(if *t { 1 } else { 0 }),
 
             (I(n), I64(_)) => Value::I64(*n as i64),
-            (I64(_), I64(_)) => *self,
+            (I64(_), I64(_)) => self.clone(),
             (F64(n), I64(_)) => Value::I64(*n as i64),
             (Ref(n), I64(_)) => Value::I64(*n as i64),
             (C(c), I64(_)) => Value::I64(*c as i64),
@@ -94,7 +94,7 @@ impl Value {
 
             (I(n), F64(_)) => Value::F64(*n as f64),
             (I64(n), F64(_)) => Value::F64(*n as f64),
-            (F64(_), F64(_)) => *self,
+            (F64(_), F64(_)) => self.clone(),
             (Ref(n), F64(_)) => Value::F64(*n as f64),
             (C(c), F64(_)) => Value::F64((*c as i64) as f64),
             (T(t), F64(_)) => Value::F64(if *t { 1. } else { 0. }),
@@ -102,7 +102,7 @@ impl Value {
             (I(n), Ref(_)) => Value::Ref(*n as usize),
             (I64(n), Ref(_)) => Value::Ref(*n as usize),
             (F64(n), Ref(_)) => Value::Ref(*n as usize),
-            (Ref(_), Ref(_)) => *self,
+            (Ref(_), Ref(_)) => self.clone(),
             (C(c), Ref(_)) => Value::Ref(*c as usize),
             (T(t), Ref(_)) => Value::Ref(if *t { 1 } else { 0 }),
 
@@ -110,15 +110,15 @@ impl Value {
             (I64(n), C(_)) => Value::C((*n as u8) as char),
             (F64(n), C(_)) => Value::C((*n as u8) as char),
             (Ref(n), C(_)) => Value::C((*n as u8) as char),
-            (C(_), C(_)) => *self,
+            (C(_), C(_)) => self.clone(),
             (T(t), C(_)) => Value::C(if *t { 't' } else { 'f' }),
 
-            (Str(_), Str(_)) => *self,
+            (Str(_), Str(_)) => self.clone(),
             (Str(_), _) => panic!("no implicit casting from string"),
             (_, Str(_)) => panic!("no implicit casting to string"),
 
-            (T(_), T(_)) => *self,
-            (v, T(_)) => match usize::from(*v) {
+            (T(_), T(_)) => self.clone(),
+            (v, T(_)) => match usize::from(v.clone()) {
                 0 => Value::T(false),
                 1 => Value::T(true),
                 _ => panic!("invalid numeric value when casting to boolean"),
@@ -135,47 +135,29 @@ impl Value {
             _ => unimplemented!(),
         }
     }
-}
 
-impl std::ops::Add for Value {
-    type Output = Value;
-    fn add(self, rhs: Self) -> Self {
+    pub fn add(&self, rhs: &Self) -> Self {
         nop_table!(self, rhs, (|l, r| l + r))
     }
-}
 
-impl std::ops::Sub for Value {
-    type Output = Value;
-    fn sub(self, rhs: Self) -> Self {
+    pub fn sub(&self, rhs: &Self) -> Self {
         nop_table!(self, rhs, (|l, r| l - r))
     }
-}
 
-impl std::ops::Mul for Value {
-    type Output = Value;
-    fn mul(self, rhs: Self) -> Self {
+    pub fn mul(&self, rhs: &Self) -> Self {
         nop_table!(self, rhs, (|l, r| l * r))
     }
-}
 
-impl std::ops::Div for Value {
-    type Output = Value;
-    fn div(self, rhs: Self) -> Self {
+    pub fn div(&self, rhs: &Self) -> Self {
         nop_table!(self, rhs, (|l, r| l / r))
     }
-}
 
-impl std::ops::Rem for Value {
-    type Output = Value;
-    fn rem(self, rhs: Self) -> Self {
+    pub fn rem(&self, rhs: &Self) -> Self {
         nop_table!(self, rhs, (|l, r| l % r))
     }
-}
 
-impl std::ops::Neg for Value {
-    type Output = Value;
-    fn neg(self) -> Self {
-        match self {
+    pub fn neg(&self) -> Self {
+        match *self {
             I(v) => Value::I(-v),
             I64(v) => Value::I64(-v),
             F64(v) => Value::F64(-v),
@@ -184,47 +166,32 @@ impl std::ops::Neg for Value {
             Ref(_) | Str(_) => panic!("cannot negate unsigned number"),
         }
     }
-}
 
-impl std::ops::Shl for Value {
-    type Output = Value;
-    fn shl(self, rhs: Self) -> Self {
+    pub fn shl(&self, rhs: &Self) -> Self {
         iop_table!(self, rhs, (|l, r| l << r))
     }
-}
 
-impl std::ops::Shr for Value {
-    type Output = Value;
-    fn shr(self, rhs: Self) -> Self {
+    pub fn shr(&self, rhs: &Self) -> Self {
         iop_table!(self, rhs, (|l, r| l >> r))
     }
-}
 
-impl std::ops::BitAnd for Value {
-    type Output = Value;
-    fn bitand(self, rhs: Self) -> Self {
-        match (self, rhs.cast(&self)) {
-            (T(lhs), T(rhs)) => Value::T(lhs & rhs),
+    pub fn and(&self, rhs: &Self) -> Self {
+        match (&self, rhs.cast(&self)) {
+            (T(lhs), T(rhs)) => Value::T(*lhs & rhs),
             _ => iop_table!(self, rhs, (|l, r| l & r)),
         }
     }
-}
 
-impl std::ops::BitOr for Value {
-    type Output = Value;
-    fn bitor(self, rhs: Self) -> Self {
-        match (self, rhs.cast(&self)) {
-            (T(lhs), T(rhs)) => Value::T(lhs | rhs),
+    pub fn or(&self, rhs: &Self) -> Self {
+        match (&self, rhs.cast(&self)) {
+            (T(lhs), T(rhs)) => Value::T(*lhs | rhs),
             _ => iop_table!(self, rhs, (|l, r| l | r)),
         }
     }
-}
 
-impl std::ops::BitXor for Value {
-    type Output = Value;
-    fn bitxor(self, rhs: Self) -> Self {
-        match (self, rhs.cast(&self)) {
-            (T(lhs), T(rhs)) => Value::T(lhs ^ rhs),
+    pub fn xor(&self, rhs: &Self) -> Self {
+        match (&self, rhs.cast(&self)) {
+            (T(lhs), T(rhs)) => Value::T(*lhs ^ rhs),
             _ => iop_table!(self, rhs, (|l, r| l ^ r)),
         }
     }

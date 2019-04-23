@@ -102,7 +102,7 @@ impl Vm {
                     match inx {
                         Instruction::Load => {
                             let val = self.data.vstack.pop().expect("missing address");
-                            self.data.vstack.push(*read_memory(&self, &val));
+                            self.data.vstack.push(read_memory(&self, &val).clone());
                         }
                         Instruction::Store => {
                             let addr = self.data.vstack.pop().expect("missing address");
@@ -110,7 +110,7 @@ impl Vm {
                             write(self, &Code::Value(addr), val);
                         }
                         Instruction::Int => {
-                            let idx = usize::from(*read(&self, &args[0]));
+                            let idx = usize::from(read(&self, &args[0]).clone());
                             if let Some(irh) = self.interrupts.get(idx) {
                                 irh(&mut self.data)?;
                             } else {
@@ -118,15 +118,15 @@ impl Vm {
                             }
                         }
                         Instruction::Cast => {
-                            let ty_idx = usize::from(*read(&self, &args[0]));
+                            let ty_idx = usize::from(read(&self, &args[0]).clone());
                             let val = self.data.vstack.last_mut().expect("no value");
                             *val = val.cast(&Value::from_type(ty_idx));
                         }
                         Instruction::Inc | Instruction::Dec => {
-                            let val = *read(&self, &args[0]);
+                            let val = read(&self, &args[0]);
                             match inx {
-                                Instruction::Inc => write(self, &args[0], val + Value::I(1)),
-                                Instruction::Dec => write(self, &args[0], val - Value::I(1)),
+                                Instruction::Inc => write(self, &args[0], val.add(&Value::I(1))),
+                                Instruction::Dec => write(self, &args[0], val.sub(&Value::I(1))),
                                 _ => unreachable!(),
                             }
                         }
@@ -150,18 +150,18 @@ impl Vm {
 
                             // TODO: deref causes copy when inplace modification would be enough
                             let val = match inx {
-                                Instruction::Add => *op1 + op2,
-                                Instruction::Sub => *op1 - op2,
-                                Instruction::Mul => *op1 * op2,
-                                Instruction::Div => *op1 / op2,
-                                Instruction::Rem => *op1 % op2,
+                                Instruction::Add => op1.add(&op2),
+                                Instruction::Sub => op1.sub(&op2),
+                                Instruction::Mul => op1.mul(&op2),
+                                Instruction::Div => op1.div(&op2),
+                                Instruction::Rem => op1.rem(&op2),
                                 Instruction::Pow => op1.pow(&op2),
-                                Instruction::Neg => -*op1,
-                                Instruction::And => *op1 & op2,
-                                Instruction::Or => *op1 | op2,
-                                Instruction::Xor => *op1 ^ op2,
-                                Instruction::Shl => *op1 << op2,
-                                Instruction::Shr => *op1 >> op2,
+                                Instruction::Neg => op1.neg(),
+                                Instruction::And => op1.and(&op2),
+                                Instruction::Or => op1.or(&op2),
+                                Instruction::Xor => op1.xor(&op2),
+                                Instruction::Shl => op1.shl(&op2),
+                                Instruction::Shr => op1.shr(&op2),
                                 _ => unimplemented!(),
                             };
 
@@ -201,8 +201,8 @@ impl Vm {
                         }
                         Instruction::Ret => self.pop_frame(Some(&mut ip)),
                         Instruction::Push => {
-                            let val = *read(self, &args[0]);
-                            self.data.vstack.push(val);
+                            let val = read(self, &args[0]);
+                            self.data.vstack.push(val.clone());
                         }
                         Instruction::Pop => {
                             let val = self.data.vstack.pop().expect("nothing to pop");
@@ -253,9 +253,9 @@ fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
     match code {
         Code::Register(reg) => register_mut(&mut vm.data)[*reg] = value,
         Code::Value(vaddr) => {
-            let addr = usize::from(*vaddr);
-            //vm.data.memory[addr] = Code::Value(value);
             unimplemented!()
+            //let addr = usize::from(*vaddr);
+            //vm.data.memory[addr] = Code::Value(value);
         }
         // TODO: reactivate this once typing is more efficient
         //Code::Value(Value::Ref(addr)) => vm.memory[*addr] = Code::Value(value),
@@ -272,8 +272,8 @@ fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
 }
 
 fn read_memory<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Value) -> &'read Value {
-    let addr = usize::from(*code);
     unimplemented!()
+    //let addr = usize::from(*code);
     //match &vm.data.memory[addr] {
     //    Code::Value(value) => &value,
     //    code => panic!("unreadable memory accessed: {:?}, addr {}", code, addr),

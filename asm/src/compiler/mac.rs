@@ -7,7 +7,6 @@ pub fn default_macros() -> MacroTable {
     let mut macs = MacroTable::new();
     macs.insert("export", &export);
     macs.insert("include", &include);
-    macs.insert("skip", &skip);
     macs
 }
 
@@ -38,17 +37,6 @@ fn include(unit: &mut Unit, args: Vec<Operand>) -> Result<(), Error> {
     } else {
         // TODO: raise `expected_got` here
         unimplemented!();
-    }
-    Ok(())
-}
-
-fn skip(unit: &mut Unit, args: Vec<Operand>) -> Result<(), Error> {
-    let n = match &args[0] {
-        Operand::Value(value) => usize::from(*value),
-        _ => unreachable!(),
-    };
-    for _ in 0..n {
-        unit.code.push(Code::Value(Value::I(0)));
     }
     Ok(())
 }

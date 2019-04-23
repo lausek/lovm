@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 //       that can be passed around easily over a StringPool (smth. like Rc<String> or Cow<String>)
 // TODO: implement Objects; stored in ObjectPool (requires well-designed memory layout)
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Value {
     I(i8),
     I64(i64),
@@ -14,7 +14,7 @@ pub enum Value {
     Ref(usize),
     T(bool),
     C(char),
-    Str(usize),
+    Str(String),
 }
 
 impl std::convert::From<Value> for usize {
