@@ -1,6 +1,5 @@
 pub mod frame;
 pub mod interrupt;
-pub mod memory;
 pub mod operation;
 pub mod str;
 
@@ -8,7 +7,6 @@ use super::*;
 
 use self::frame::*;
 use self::interrupt::*;
-use self::memory::*;
 use self::str::*;
 
 pub use std::collections::HashMap;
@@ -78,9 +76,9 @@ impl Vm {
 }
 
 impl Vm {
-    pub fn run(&mut self, program: &Program) -> VmResult {
+    fn run_frame(&mut self, co: &CodeObject) -> VmResult {
         // loads the programs main function
-        let bl = &program.code();
+        let bl = &co.inner;
         let len = bl.len();
         let mut ip = 0;
 
@@ -181,7 +179,7 @@ impl Vm {
                         | Instruction::Jgt
                         | Instruction::Jle
                         | Instruction::Jlt => {
-                            if register(&self.data).is_jmp_needed(inx) {
+                            if register(&self.data).is_jmp_needed(&inx) {
                                 match &args[0] {
                                     Code::Value(Value::Ref(r)) => ip = *r,
                                     _ => panic!("invalid jump operand"),
@@ -223,8 +221,12 @@ impl Vm {
 
             ip += 1;
         }
-
         Ok(())
+    }
+
+    pub fn run(&mut self, module: &Module) -> VmResult {
+        let co = &module.code();
+        self.run_frame(co)
     }
 
     fn push_frame(&mut self, ret: Option<usize>) {

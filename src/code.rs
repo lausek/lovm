@@ -200,11 +200,11 @@ impl Module {
         new
     }
 
-    pub fn code(&self) -> &CodeBlock {
+    pub fn code(&self) -> &CodeObject {
         self.inner
             .iter()
             .find(|(name, _)| name == "main")
-            .map(|(_, code)| &code.inner)
+            .map(|(_, code)| code)
             .unwrap()
     }
 
@@ -237,7 +237,7 @@ impl Module {
 
 impl std::fmt::Display for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        let mut it = self.code().iter();
+        let mut it = self.code().inner.iter();
         let mut offset = 0;
 
         writeln!(f, "program:")?;
