@@ -13,6 +13,16 @@ use self::str::*;
 
 pub use std::collections::HashMap;
 
+// the vm is meant to be used as a dynamic runtime. it keeps track of:
+//  - globals: area for storing global vm values
+//  - modules: loaded vm modules; used for name lookup (e.g. in function call)
+//  - obj_pool: all allocated custom objects
+//  - state: status flag for vm flow control
+//  - stack: callstack consisting of local frames
+//  - vstack: global value stack; used for returning values (?)
+//
+// INFO: see operation.rs for more
+
 // TODO: rename `vm` to `runtime` to avoid name conflicts with vm binary (?)
 
 pub const VM_MEMORY_SIZE: usize = 2400;
@@ -181,6 +191,8 @@ impl Vm {
                             continue;
                         }
                         Instruction::Call => {
+                            // TODO: lookup the name on the stack
+                            // TODO: call `run` again with new `CodeObject`
                             match &args[0] {
                                 Code::Value(Value::Ref(r)) => ip = *r,
                                 _ => panic!("invalid jump operand"),

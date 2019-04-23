@@ -2,6 +2,10 @@ use super::*;
 
 use self::Value::*;
 
+// to support operations on primitive types, lovm wraps them in special `Value` variants.
+// this includes `String` which is also used for loading/storing variables, attributes of 
+// objects, and dispatching function calls.
+
 // table for whole number values
 macro_rules! iop_table {
     ($lhs:expr, $rhs:expr, $op:tt) => {
