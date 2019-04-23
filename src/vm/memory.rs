@@ -2,6 +2,8 @@ use super::*;
 
 use std::collections::HashMap;
 
+// TODO: is this module still needed?
+
 #[derive(Debug)]
 pub struct VmMemory {
     mem: HashMap<usize, Code>,
@@ -16,7 +18,7 @@ impl VmMemory {
 
     pub fn map(&mut self, bl: &CodeBlock, at: usize) {
         for (off, inx) in bl.iter().enumerate() {
-            self.mem.insert(at + off, *inx);
+            self.mem.insert(at + off, inx.clone());
         }
     }
 }

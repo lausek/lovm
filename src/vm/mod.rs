@@ -38,21 +38,23 @@ pub enum VmState {
 }
 
 pub struct VmData {
-    pub memory: VmMemory,
+    pub globals: HashMap<Name, Value>,
+    pub modules: Vec<Module>,
+    pub obj_pool: HashMap<Name, ()>,
     pub state: VmState,
     pub stack: Vec<VmFrame>,
-    pub str_pool: VmStrPool,
     pub vstack: Vec<Value>,
 }
 
 impl VmData {
     pub fn new() -> Self {
         Self {
-            memory: VmMemory::new(),
+            globals: HashMap::new(),
+            modules: vec![],
+            obj_pool: HashMap::new(),
             state: VmState::Initial,
-            stack: Vec::with_capacity(VM_STACK_SIZE),
-            str_pool: VmStrPool::new(),
-            vstack: Vec::with_capacity(VM_STACK_SIZE),
+            stack: vec![],
+            vstack: vec![],
         }
     }
 }
@@ -86,13 +88,13 @@ impl Vm {
         self.data.state = VmState::Running;
 
         while self.data.state == VmState::Running && ip < len {
-            match bl[ip] {
+            match &bl[ip] {
                 Code::Instruction(inx) => {
                     if cfg!(debug_assertions) {
                         println!("{}: {:?}", ip, inx);
                     }
 
-                    if inx == Instruction::Call {
+                    if inx == &Instruction::Call {
                         self.push_frame(Some(ip + 1));
                     }
 
@@ -240,7 +242,7 @@ impl Vm {
         if self.data.stack.is_empty() {
             self.data.state = VmState::Exited;
         } else {
-            *register_mut(&mut self.data) = *self.data.stack.last().expect("no last frame");
+            *register_mut(&mut self.data) = self.data.stack.last().expect("no last frame").clone();
         }
     }
 }
@@ -250,7 +252,8 @@ fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
         Code::Register(reg) => register_mut(&mut vm.data)[*reg] = value,
         Code::Value(vaddr) => {
             let addr = usize::from(*vaddr);
-            vm.data.memory[addr] = Code::Value(value);
+            //vm.data.memory[addr] = Code::Value(value);
+            unimplemented!()
         }
         // TODO: reactivate this once typing is more efficient
         //Code::Value(Value::Ref(addr)) => vm.memory[*addr] = Code::Value(value),
@@ -268,10 +271,11 @@ fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
 
 fn read_memory<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Value) -> &'read Value {
     let addr = usize::from(*code);
-    match &vm.data.memory[addr] {
-        Code::Value(value) => &value,
-        code => panic!("unreadable memory accessed: {:?}, addr {}", code, addr),
-    }
+    unimplemented!()
+    //match &vm.data.memory[addr] {
+    //    Code::Value(value) => &value,
+    //    code => panic!("unreadable memory accessed: {:?}, addr {}", code, addr),
+    //}
 }
 
 fn take<'bl>(bl: &'bl [Code], ip: &mut usize, n: usize) -> &'bl [Code] {

@@ -74,7 +74,7 @@ macro_rules! program {
 }
 */
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Code {
     Instruction(Instruction),
     Register(Register),

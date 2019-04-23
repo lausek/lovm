@@ -2,7 +2,7 @@ use super::*;
 
 use std::cmp;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct VmFrame {
     pub a: Value,
     pub b: Value,
@@ -24,7 +24,7 @@ impl VmFrame {
         }
     }
 
-    pub fn is_jmp_needed(&self, inx: Instruction) -> bool {
+    pub fn is_jmp_needed(&self, inx: &Instruction) -> bool {
         let cmp = self.cmp.expect("no comparison");
         match inx {
             Instruction::Jeq if cmp == cmp::Ordering::Equal => true,
