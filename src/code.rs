@@ -21,7 +21,7 @@ pub type Name = String;
 pub type CodeBlock = Vec<Code>;
 
 pub type CodeObject = Space<CodeBlock>;
-pub type Module = Space<Vec<(Name, CodeBlock)>>;
+pub type Module = Space<Vec<(Name, CodeObject)>>;
 pub type Program = Module;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -29,17 +29,17 @@ pub struct Space<T>
 where
     T: std::default::Default,
 {
-    consts: Vec<Value>,
-    locals: Vec<Name>,
-    globals: Vec<Name>,
-    inner: T,
+    pub consts: Vec<Value>,
+    pub locals: Vec<Name>,
+    pub globals: Vec<Name>,
+    pub inner: T,
 }
 
 impl<T> Space<T>
 where
     T: std::default::Default,
 {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             consts: vec![],
             locals: vec![],
@@ -194,7 +194,9 @@ impl Module {
 
     pub fn with_code(code: CodeBlock) -> Self {
         let mut new = Self::new();
-        new.inner = vec![("main".into(), code)];
+        let mut co = CodeObject::new();
+        co.inner = code;
+        new.inner = vec![("main".into(), co)];
         new
     }
 
@@ -202,16 +204,16 @@ impl Module {
         self.inner
             .iter()
             .find(|(name, _)| name == "main")
-            .map(|(_, code)| code)
+            .map(|(_, code)| &code.inner)
             .unwrap()
     }
 
-    pub fn slots<T>(&self) -> &T {
-        unimplemented!()
+    pub fn slots(&self) -> &Vec<(Name, CodeObject)> {
+        &self.inner
     }
 
-    pub fn slots_mut<T>(&mut self) -> &mut T {
-        unimplemented!()
+    pub fn slots_mut(&mut self) -> &mut Vec<(Name, CodeObject)> {
+        &mut self.inner
     }
 
     // TODO: `labels_*` functions will be dropped as they were meant for static linking (not supported anymore)

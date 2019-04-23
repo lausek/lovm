@@ -1,5 +1,7 @@
 #!(cfg(test))
 
+use super::*;
+
 #[allow(dead_code)]
 fn read_file(path: &str) -> String {
     use std::io::Read;
