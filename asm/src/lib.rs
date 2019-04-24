@@ -32,18 +32,18 @@ pub fn compile_file(path: &str) -> Result<Unit, Error> {
 pub fn into_program(unit: Unit) -> Program {
     let mut program = Program::with_code(unit.code);
 
-// TODO: this doesn't work anymore due to the new memory management concept. waiting for
-// generator library...
-/*
-    *program.labels_mut() = unit
-        .labels
-        .iter()
-        .filter_map(|(ident, label)| match label.is_exported() {
-            true => Some((ident.raw.clone(), label.decl.as_ref().unwrap().1)),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-*/
+    // TODO: this doesn't work anymore due to the new memory management concept. waiting for
+    // generator library...
+    /*
+        *program.labels_mut() = unit
+            .labels
+            .iter()
+            .filter_map(|(ident, label)| match label.is_exported() {
+                true => Some((ident.raw.clone(), label.decl.as_ref().unwrap().1)),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+    */
 
     program
 }

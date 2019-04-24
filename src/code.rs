@@ -130,15 +130,18 @@ pub enum Instruction {
     Jle,
     Jlt,
 
-    Load,  // pops a ref off the stack, leaving the locations value inplace
-    Store, // pops a ref and value off the stack, writing value to location ref
+    Cpush, // push constant
+    Lpush, // push local value
+    Lpop,  // pop to local
+    Gpush, // push global value
+    Gpop,  // pop to global
 
     Cast,
     Call,
     Int,
     Ret,
-    Push,
-    Pop,
+    Push, // TODO: remove as not needed anymore
+    Pop,  // TODO: remove as not needed anymore
     Pusha,
     Popa,
 }
@@ -159,7 +162,12 @@ impl Instruction {
             | Instruction::Jlt
             | Instruction::Call
             | Instruction::Push
-            | Instruction::Pop => 1,
+            | Instruction::Pop
+            | Instruction::Cpush
+            | Instruction::Lpush
+            | Instruction::Lpop
+            | Instruction::Gpush
+            | Instruction::Gpop => 1,
 
             Instruction::Cmp
             | Instruction::Add
@@ -176,9 +184,7 @@ impl Instruction {
             | Instruction::Shr
             | Instruction::Ret
             | Instruction::Pusha
-            | Instruction::Popa
-            | Instruction::Load
-            | Instruction::Store => 0,
+            | Instruction::Popa => 0,
         }
     }
 }
@@ -215,24 +221,6 @@ impl Module {
     pub fn slots_mut(&mut self) -> &mut Vec<(Name, CodeObject)> {
         &mut self.inner
     }
-
-    // TODO: `labels_*` functions will be dropped as they were meant for static linking (not supported anymore)
-    /*
-    pub fn labels(&self) -> &Vec<(String, usize)> {
-        unimplemented!()
-    }
-
-    pub fn labels_mut(&mut self) -> &mut Vec<(String, usize)> {
-        unimplemented!()
-    }
-
-    pub fn entry_point(&self) -> Option<usize> {
-        self.labels()
-            .iter()
-            .find(|(name, _)| name == "main")
-            .map(|(_, off)| *off)
-    }
-    */
 }
 
 impl std::fmt::Display for Program {

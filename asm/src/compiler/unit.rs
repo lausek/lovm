@@ -126,8 +126,7 @@ impl Unit {
 
                 if let Some(ty) = stmt.ty {
                     self.push_inx(Instruction::Cast);
-                    self.code
-                        .push(Code::Value(Value::I(ty.clone().into())));
+                    self.code.push(Code::Value(Value::I(ty.clone().into())));
                 }
 
                 if let Operand::Deref(x1) = x1 {
@@ -171,8 +170,7 @@ impl Unit {
 
                             if let Some(ty) = stmt.ty {
                                 self.push_inx(Instruction::Cast);
-                                self.code
-                                    .push(Code::Value(Value::I(ty.clone().into())));
+                                self.code.push(Code::Value(Value::I(ty.clone().into())));
                             }
 
                             // push arg2
@@ -209,8 +207,6 @@ impl Unit {
 
     pub fn link(&mut self) -> Result<(), Error> {
         let mut errs = vec![];
-        //println!("linking {:?}", self.path);
-        //println!("sub_units {:#?}", self.sub_units);
 
         let mut link_offset = self.code.len();
 
@@ -248,13 +244,12 @@ fn merge_labels(
     ctx: &mut HashMap<Ident, Label>,
     scope: &HashMap<Ident, Label>,
 ) -> Result<(), Error> {
-    for (key, value) in scope.iter() {
-        match ctx.get_mut(&key) {
-            // FIXME: raise `redeclared`
+    for (ident, value) in scope.iter() {
+        match ctx.get_mut(&ident) {
             Some(label) if label.decl.is_none() && value.decl.is_some() => {
                 label.decl = value.decl.clone();
             }
-            Some(_) => panic!("label {:?} redeclared", key),
+            Some(_) => return raise::redeclared(&ident),
             _ => {}
         }
     }

@@ -1,13 +1,11 @@
 pub mod frame;
 pub mod interrupt;
 pub mod operation;
-pub mod str;
 
 use super::*;
 
 use self::frame::*;
 use self::interrupt::*;
-use self::str::*;
 
 pub use std::collections::HashMap;
 
@@ -97,15 +95,6 @@ impl Vm {
                     match inx {
                         // ret is needed for early returns
                         Instruction::Ret => break,
-                        Instruction::Load => {
-                            let val = self.data.vstack.pop().expect("missing address");
-                            self.data.vstack.push(read_memory(&self, &val).clone());
-                        }
-                        Instruction::Store => {
-                            let addr = self.data.vstack.pop().expect("missing address");
-                            let val = self.data.vstack.pop().expect("missing value");
-                            write(self, &Code::Value(addr), val);
-                        }
                         Instruction::Int => {
                             let idx = usize::from(read(&self, &args[0]).clone());
                             if let Some(irh) = self.interrupts.get(idx) {
@@ -123,13 +112,21 @@ impl Vm {
                             let fname = self.data.vstack.pop().expect("no function name");
                             // TODO: lookup the name in loaded modules
                             // TODO: call `run` again with new `CodeObject`
-                            /*
-                            match &args[0] {
-                                Code::Value(Value::Ref(r)) => ip = *r,
-                                _ => panic!("invalid jump operand"),
+                        }
+                        Instruction::Cpush
+                        | Instruction::Lpush
+                        | Instruction::Lpop
+                        | Instruction::Gpush
+                        | Instruction::Gpop => {
+                            let idx = read_arg(&args[0]);
+                            match inx {
+                                Instruction::Cpush => self.data.vstack.push(co.consts[idx].clone()),
+                                Instruction::Lpush => {} // TODO: read local from frame
+                                Instruction::Lpop => {}  // TODO: write value to local in frame
+                                Instruction::Gpush => {} // TODO: read global from vm
+                                Instruction::Gpop => {}  // TODO: write value to global in vm
+                                _ => unreachable!(),
                             }
-                            continue;
-                            */
                         }
                         Instruction::Inc | Instruction::Dec => {
                             // `increment` and `decrement` are common operations and allow for
@@ -156,12 +153,12 @@ impl Vm {
                         | Instruction::Shr => {
                             let op2 = self.data.vstack.pop().expect("no operand");
                             let op1 = self.data.vstack.last_mut().expect("no target");
+
                             if cfg!(debug_assertions) {
                                 println!("{:?}, {:?}", op1, op2);
                             }
 
-                            // TODO: deref causes copy when inplace modification would be enough
-                            let val = match inx {
+                            *op1 = match inx {
                                 Instruction::Add => op1.add(&op2),
                                 Instruction::Sub => op1.sub(&op2),
                                 Instruction::Mul => op1.mul(&op2),
@@ -176,8 +173,6 @@ impl Vm {
                                 Instruction::Shr => op1.shr(&op2),
                                 _ => unimplemented!(),
                             };
-
-                            *op1 = val;
                         }
                         Instruction::Cmp => {
                             let op2 = self.data.vstack.pop().expect("missing op2");
@@ -192,15 +187,9 @@ impl Vm {
                         | Instruction::Jle
                         | Instruction::Jlt => {
                             if register(&self.data).is_jmp_needed(&inx) {
-                                match &args[0] {
-                                    Code::Value(Value::Ref(r)) => ip = *r,
-                                    _ => panic!("invalid jump operand"),
-                                }
-                            } else {
-                                ip += 1;
+                                ip = read_arg(&args[0]);
+                                continue;
                             }
-
-                            continue;
                         }
                         Instruction::Push => {
                             let val = read(self, &args[0]);
@@ -263,6 +252,13 @@ fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
         //Code::Value(Value::Ref(addr)) => vm.memory[*addr] = Code::Value(value),
         _ => unimplemented!(),
     };
+}
+
+fn read_arg(arg: &Code) -> usize {
+    match arg {
+        Code::Value(Value::Ref(n)) => *n,
+        _ => panic!("expected index, got {:?}", arg),
+    }
 }
 
 fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
