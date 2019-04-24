@@ -1,13 +1,18 @@
-main:
-mov A, #10      ; set A to 10
-mov B, #20      ; set B to 20
-add A, B        ; A = 30
+my_glob: dv "here is string"
 
-pusha
-loop:
-    inc C
-    inc A
-    cmp C, #10
-    jne loop
-popa
-ret
+.export main
+main:
+    mov A, #10      ; set A to 10
+    mov B, #20      ; set B to 20
+    add A, B        ; A = 30
+
+    mov D, #true
+
+    pusha
+    loop:
+        inc C
+        inc A
+        cmp C, #10
+        jne loop
+    popa
+    ret
