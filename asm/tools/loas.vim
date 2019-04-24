@@ -13,7 +13,7 @@ setlocal shiftwidth=4
 setlocal completefunc=syntaxcomplete#Complete
 
 highlight loasComment   ctermfg=8       guifg=#0A0A0A
-highlight loasConst     ctermfg=13      guifg=#00ffff
+highlight loasConst     ctermfg=cyan    guifg=#00ffff
 highlight loasKeyword   ctermfg=red     guifg=#00ffff
 highlight loasMacro     ctermfg=6       guifg=#00ffff
 highlight loasString    ctermfg=yellow  guifg=#00ffff
