@@ -95,6 +95,8 @@ impl Vm {
                     let args = take(bl, &mut ip, argc);
 
                     match inx {
+                        // ret is needed for early returns
+                        Instruction::Ret => break,
                         Instruction::Load => {
                             let val = self.data.vstack.pop().expect("missing address");
                             self.data.vstack.push(read_memory(&self, &val).clone());
@@ -117,7 +119,22 @@ impl Vm {
                             let val = self.data.vstack.last_mut().expect("no value");
                             *val = val.cast(&Value::from_type(ty_idx));
                         }
+                        Instruction::Call => {
+                            let fname = self.data.vstack.pop().expect("no function name");
+                            // TODO: lookup the name in loaded modules
+                            // TODO: call `run` again with new `CodeObject`
+                            /*
+                            match &args[0] {
+                                Code::Value(Value::Ref(r)) => ip = *r,
+                                _ => panic!("invalid jump operand"),
+                            }
+                            continue;
+                            */
+                        }
                         Instruction::Inc | Instruction::Dec => {
+                            // `increment` and `decrement` are common operations and allow for
+                            // inplace modifications instead of computation over the stack.
+                            // TODO: do inplace
                             let val = read(&self, &args[0]);
                             match inx {
                                 Instruction::Inc => write(self, &args[0], val.add(&Value::I(1))),
@@ -185,19 +202,6 @@ impl Vm {
 
                             continue;
                         }
-                        Instruction::Call => {
-                            let fname = self.data.vstack.pop().expect("no function name");
-                            // TODO: lookup the name in loaded modules
-                            // TODO: call `run` again with new `CodeObject`
-                            /*
-                            match &args[0] {
-                                Code::Value(Value::Ref(r)) => ip = *r,
-                                _ => panic!("invalid jump operand"),
-                            }
-                            continue;
-                            */
-                        }
-                        Instruction::Ret => self.pop_frame(),
                         Instruction::Push => {
                             let val = read(self, &args[0]);
                             self.data.vstack.push(val.clone());
@@ -219,6 +223,9 @@ impl Vm {
 
             ip += 1;
         }
+
+        self.pop_frame();
+
         Ok(())
     }
 
