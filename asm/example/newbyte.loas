@@ -1,18 +1,28 @@
-; constants: ["x", 2, "y"]
+my_global: dv #0
+
+; constants: [2, 3]
+; locals: [x, y]
+; globals: [my_global]
 main:
-    mov x, #2
     ; inx ----- | stack ------
-    ; -------------------------
-    ; pushc 1   | 2
-    ; pushc 0   | 2, "x"
+
+    mov x, #2
+    ; pushc 0   | 2
+    ; pushl 0   | 2, x
     ; store     |
     ; x = 2
 
     mov y, x
-    ; inx ----- | stack ------
-    ; pushc 0   | "x"
+    ; pushl 0   | x
     ; load      | 2
-    ; pushc 2   | 2, "y"
+    ; pushl 1   | 2, y
+    ; store     |
+    ; y = x = 2
+
+    mov my_global, #3
+    ; pushl 0   | x
+    ; load      | 2
+    ; pushl 1   | 2, y
     ; store     |
     ; y = x = 2
 
