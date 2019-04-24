@@ -1,0 +1,19 @@
+; constants: ["x", 2, "y"]
+main:
+    mov x, #2
+    ; inx ----- | stack ------
+    ; -------------------------
+    ; pushc 1   | 2
+    ; pushc 0   | 2, "x"
+    ; store     |
+    ; x = 2
+
+    mov y, x
+    ; inx ----- | stack ------
+    ; pushc 0   | "x"
+    ; load      | 2
+    ; pushc 2   | 2, "y"
+    ; store     |
+    ; y = x = 2
+
+    ret

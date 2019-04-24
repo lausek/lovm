@@ -22,7 +22,7 @@ fn main() {
 
     let program = into_program(unit);
 
-    println!("{:?}", program.labels);
+    println!("{:?}", program.slots().iter());
     println!("{}", program);
 
     vm.run(&program).unwrap();

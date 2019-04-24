@@ -9,7 +9,6 @@ pub struct VmFrame {
     pub c: Value,
     pub d: Value,
     pub cmp: Option<cmp::Ordering>,
-    pub ret: Option<usize>,
 }
 
 impl VmFrame {
@@ -20,7 +19,6 @@ impl VmFrame {
             c: Value::I(0),
             d: Value::I(0),
             cmp: None,
-            ret: None,
         }
     }
 

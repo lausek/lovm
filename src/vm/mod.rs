@@ -76,24 +76,19 @@ impl Vm {
 }
 
 impl Vm {
-    fn run_frame(&mut self, co: &CodeObject) -> VmResult {
-        // loads the programs main function
+    // TODO: passing return address around is probably not needed anymore
+    fn run_object(&mut self, co: &CodeObject) -> VmResult {
         let bl = &co.inner;
         let len = bl.len();
         let mut ip = 0;
 
-        self.push_frame(None);
-        self.data.state = VmState::Running;
+        self.push_frame();
 
         while self.data.state == VmState::Running && ip < len {
             match &bl[ip] {
                 Code::Instruction(inx) => {
                     if cfg!(debug_assertions) {
                         println!("{}: {:?}", ip, inx);
-                    }
-
-                    if inx == &Instruction::Call {
-                        self.push_frame(Some(ip + 1));
                     }
 
                     let argc = inx.arguments();
@@ -191,15 +186,18 @@ impl Vm {
                             continue;
                         }
                         Instruction::Call => {
-                            // TODO: lookup the name on the stack
+                            let fname = self.data.vstack.pop().expect("no function name");
+                            // TODO: lookup the name in loaded modules
                             // TODO: call `run` again with new `CodeObject`
+                            /*
                             match &args[0] {
                                 Code::Value(Value::Ref(r)) => ip = *r,
                                 _ => panic!("invalid jump operand"),
                             }
                             continue;
+                            */
                         }
-                        Instruction::Ret => self.pop_frame(Some(&mut ip)),
+                        Instruction::Ret => self.pop_frame(),
                         Instruction::Push => {
                             let val = read(self, &args[0]);
                             self.data.vstack.push(val.clone());
@@ -208,8 +206,8 @@ impl Vm {
                             let val = self.data.vstack.pop().expect("nothing to pop");
                             write(self, &args[0], val);
                         }
-                        Instruction::Pusha => self.push_frame(None),
-                        Instruction::Popa => self.pop_frame(None),
+                        Instruction::Pusha => self.push_frame(),
+                        Instruction::Popa => self.pop_frame(),
                     }
                 }
                 what => panic!("non-executable code reached {:?}", what),
@@ -225,21 +223,18 @@ impl Vm {
     }
 
     pub fn run(&mut self, module: &Module) -> VmResult {
+        // loads the programs main function
         let co = &module.code();
-        self.run_frame(co)
+        self.data.state = VmState::Running;
+        self.run_object(co)
     }
 
-    fn push_frame(&mut self, ret: Option<usize>) {
+    fn push_frame(&mut self) {
         self.data.stack.push(VmFrame::new());
-        register_mut(&mut self.data).ret = ret;
     }
 
-    fn pop_frame(&mut self, ip: Option<&mut usize>) {
+    fn pop_frame(&mut self) {
         let frame = self.data.stack.pop().expect("frame to pop");
-
-        if let (Some(ip), Some(jump_ip)) = (ip, frame.ret) {
-            *ip = jump_ip;
-        }
 
         if self.data.stack.is_empty() {
             self.data.state = VmState::Exited;
