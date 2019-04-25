@@ -87,7 +87,7 @@ impl FunctionBuilder {
         self
     }
 
-    pub fn build(self) -> BuildResult<Function> {
+    pub fn build(&self) -> BuildResult<Function> {
         println!("building func {:#?}", self);
 
         // used for resolving branch offsets
@@ -95,17 +95,17 @@ impl FunctionBuilder {
         let mut offsets: Vec<(usize, usize)> = vec![];
 
         let mut func = Function::new();
-        func.argc = self.argc;
-        func.space = self.space;
-        func.inner = translate_sequence(&mut func.space, self.seq, &mut offsets)?;
+        func.argc = self.argc.clone();
+        func.space = self.space.clone();
+        func.inner = translate_sequence(&mut func.space, self.seq.clone(), &mut offsets)?;
 
-        for (bidx, branch) in self.branches.into_iter().enumerate() {
+        for (bidx, branch) in self.branches.iter().enumerate() {
             let boffset = func.inner.len();
             for (offset, _) in offsets.iter().filter(|(_, i)| *i == bidx) {
                 func.inner[*offset].set_arg(boffset);
             }
 
-            let branch_co = translate_sequence(&mut func.space, branch, &mut offsets)?;
+            let branch_co = translate_sequence(&mut func.space, branch.clone(), &mut offsets)?;
             func.inner.extend(branch_co);
         }
 
