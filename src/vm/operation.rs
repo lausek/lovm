@@ -72,7 +72,6 @@ impl Value {
             Value::T(t) => format!("{}", t),
             Value::C(c) => format!("{}", c),
             Value::Str(s) => s.clone(),
-            _ => unimplemented!(),
         }
     }
 

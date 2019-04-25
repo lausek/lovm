@@ -84,28 +84,6 @@ pub type Code = Instruction;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 #[repr(u8)]
-pub enum Register {
-    A,
-    B,
-    C,
-    D,
-}
-
-impl std::str::FromStr for Register {
-    type Err = ();
-    fn from_str(from: &str) -> Result<Self, Self::Err> {
-        match from.chars().nth(0) {
-            Some('A') => Ok(Register::A),
-            Some('B') => Ok(Register::B),
-            Some('C') => Ok(Register::C),
-            Some('D') => Ok(Register::D),
-            _ => Err(()),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
-#[repr(u8)]
 pub enum Instruction {
     Inc,
     Dec,

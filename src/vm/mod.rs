@@ -17,6 +17,11 @@ pub use std::collections::HashMap;
 //  - stack: callstack consisting of local frames
 //  - vstack: global value stack; used for returning values (?)
 //
+// the register-based implementation approach was dropped in favor of stack-based
+// processing because it can be implemented in a straight forward fashion without
+// too many local indirections. however, it is possible that they might return
+// later when the performance expectations are higher.
+//
 // INFO: see operation.rs for more
 
 // TODO: rename `vm` to `runtime` to avoid name conflicts with vm binary (?)
@@ -85,7 +90,6 @@ impl Vm {
         Err(format!("function `{}` is unknown", name))
     }
 
-    // TODO: passing return address around is probably not needed anymore
     fn run_object(&mut self, co: &CodeObject) -> VmResult {
         let bl = &co.inner;
         let len = bl.len();
@@ -99,8 +103,8 @@ impl Vm {
 
         while self.data.state == VmState::Running && ip < len {
             let inx = &bl[ip];
-            let argc = inx.arguments();
-            let args = take(bl, &mut ip, argc);
+            //let argc = inx.arguments();
+            //let args = take(bl, &mut ip, argc);
 
             if cfg!(debug_assertions) {
                 println!("{}: {:?}", ip, inx);
@@ -110,7 +114,6 @@ impl Vm {
                 // ret is needed for early returns
                 Instruction::Ret => break,
                 Instruction::Int(idx) => {
-                    //let idx = usize::from(read(&self, &args[0]).clone());
                     if let Some(irh) = self.interrupts.get(*idx) {
                         irh(&mut self.data)?;
                     } else {
@@ -118,7 +121,6 @@ impl Vm {
                     }
                 }
                 Instruction::Cast(ty_idx) => {
-                    //let ty_idx = usize::from(read(&self, &args[0]).clone());
                     let val = self.data.vstack.last_mut().expect("no value");
                     *val = val.cast(&Value::from_type(*ty_idx));
                 }
@@ -128,7 +130,6 @@ impl Vm {
                     self.run_object(&co)?;
                 }
                 Instruction::Lpop(idx) | Instruction::Gpop(idx) => {
-                    //let idx = read_arg(&args[0]);
                     let value = self.data.vstack.pop().expect("no value");
                     match inx {
                         Instruction::Lpop(_) => {
@@ -142,7 +143,6 @@ impl Vm {
                     }
                 }
                 Instruction::Cpush(idx) | Instruction::Lpush(idx) | Instruction::Gpush(idx) => {
-                    //let idx = read_arg(&args[0]);
                     let value = match inx {
                         Instruction::Cpush(_) => co.space.consts[*idx].clone(),
                         Instruction::Lpush(_) => register(&self.data).locals[*idx].clone(),
@@ -155,15 +155,16 @@ impl Vm {
                     self.data.vstack.push(value);
                 }
                 Instruction::Inc | Instruction::Dec => {
+                    unimplemented!();
                     // `increment` and `decrement` are common operations and allow for
                     // inplace modifications instead of computation over the stack.
-                    // TODO: do inplace
-                    let val = read(&self, &args[0]);
-                    match inx {
-                        Instruction::Inc => write(self, &args[0], val.add(&Value::I(1))),
-                        Instruction::Dec => write(self, &args[0], val.sub(&Value::I(1))),
-                        _ => unreachable!(),
-                    }
+                    // TODO: implement inc and dec
+                    //let val = read(&self, &args[0]);
+                    //match inx {
+                    //    Instruction::Inc => write(self, &args[0], val.add(&Value::I(1))),
+                    //    Instruction::Dec => write(self, &args[0], val.sub(&Value::I(1))),
+                    //    _ => unreachable!(),
+                    //}
                 }
                 Instruction::Add
                 | Instruction::Sub
@@ -256,50 +257,6 @@ impl Vm {
             *register_mut(&mut self.data) = self.data.stack.last().expect("no last frame").clone();
         }
     }
-}
-
-fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
-    unimplemented!()
-    /*
-    match code {
-        Code::Register(reg) => register_mut(&mut vm.data)[*reg] = value,
-        Code::Value(_vaddr) => {
-            unimplemented!()
-            //let addr = usize::from(*vaddr);
-            //vm.data.memory[addr] = Code::Value(value);
-        }
-        // TODO: reactivate this once typing is more efficient
-        //Code::Value(Value::Ref(addr)) => vm.memory[*addr] = Code::Value(value),
-        _ => unimplemented!(),
-    };
-    */
-}
-
-fn read_arg(arg: &Code) -> usize {
-    unimplemented!()
-    /*
-    match arg {
-        Code::Value(Value::Ref(n)) => *n,
-        _ => panic!("expected index, got {:?}", arg),
-    }
-    */
-}
-
-fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
-    unimplemented!()
-    /*
-    match code {
-        Code::Register(reg) => &register(&vm.data)[*reg],
-        Code::Value(value) => value,
-        _ => unimplemented!(),
-    }
-    */
-}
-
-fn take<'bl>(bl: &'bl [Code], ip: &mut usize, n: usize) -> &'bl [Code] {
-    let view = &bl[*ip + 1..=*ip + n];
-    *ip += n;
-    view
 }
 
 fn register(vm: &VmData) -> &VmFrame {
