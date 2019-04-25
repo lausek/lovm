@@ -96,11 +96,9 @@ impl FunctionBuilder {
         func.space = self.space;
         func.inner = translate_sequence(&mut func.space, self.seq, &mut offsets)?;
 
-        println!("{:?}", offsets);
         for (bidx, branch) in self.branches.into_iter().enumerate() {
             let boffset = func.inner.len();
             for (offset, _) in offsets.iter().filter(|(_, i)| *i == bidx) {
-                println!("write {}", offset);
                 func.inner[*offset] = mkref(boffset);
             }
 
