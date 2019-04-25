@@ -27,7 +27,7 @@ macro_rules! test_file {
             let program = lovm_asm_lib::into_program(unit);
 
             vm.interrupts_mut()
-                .set(Interrupt::Dbg as usize, Some(&$tester));
+                .set(Interrupt::Debug as usize, Some(&$tester));
 
             vm.run(&program).unwrap();
         }
