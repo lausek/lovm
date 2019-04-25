@@ -102,7 +102,7 @@ impl FunctionBuilder {
         for (bidx, branch) in self.branches.into_iter().enumerate() {
             let boffset = func.inner.len();
             for (offset, _) in offsets.iter().filter(|(_, i)| *i == bidx) {
-                func.inner[*offset] = mkref(boffset);
+                func.inner[*offset].set_arg(boffset);
             }
 
             let branch_co = translate_sequence(&mut func.space, branch, &mut offsets)?;
@@ -133,13 +133,13 @@ fn translate_sequence(
 
                 co.extend(translate_operand(space, &target, Access::Read)?);
                 co.extend(translate_operand(space, &arg1, Access::Read)?);
-                co.push(Code::Instruction(inx));
+                co.push(inx);
 
                 if op.is_update() {
                     co.extend(translate_operand(space, &target, Access::Write)?);
                 }
             } else {
-                co.push(Code::Instruction(inx));
+                co.push(inx);
             }
         } else {
             match op.ty {
@@ -158,17 +158,17 @@ fn translate_sequence(
                         &op.target().unwrap(),
                         Access::Read,
                     )?);
-                    co.push(Code::Instruction(Instruction::Call));
+                    co.push(Instruction::Call);
                 }
                 OperationType::Ret => {
-                    co.push(Code::Instruction(Instruction::Ret));
+                    co.push(Instruction::Ret);
                 }
                 OperationType::Cmp => {
                     let target = op.target().unwrap();
                     let arg1 = op.rest().next().unwrap();
                     co.extend(translate_operand(space, &arg1, Access::Read)?);
                     co.extend(translate_operand(space, &target, Access::Read)?);
-                    co.push(Code::Instruction(Instruction::Cmp));
+                    co.push(Instruction::Cmp);
                 }
                 OperationType::Jmp
                 | OperationType::Jeq
@@ -179,25 +179,20 @@ fn translate_sequence(
                 | OperationType::Jlt => {
                     let target = op.target().unwrap();
                     let inx = match op.ty {
-                        OperationType::Jmp => Instruction::Jmp,
-                        OperationType::Jeq => Instruction::Jeq,
-                        OperationType::Jne => Instruction::Jne,
-                        OperationType::Jge => Instruction::Jge,
-                        OperationType::Jgt => Instruction::Jgt,
-                        OperationType::Jle => Instruction::Jle,
-                        OperationType::Jlt => Instruction::Jlt,
+                        OperationType::Jmp => Instruction::Jmp(std::usize::MAX),
+                        OperationType::Jeq => Instruction::Jeq(std::usize::MAX),
+                        OperationType::Jne => Instruction::Jne(std::usize::MAX),
+                        OperationType::Jge => Instruction::Jge(std::usize::MAX),
+                        OperationType::Jgt => Instruction::Jgt(std::usize::MAX),
+                        OperationType::Jle => Instruction::Jle(std::usize::MAX),
+                        OperationType::Jlt => Instruction::Jlt(std::usize::MAX),
                         _ => unreachable!(),
                     };
-                    co.push(Code::Instruction(inx));
-
                     offsets.push((co.len(), target.as_const().clone().into()));
-                    co.push(mkref(std::usize::MAX));
+                    co.push(inx);
                 }
                 OperationType::Debug => {
-                    co.extend(vec![
-                        Code::Instruction(Instruction::Int),
-                        Code::Value(Value::Ref(vm::Interrupt::Debug as usize)),
-                    ]);
+                    co.extend(vec![Instruction::Int(vm::Interrupt::Debug as usize)]);
                 }
                 _ => unimplemented!(),
             }
@@ -210,14 +205,11 @@ fn translate_operand(space: &mut Space, op: &Operand, acc: Access) -> BuildResul
     match op {
         Operand::Name(n) if space.locals.contains(n) => {
             let idx = space.locals.iter().position(|local| local == n).unwrap();
-            Ok(vec![
-                Code::Instruction(if acc == Access::Write {
-                    Instruction::Lpop
-                } else {
-                    Instruction::Lpush
-                }),
-                Code::Value(Value::Ref(idx)),
-            ])
+            Ok(vec![if acc == Access::Write {
+                Instruction::Lpop(idx)
+            } else {
+                Instruction::Lpush(idx)
+            }])
         }
         Operand::Name(n) => {
             let idx = if !space.globals.contains(n) {
@@ -226,21 +218,15 @@ fn translate_operand(space: &mut Space, op: &Operand, acc: Access) -> BuildResul
             } else {
                 space.globals.iter().position(|global| global == n).unwrap()
             };
-            Ok(vec![
-                Code::Instruction(if acc == Access::Write {
-                    Instruction::Gpop
-                } else {
-                    Instruction::Gpush
-                }),
-                Code::Value(Value::Ref(idx)),
-            ])
+            Ok(vec![if acc == Access::Write {
+                Instruction::Gpop(idx)
+            } else {
+                Instruction::Gpush(idx)
+            }])
         }
         Operand::Const(v) => {
             let idx = index_of(&space.consts, &v);
-            Ok(vec![
-                Code::Instruction(Instruction::Cpush),
-                Code::Value(Value::Ref(idx)),
-            ])
+            Ok(vec![Instruction::Cpush(idx)])
         }
     }
 }

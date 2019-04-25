@@ -27,17 +27,19 @@ impl VmFrame {
     pub fn is_jmp_needed(&self, inx: &Instruction) -> bool {
         let cmp = self.cmp.expect("no comparison");
         match inx {
-            Instruction::Jeq if cmp == cmp::Ordering::Equal => true,
-            Instruction::Jne if cmp != cmp::Ordering::Equal => true,
-            Instruction::Jge if (cmp == cmp::Ordering::Greater) | (cmp == cmp::Ordering::Equal) => {
+            Instruction::Jeq(_) if cmp == cmp::Ordering::Equal => true,
+            Instruction::Jne(_) if cmp != cmp::Ordering::Equal => true,
+            Instruction::Jge(_)
+                if (cmp == cmp::Ordering::Greater) | (cmp == cmp::Ordering::Equal) =>
+            {
                 true
             }
-            Instruction::Jgt if cmp == cmp::Ordering::Greater => true,
-            Instruction::Jle if (cmp == cmp::Ordering::Less) | (cmp == cmp::Ordering::Equal) => {
+            Instruction::Jgt(_) if cmp == cmp::Ordering::Greater => true,
+            Instruction::Jle(_) if (cmp == cmp::Ordering::Less) | (cmp == cmp::Ordering::Equal) => {
                 true
             }
-            Instruction::Jlt if cmp == cmp::Ordering::Less => true,
-            Instruction::Jmp => true,
+            Instruction::Jlt(_) if cmp == cmp::Ordering::Less => true,
+            Instruction::Jmp(_) => true,
             // no jump will be executed
             _ => false,
         }

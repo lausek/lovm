@@ -98,139 +98,127 @@ impl Vm {
         }
 
         while self.data.state == VmState::Running && ip < len {
-            match &bl[ip] {
-                Code::Instruction(inx) => {
-                    if cfg!(debug_assertions) {
-                        println!("{}: {:?}", ip, inx);
-                    }
+            let inx = &bl[ip];
+            let argc = inx.arguments();
+            let args = take(bl, &mut ip, argc);
 
-                    let argc = inx.arguments();
-                    let args = take(bl, &mut ip, argc);
+            if cfg!(debug_assertions) {
+                println!("{}: {:?}", ip, inx);
+            }
 
-                    match inx {
-                        // ret is needed for early returns
-                        Instruction::Ret => break,
-                        Instruction::Int => {
-                            let idx = usize::from(read(&self, &args[0]).clone());
-                            if let Some(irh) = self.interrupts.get(idx) {
-                                irh(&mut self.data)?;
-                            } else {
-                                return Err(format!("interrupt {} not defined", idx));
-                            }
-                        }
-                        Instruction::Cast => {
-                            let ty_idx = usize::from(read(&self, &args[0]).clone());
-                            let val = self.data.vstack.last_mut().expect("no value");
-                            *val = val.cast(&Value::from_type(ty_idx));
-                        }
-                        Instruction::Call => {
-                            let fname = self.data.vstack.pop().expect("no function name");
-                            let co = self.call_lookup(&fname.to_string())?.clone();
-                            self.run_object(&co)?;
-                        }
-                        Instruction::Lpop | Instruction::Gpop => {
-                            let idx = read_arg(&args[0]);
-                            let value = self.data.vstack.pop().expect("no value");
-                            match inx {
-                                Instruction::Lpop => {
-                                    register_mut(&mut self.data).locals[idx] = value;
-                                }
-                                Instruction::Gpop => {
-                                    let name = co.space.globals.get(idx).unwrap();
-                                    self.data.globals.insert(name.clone(), value);
-                                }
-                                _ => unreachable!(),
-                            }
-                        }
-                        Instruction::Cpush | Instruction::Lpush | Instruction::Gpush => {
-                            let idx = read_arg(&args[0]);
-                            let value = match inx {
-                                Instruction::Cpush => co.space.consts[idx].clone(),
-                                Instruction::Lpush => register(&self.data).locals[idx].clone(),
-                                Instruction::Gpush => {
-                                    let name = co.space.globals.get(idx).unwrap();
-                                    self.data.globals.get(name).unwrap().clone()
-                                }
-                                _ => unreachable!(),
-                            };
-                            self.data.vstack.push(value);
-                        }
-                        Instruction::Inc | Instruction::Dec => {
-                            // `increment` and `decrement` are common operations and allow for
-                            // inplace modifications instead of computation over the stack.
-                            // TODO: do inplace
-                            let val = read(&self, &args[0]);
-                            match inx {
-                                Instruction::Inc => write(self, &args[0], val.add(&Value::I(1))),
-                                Instruction::Dec => write(self, &args[0], val.sub(&Value::I(1))),
-                                _ => unreachable!(),
-                            }
-                        }
-                        Instruction::Add
-                        | Instruction::Sub
-                        | Instruction::Mul
-                        | Instruction::Div
-                        | Instruction::Rem
-                        | Instruction::Pow
-                        | Instruction::Neg
-                        | Instruction::And
-                        | Instruction::Or
-                        | Instruction::Xor
-                        | Instruction::Shl
-                        | Instruction::Shr => {
-                            let op2 = self.data.vstack.pop().expect("no operand");
-                            let op1 = self.data.vstack.last_mut().expect("no target");
-
-                            if cfg!(debug_assertions) {
-                                println!("{:?}, {:?}", op1, op2);
-                            }
-
-                            *op1 = match inx {
-                                Instruction::Add => op1.add(&op2),
-                                Instruction::Sub => op1.sub(&op2),
-                                Instruction::Mul => op1.mul(&op2),
-                                Instruction::Div => op1.div(&op2),
-                                Instruction::Rem => op1.rem(&op2),
-                                Instruction::Pow => op1.pow(&op2),
-                                Instruction::Neg => op1.neg(),
-                                Instruction::And => op1.and(&op2),
-                                Instruction::Or => op1.or(&op2),
-                                Instruction::Xor => op1.xor(&op2),
-                                Instruction::Shl => op1.shl(&op2),
-                                Instruction::Shr => op1.shr(&op2),
-                                _ => unimplemented!(),
-                            };
-                        }
-                        Instruction::Cmp => {
-                            let op2 = self.data.vstack.pop().expect("missing op2");
-                            let op1 = self.data.vstack.pop().expect("missing op1");
-                            (*register_mut(&mut self.data)).cmp = op1.partial_cmp(&op2);
-                        }
-                        Instruction::Jmp
-                        | Instruction::Jeq
-                        | Instruction::Jne
-                        | Instruction::Jge
-                        | Instruction::Jgt
-                        | Instruction::Jle
-                        | Instruction::Jlt => {
-                            if register(&self.data).is_jmp_needed(&inx) {
-                                ip = read_arg(&args[0]);
-                                continue;
-                            }
-                        }
-                        Instruction::Push => {
-                            let val = read(self, &args[0]);
-                            self.data.vstack.push(val.clone());
-                        }
-                        Instruction::Pop => {
-                            let val = self.data.vstack.pop().expect("nothing to pop");
-                            write(self, &args[0], val);
-                        }
-                        Instruction::Pusha => self.push_frame(0),
-                        Instruction::Popa => self.pop_frame(),
+            match inx {
+                // ret is needed for early returns
+                Instruction::Ret => break,
+                Instruction::Int(idx) => {
+                    //let idx = usize::from(read(&self, &args[0]).clone());
+                    if let Some(irh) = self.interrupts.get(*idx) {
+                        irh(&mut self.data)?;
+                    } else {
+                        return Err(format!("interrupt {} not defined", idx));
                     }
                 }
-                what => panic!("non-executable code reached {:?}", what),
+                Instruction::Cast(ty_idx) => {
+                    //let ty_idx = usize::from(read(&self, &args[0]).clone());
+                    let val = self.data.vstack.last_mut().expect("no value");
+                    *val = val.cast(&Value::from_type(*ty_idx));
+                }
+                Instruction::Call => {
+                    let fname = self.data.vstack.pop().expect("no function name");
+                    let co = self.call_lookup(&fname.to_string())?.clone();
+                    self.run_object(&co)?;
+                }
+                Instruction::Lpop(idx) | Instruction::Gpop(idx) => {
+                    //let idx = read_arg(&args[0]);
+                    let value = self.data.vstack.pop().expect("no value");
+                    match inx {
+                        Instruction::Lpop(_) => {
+                            register_mut(&mut self.data).locals[*idx] = value;
+                        }
+                        Instruction::Gpop(_) => {
+                            let name = co.space.globals.get(*idx).unwrap();
+                            self.data.globals.insert(name.clone(), value);
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                Instruction::Cpush(idx) | Instruction::Lpush(idx) | Instruction::Gpush(idx) => {
+                    //let idx = read_arg(&args[0]);
+                    let value = match inx {
+                        Instruction::Cpush(_) => co.space.consts[*idx].clone(),
+                        Instruction::Lpush(_) => register(&self.data).locals[*idx].clone(),
+                        Instruction::Gpush(_) => {
+                            let name = co.space.globals.get(*idx).unwrap();
+                            self.data.globals.get(name).unwrap().clone()
+                        }
+                        _ => unreachable!(),
+                    };
+                    self.data.vstack.push(value);
+                }
+                Instruction::Inc | Instruction::Dec => {
+                    // `increment` and `decrement` are common operations and allow for
+                    // inplace modifications instead of computation over the stack.
+                    // TODO: do inplace
+                    let val = read(&self, &args[0]);
+                    match inx {
+                        Instruction::Inc => write(self, &args[0], val.add(&Value::I(1))),
+                        Instruction::Dec => write(self, &args[0], val.sub(&Value::I(1))),
+                        _ => unreachable!(),
+                    }
+                }
+                Instruction::Add
+                | Instruction::Sub
+                | Instruction::Mul
+                | Instruction::Div
+                | Instruction::Rem
+                | Instruction::Pow
+                | Instruction::Neg
+                | Instruction::And
+                | Instruction::Or
+                | Instruction::Xor
+                | Instruction::Shl
+                | Instruction::Shr => {
+                    let op2 = self.data.vstack.pop().expect("no operand");
+                    let op1 = self.data.vstack.last_mut().expect("no target");
+
+                    if cfg!(debug_assertions) {
+                        println!("{:?}, {:?}", op1, op2);
+                    }
+
+                    *op1 = match inx {
+                        Instruction::Add => op1.add(&op2),
+                        Instruction::Sub => op1.sub(&op2),
+                        Instruction::Mul => op1.mul(&op2),
+                        Instruction::Div => op1.div(&op2),
+                        Instruction::Rem => op1.rem(&op2),
+                        Instruction::Pow => op1.pow(&op2),
+                        Instruction::Neg => op1.neg(),
+                        Instruction::And => op1.and(&op2),
+                        Instruction::Or => op1.or(&op2),
+                        Instruction::Xor => op1.xor(&op2),
+                        Instruction::Shl => op1.shl(&op2),
+                        Instruction::Shr => op1.shr(&op2),
+                        _ => unimplemented!(),
+                    };
+                }
+                Instruction::Cmp => {
+                    let op2 = self.data.vstack.pop().expect("missing op2");
+                    let op1 = self.data.vstack.pop().expect("missing op1");
+                    (*register_mut(&mut self.data)).cmp = op1.partial_cmp(&op2);
+                }
+                Instruction::Jmp(nip)
+                | Instruction::Jeq(nip)
+                | Instruction::Jne(nip)
+                | Instruction::Jge(nip)
+                | Instruction::Jgt(nip)
+                | Instruction::Jle(nip)
+                | Instruction::Jlt(nip) => {
+                    if register(&self.data).is_jmp_needed(&inx) {
+                        ip = *nip;
+                        continue;
+                    }
+                }
+                Instruction::Pusha => self.push_frame(0),
+                Instruction::Popa => self.pop_frame(),
             }
 
             if cfg!(debug_assertions) {
@@ -271,6 +259,8 @@ impl Vm {
 }
 
 fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
+    unimplemented!()
+    /*
     match code {
         Code::Register(reg) => register_mut(&mut vm.data)[*reg] = value,
         Code::Value(_vaddr) => {
@@ -282,21 +272,28 @@ fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
         //Code::Value(Value::Ref(addr)) => vm.memory[*addr] = Code::Value(value),
         _ => unimplemented!(),
     };
+    */
 }
 
 fn read_arg(arg: &Code) -> usize {
+    unimplemented!()
+    /*
     match arg {
         Code::Value(Value::Ref(n)) => *n,
         _ => panic!("expected index, got {:?}", arg),
     }
+    */
 }
 
 fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
+    unimplemented!()
+    /*
     match code {
         Code::Register(reg) => &register(&vm.data)[*reg],
         Code::Value(value) => value,
         _ => unimplemented!(),
     }
+    */
 }
 
 fn take<'bl>(bl: &'bl [Code], ip: &mut usize, n: usize) -> &'bl [Code] {

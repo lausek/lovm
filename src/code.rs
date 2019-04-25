@@ -80,37 +80,7 @@ impl Space {
     }
 }
 
-// TODO: modifications for support of constant values
-//          - new instruction `Loadc`, loads a constant value onto the stack
-//          - add new constant vector to `Program`
-
-/*
-TODO: remove; replaced by lovm_asm_lib
-macro_rules! program {
-    {$($inx:expr $(,$reg:ident)* $(,#$c:expr)?;)*} => {{
-        use crate::code::Instruction::*;
-        use crate::code::Register::*;
-        use crate::value::Value::*;
-        let code = vec![$(
-            crate::code::Code::Instruction($inx)
-            $(,
-                crate::code::Code::Register($reg)
-             )*
-            $(,
-                crate::code::Code::Value($c)
-             )?
-        ),*];
-        crate::code::Program::with_code(code)
-    }}
-}
-*/
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub enum Code {
-    Instruction(Instruction),
-    Register(Register),
-    Value(Value),
-}
+pub type Code = Instruction;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 #[repr(u8)]
@@ -153,53 +123,69 @@ pub enum Instruction {
     Shr,
 
     Cmp,
-    Jmp,
-    Jeq,
-    Jne,
-    Jge,
-    Jgt,
-    Jle,
-    Jlt,
+    Jmp(usize),
+    Jeq(usize),
+    Jne(usize),
+    Jge(usize),
+    Jgt(usize),
+    Jle(usize),
+    Jlt(usize),
 
-    Cpush, // push constant
-    Lpush, // push local value
-    Lpop,  // pop to local
-    Gpush, // push global value
-    Gpop,  // pop to global
+    Cpush(usize), // push constant
+    Lpush(usize), // push local value
+    Lpop(usize),  // pop to local
+    Gpush(usize), // push global value
+    Gpop(usize),  // pop to global
 
-    Cast,
+    Cast(usize),
     Call,
-    Int,
+    Int(usize),
     Ret,
-    Push, // TODO: remove as not needed anymore
-    Pop,  // TODO: remove as not needed anymore
     Pusha,
     Popa,
 }
 
 impl Instruction {
+    pub fn set_arg(&mut self, arg: usize) {
+        match self {
+            Instruction::Int(c)
+            | Instruction::Cast(c)
+            | Instruction::Jmp(c)
+            | Instruction::Jeq(c)
+            | Instruction::Jne(c)
+            | Instruction::Jge(c)
+            | Instruction::Jgt(c)
+            | Instruction::Jle(c)
+            | Instruction::Jlt(c)
+            | Instruction::Cpush(c)
+            | Instruction::Lpush(c)
+            | Instruction::Lpop(c)
+            | Instruction::Gpush(c)
+            | Instruction::Gpop(c) => *c = arg,
+            _ => unimplemented!(),
+        }
+    }
+
     pub fn arguments(&self) -> usize {
         match self {
-            Instruction::Int
-            | Instruction::Cast
-            | Instruction::Inc
-            | Instruction::Dec
-            | Instruction::Jmp
-            | Instruction::Jeq
-            | Instruction::Jne
-            | Instruction::Jge
-            | Instruction::Jgt
-            | Instruction::Jle
-            | Instruction::Jlt
-            | Instruction::Push
-            | Instruction::Pop
-            | Instruction::Cpush
-            | Instruction::Lpush
-            | Instruction::Lpop
-            | Instruction::Gpush
-            | Instruction::Gpop => 1,
+            Instruction::Int(_)
+            | Instruction::Cast(_)
+            | Instruction::Jmp(_)
+            | Instruction::Jeq(_)
+            | Instruction::Jne(_)
+            | Instruction::Jge(_)
+            | Instruction::Jgt(_)
+            | Instruction::Jle(_)
+            | Instruction::Jlt(_)
+            | Instruction::Cpush(_)
+            | Instruction::Lpush(_)
+            | Instruction::Lpop(_)
+            | Instruction::Gpush(_)
+            | Instruction::Gpop(_) => 1,
 
-            Instruction::Call
+            Instruction::Inc
+            | Instruction::Dec
+            | Instruction::Call
             | Instruction::Cmp
             | Instruction::Add
             | Instruction::Sub
@@ -263,14 +249,9 @@ impl std::fmt::Display for Program {
         while let Some(inx) = it.next() {
             write!(f, "{:04}: {:?}", offset, inx)?;
             offset += 1;
-            match inx {
-                Code::Instruction(inx) => {
-                    for _ in 0..inx.arguments() {
-                        write!(f, "\t{:?}", it.next().unwrap())?;
-                        offset += 1;
-                    }
-                }
-                _ => {}
+            for _ in 0..inx.arguments() {
+                write!(f, "\t{:?}", it.next().unwrap())?;
+                offset += 1;
             }
             write!(f, "\n")?;
         }

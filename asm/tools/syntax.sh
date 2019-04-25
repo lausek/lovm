@@ -21,7 +21,6 @@ install () {
 }
 
 uninstall () {
-    # TODO: if directory is empty, `rmdir` it
     rm "$VIM_PATH/syntax/loas.vim" -v
     rm "$VIM_PATH/ftdetect/loas.vim" -v
     echo "INFO: operation ended successfully!"

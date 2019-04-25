@@ -31,7 +31,7 @@ impl Unit {
     }
 
     pub fn push_inx(&mut self, inx: Instruction) {
-        self.code.push(Code::Instruction(inx));
+        self.code.push(inx);
     }
 
     pub fn compile_operand(&mut self, op: Operand) -> Result<(), String> {
@@ -48,14 +48,14 @@ impl Unit {
                     self.labels.insert(ident.clone(), label);
                 }
             },
-            Operand::Register(reg) => code = Code::Register(reg),
-            Operand::Value(value) => code = Code::Value(value),
-            Operand::Str(s) => {
-                for c in s.bytes() {
-                    self.code.push(Code::Value(Value::I(c as i8)));
-                }
-                return Ok(());
-            }
+            //Operand::Register(reg) => code = Code::Register(reg),
+            //Operand::Value(value) => code = Code::Value(value),
+            //Operand::Str(s) => {
+            //    for c in s.bytes() {
+            //        self.code.push(Code::Value(Value::I(c as i8)));
+            //    }
+            //    return Ok(());
+            //}
             Operand::Deref(_) => unreachable!(),
         }
 
@@ -223,7 +223,7 @@ impl Unit {
         for (_, label) in self.labels.iter() {
             if let Some((_, off)) = label.decl {
                 for (_, idx) in label.locations.iter().rev() {
-                    *self.code.get_mut(*idx).unwrap() = Code::Value(Value::Ref(off));
+                    self.code.get_mut(*idx).unwrap().set_arg(off);
                 }
             } else {
                 for (ident, _) in label.locations.iter() {

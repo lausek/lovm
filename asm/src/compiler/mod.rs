@@ -16,6 +16,11 @@ use lovm::value::Value;
 
 use std::collections::HashMap;
 
+// this crate is obsolete and will not be developed further. the change
+// of the bytecode and progress on the vm in general has made it pretty
+// unreasonable to spend more effort on an ugly language with little
+// usability that wasn't designed to fit the current code requirements.
+
 // TODO: fix offsets of included programs
 //       1. collect all static strings into a big section at program end
 //       2. label resolvement must change to be totally lazily
@@ -25,6 +30,7 @@ use std::collections::HashMap;
 
 pub type CompileResult = Result<Unit, Error>;
 
+/*
 const fn mkref(raw: usize) -> Code {
     Code::Value(Value::Ref(raw))
 }
@@ -36,6 +42,7 @@ fn embed_string(s: &str, cb: &mut Vec<Code>) {
     // null terminator
     cb.push(Code::Value(Value::I(0)));
 }
+*/
 
 pub struct Compiler {
     macs: MacroTable,

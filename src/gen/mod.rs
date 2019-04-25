@@ -10,8 +10,4 @@ use super::*;
 
 pub type BuildResult<T> = Result<T, ()>;
 
-pub fn mkref(from: usize) -> Code {
-    Code::Value(Value::Ref(from))
-}
-
 // TODO: export functionality for generating lovm programs
