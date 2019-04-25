@@ -113,22 +113,32 @@ impl Vm {
                             // TODO: lookup the name in loaded modules
                             // TODO: call `run` again with new `CodeObject`
                         }
-                        Instruction::Cpush
-                        | Instruction::Lpush
-                        | Instruction::Lpop
-                        | Instruction::Gpush
-                        | Instruction::Gpop => {
+                        Instruction::Lpop | Instruction::Gpop => {
                             let idx = read_arg(&args[0]);
+                            let value = self.data.vstack.pop().expect("no value");
                             match inx {
-                                Instruction::Cpush => {
-                                    self.data.vstack.push(co.space.consts[idx].clone())
+                                Instruction::Lpop => {
+                                    register_mut(&mut self.data).locals[idx] = value;
                                 }
-                                Instruction::Lpush => {} // TODO: read local from frame
-                                Instruction::Lpop => {}  // TODO: write value to local in frame
-                                Instruction::Gpush => {} // TODO: read global from vm
-                                Instruction::Gpop => {}  // TODO: write value to global in vm
+                                Instruction::Gpop => {
+                                    let name = co.space.globals.get(idx).unwrap();
+                                    self.data.globals.insert(name.clone(), value);
+                                }
                                 _ => unreachable!(),
                             }
+                        }
+                        Instruction::Cpush | Instruction::Lpush | Instruction::Gpush => {
+                            let idx = read_arg(&args[0]);
+                            let value = match inx {
+                                Instruction::Cpush => co.space.consts[idx].clone(),
+                                Instruction::Lpush => register(&self.data).locals[idx].clone(),
+                                Instruction::Gpush => {
+                                    let name = co.space.globals.get(idx).unwrap();
+                                    self.data.globals.get(name).unwrap().clone()
+                                }
+                                _ => unreachable!(),
+                            };
+                            self.data.vstack.push(value);
                         }
                         Instruction::Inc | Instruction::Dec => {
                             // `increment` and `decrement` are common operations and allow for

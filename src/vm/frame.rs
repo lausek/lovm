@@ -8,6 +8,7 @@ pub struct VmFrame {
     pub b: Value,
     pub c: Value,
     pub d: Value,
+    pub locals: Vec<Value>,
     pub cmp: Option<cmp::Ordering>,
 }
 
@@ -18,6 +19,7 @@ impl VmFrame {
             b: Value::I(0),
             c: Value::I(0),
             d: Value::I(0),
+            locals: vec![],
             cmp: None,
         }
     }

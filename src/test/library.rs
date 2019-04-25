@@ -7,14 +7,10 @@ use crate::gen::*;
 #[test]
 fn simple_function() {
     let func = gen_foo().expect("building function failed");
-    println!("{:?}", func);
-
-    assert!(false);
 }
 
 #[test]
 fn simple_module() {
-    assert!(false);
     let foo = gen_foo().expect("building `foo` failed");
     let bar = gen_foo().expect("building `bar` failed");
 
@@ -23,9 +19,6 @@ fn simple_module() {
     builder.decl("bar", bar);
 
     let module = builder.build().expect("building module failed");
-    println!("{:?}", module);
-
-    assert!(false);
 }
 
 fn gen_foo() -> BuildResult<Function> {
