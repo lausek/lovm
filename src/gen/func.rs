@@ -52,12 +52,12 @@ impl FunctionBuilder {
         self
     }
 
-    pub fn debug(mut self) -> Self {
+    pub fn debug(&mut self) -> &mut Self {
         self.seq.push(Operation::new(OperationType::Debug));
         self
     }
 
-    pub fn branch(mut self, jmp: Operation, seq: Sequence) -> Self {
+    pub fn branch(&mut self, jmp: Operation, seq: Sequence) -> &mut Self {
         for c in seq.iter().flat_map(|op| op.consts()) {
             if !self.space.consts.contains(c) {
                 self.space.consts.push(c.clone());
@@ -69,7 +69,7 @@ impl FunctionBuilder {
         self
     }
 
-    pub fn step(mut self, op: Operation) -> Self {
+    pub fn step(&mut self, op: Operation) -> &mut Self {
         for c in op.consts() {
             if !self.space.consts.contains(c) {
                 self.space.consts.push(c.clone());

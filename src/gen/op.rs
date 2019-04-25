@@ -2,6 +2,16 @@ use super::*;
 
 pub type Sequence = Vec<Operation>;
 
+macro_rules! derive_constructor {
+    ($ty:path, $name:ident) => {
+        impl Operation {
+            pub fn $name() -> Self {
+                Operation::new($ty)
+            }
+        }
+    };
+}
+
 // TODO: operations must be redeclared here (code in asm project has already solved such a problem)
 #[derive(Clone, Debug, PartialEq)]
 pub enum OperationType {
@@ -34,7 +44,37 @@ pub enum OperationType {
     Shr,
 }
 
-// TODO: add constructors for different `OperationType`s e.g. `.add()` for `new(Operation::Add)`
+impl Operation {
+    pub fn call(fname: &str) -> Self {
+        Operation::new(OperationType::Call).op(fname)
+    }
+}
+
+derive_constructor!(OperationType::Ass, ass);
+derive_constructor!(OperationType::Debug, debug);
+derive_constructor!(OperationType::Ret, ret);
+derive_constructor!(OperationType::Cmp, cmp);
+derive_constructor!(OperationType::Jmp, jmp);
+derive_constructor!(OperationType::Jeq, jeq);
+derive_constructor!(OperationType::Jne, jne);
+derive_constructor!(OperationType::Jge, jge);
+derive_constructor!(OperationType::Jgt, jgt);
+derive_constructor!(OperationType::Jle, jle);
+derive_constructor!(OperationType::Jlt, jlt);
+
+derive_constructor!(OperationType::Add, add);
+derive_constructor!(OperationType::Sub, sub);
+derive_constructor!(OperationType::Mul, mul);
+derive_constructor!(OperationType::Div, div);
+derive_constructor!(OperationType::Rem, rem);
+derive_constructor!(OperationType::Pow, pow);
+derive_constructor!(OperationType::Neg, neg);
+derive_constructor!(OperationType::And, and);
+derive_constructor!(OperationType::Or, or);
+derive_constructor!(OperationType::Xor, xor);
+derive_constructor!(OperationType::Shl, shl);
+derive_constructor!(OperationType::Shr, shr);
+
 #[derive(Clone, Debug)]
 pub struct Operation {
     ops: Vec<Operand>,

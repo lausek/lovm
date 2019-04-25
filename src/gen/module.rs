@@ -31,11 +31,12 @@ impl ModuleBuilder {
         }
     }
 
-    pub fn decl<T>(&mut self, name: T, co: CodeObject)
+    pub fn decl<T>(&mut self, name: T, co: CodeObject) -> &mut Self
     where
         T: std::string::ToString,
     {
         self.slots.push((name.to_string(), co));
+        self
     }
 
     pub fn build(self) -> BuildResult<Module> {
