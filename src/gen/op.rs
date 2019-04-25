@@ -6,6 +6,8 @@ pub type Sequence = Vec<Operation>;
 #[derive(Clone, Debug, PartialEq)]
 pub enum OperationType {
     Ass,
+    Debug,
+
     Add,
     Sub,
     Mul,
@@ -20,6 +22,7 @@ pub enum OperationType {
     Shr,
 }
 
+// TODO: add constructors for different `OperationType`s e.g. `.add()` for `new(Operation::Add)`
 #[derive(Clone, Debug)]
 pub struct Operation {
     ops: Vec<Operand>,

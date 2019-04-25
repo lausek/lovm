@@ -4,8 +4,8 @@ pub mod operation;
 
 use super::*;
 
-use self::frame::*;
-use self::interrupt::*;
+pub use self::frame::*;
+pub use self::interrupt::*;
 
 pub use std::collections::HashMap;
 
@@ -80,7 +80,7 @@ impl Vm {
         let len = bl.len();
         let mut ip = 0;
 
-        self.push_frame();
+        self.push_frame(co.argc);
 
         while self.data.state == VmState::Running && ip < len {
             match &bl[ip] {
@@ -211,7 +211,7 @@ impl Vm {
                             let val = self.data.vstack.pop().expect("nothing to pop");
                             write(self, &args[0], val);
                         }
-                        Instruction::Pusha => self.push_frame(),
+                        Instruction::Pusha => self.push_frame(0),
                         Instruction::Popa => self.pop_frame(),
                     }
                 }
@@ -237,8 +237,8 @@ impl Vm {
         self.run_object(co)
     }
 
-    fn push_frame(&mut self) {
-        self.data.stack.push(VmFrame::new());
+    fn push_frame(&mut self, argc: usize) {
+        self.data.stack.push(VmFrame::new(argc));
     }
 
     fn pop_frame(&mut self) {

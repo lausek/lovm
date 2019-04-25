@@ -21,6 +21,33 @@ fn simple_module() {
     let module = builder.build().expect("building module failed");
 }
 
+#[test]
+fn fib_function() {
+    let fib = FunctionBuilder::new()
+        .with_args(vec!["x"])
+        .step(Operation::new(OperationType::Add).update().op("x").op(1))
+        .debug()
+        .build()
+        .expect("building function failed");
+
+    let module = ModuleBuilder::from_object(fib)
+        .build()
+        .expect("building module failed");
+    println!("{:?}", module);
+
+    fn debug(data: &mut vm::VmData) -> vm::VmResult {
+        println!("locals: {:?}", data.stack.last().unwrap().locals);
+        Ok(())
+    }
+
+    let mut vm = vm::Vm::new();
+    vm.interrupts_mut()
+        .set(vm::Interrupt::Debug as usize, &debug);
+    vm.run(&module).expect("error in code");
+
+    assert!(false);
+}
+
 fn gen_foo() -> BuildResult<Function> {
     // pseudocode:
     //      f(x, y):

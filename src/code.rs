@@ -39,6 +39,7 @@ impl Module {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CodeObject {
+    pub argc: usize,
     pub space: Space,
     pub inner: CodeBlock,
 }
@@ -46,6 +47,7 @@ pub struct CodeObject {
 impl CodeObject {
     pub fn new() -> Self {
         Self {
+            argc: 0,
             space: Space::new(),
             inner: CodeBlock::new(),
         }

@@ -25,6 +25,12 @@ impl ModuleBuilder {
         Self { slots: vec![] }
     }
 
+    pub fn from_object(co: CodeObject) -> Self {
+        Self {
+            slots: vec![("main".to_string(), co)],
+        }
+    }
+
     pub fn decl<T>(&mut self, name: T, co: CodeObject)
     where
         T: std::string::ToString,

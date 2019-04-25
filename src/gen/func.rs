@@ -50,6 +50,11 @@ impl FunctionBuilder {
         self
     }
 
+    pub fn debug(mut self) -> Self {
+        self.seq.push(Operation::new(OperationType::Debug));
+        self
+    }
+
     pub fn step(mut self, op: Operation) -> Self {
         for c in op.consts() {
             if !self.space.consts.contains(c) {
@@ -75,14 +80,15 @@ impl FunctionBuilder {
         println!("building func {:#?}", self);
 
         let mut func = Function::new();
+        func.argc = self.argc;
         func.space = self.space;
 
         for op in self.seq.iter() {
-            let target = op.target().unwrap();
             let mut ops = op.ops();
-            let arg1 = ops.next().unwrap();
 
             if let Some(inx) = op.as_inx() {
+                let target = op.target().unwrap();
+                let arg1 = ops.next().unwrap();
                 if op.is_update() {
                     func.inner
                         .extend(translate_operand(&mut func.space, &target, Access::Read)?);
@@ -98,6 +104,8 @@ impl FunctionBuilder {
             } else {
                 match op.ty {
                     OperationType::Ass => {
+                        let target = op.target().unwrap();
+                        let arg1 = ops.next().unwrap();
                         func.inner
                             .extend(translate_operand(&mut func.space, &arg1, Access::Read)?);
                         func.inner.extend(translate_operand(
@@ -105,6 +113,12 @@ impl FunctionBuilder {
                             &target,
                             Access::Write,
                         )?);
+                    }
+                    OperationType::Debug => {
+                        func.inner.extend(vec![
+                            Code::Instruction(Instruction::Int),
+                            Code::Value(Value::Ref(vm::Interrupt::Debug as usize)),
+                        ]);
                     }
                     _ => unimplemented!(),
                 }

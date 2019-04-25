@@ -13,13 +13,13 @@ pub struct VmFrame {
 }
 
 impl VmFrame {
-    pub fn new() -> Self {
+    pub fn new(argc: usize) -> Self {
         Self {
             a: Value::I(0),
             b: Value::I(0),
             c: Value::I(0),
             d: Value::I(0),
-            locals: vec![],
+            locals: (0..argc).map(|_| Value::I(0)).collect(),
             cmp: None,
         }
     }
