@@ -1,8 +1,0 @@
-; reserve 8 static params
-.skip       #8
-func:
-    ret
-
-main:
-    call func
-    ret

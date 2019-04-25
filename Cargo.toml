@@ -13,4 +13,3 @@ bincode = "1.1.2"
 
 [dev-dependencies]
 lovm = { path = "." }
-lovm-asm = { path = "./asm" }

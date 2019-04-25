@@ -1,8 +1,0 @@
-main:
-    push my_string
-    call print
-    ret
-
-my_string: dv "hello \" world"
-
-.include "std.loas"

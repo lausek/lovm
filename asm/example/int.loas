@@ -1,4 +1,0 @@
-main:
-    push A
-    int #10
-    ret
