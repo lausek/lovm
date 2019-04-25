@@ -118,7 +118,7 @@ impl Unit {
                 if let Operand::Deref(x2) = x2 {
                     self.push_inx(Instruction::Push);
                     self.compile_operand(*x2)?;
-                    self.push_inx(Instruction::Load);
+                    //self.push_inx(Instruction::Load);
                 } else {
                     self.push_inx(Instruction::Push);
                     self.compile_operand(x2)?;
@@ -132,9 +132,9 @@ impl Unit {
                 if let Operand::Deref(x1) = x1 {
                     self.push_inx(Instruction::Push);
                     self.compile_operand(*x1)?;
-                    self.push_inx(Instruction::Store);
+                    //self.push_inx(Instruction::Store);
                 } else {
-                    self.push_inx(Instruction::Pop);
+                    //self.push_inx(Instruction::Pop);
                     self.compile_operand(x1)?;
                 }
             }

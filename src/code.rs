@@ -20,31 +20,51 @@ use serde::{Deserialize, Serialize};
 pub type Name = String;
 pub type CodeBlock = Vec<Code>;
 
-pub type CodeObject = Space<CodeBlock>;
-pub type Module = Space<Vec<(Name, CodeObject)>>;
 pub type Program = Module;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct Space<T>
-where
-    T: std::default::Default,
-{
+pub struct Module {
+    pub space: Space,
+    pub inner: Vec<(Name, CodeObject)>,
+}
+
+impl Module {
+    pub fn new() -> Self {
+        Self {
+            space: Space::new(),
+            inner: vec![],
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct CodeObject {
+    pub space: Space,
+    pub inner: CodeBlock,
+}
+
+impl CodeObject {
+    pub fn new() -> Self {
+        Self {
+            space: Space::new(),
+            inner: CodeBlock::new(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Space {
     pub consts: Vec<Value>,
     pub locals: Vec<Name>,
     pub globals: Vec<Name>,
-    pub inner: T,
 }
 
-impl<T> Space<T>
-where
-    T: std::default::Default,
-{
+impl Space {
     pub fn new() -> Self {
         Self {
             consts: vec![],
             locals: vec![],
             globals: vec![],
-            inner: T::default(),
         }
     }
 }

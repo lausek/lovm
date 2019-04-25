@@ -43,6 +43,12 @@ impl std::convert::From<i8> for Value {
     }
 }
 
+impl std::convert::From<i32> for Value {
+    fn from(n: i32) -> Value {
+        Value::I64(n as i64)
+    }
+}
+
 impl std::convert::From<i64> for Value {
     fn from(n: i64) -> Value {
         Value::I64(n)

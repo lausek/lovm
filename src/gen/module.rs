@@ -15,6 +15,7 @@ use super::*;
 //
 // ---- explanation
 
+#[derive(Clone, Debug)]
 pub struct ModuleBuilder {
     slots: Vec<(Name, CodeObject)>,
 }

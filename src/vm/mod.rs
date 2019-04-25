@@ -120,7 +120,9 @@ impl Vm {
                         | Instruction::Gpop => {
                             let idx = read_arg(&args[0]);
                             match inx {
-                                Instruction::Cpush => self.data.vstack.push(co.consts[idx].clone()),
+                                Instruction::Cpush => {
+                                    self.data.vstack.push(co.space.consts[idx].clone())
+                                }
                                 Instruction::Lpush => {} // TODO: read local from frame
                                 Instruction::Lpop => {}  // TODO: write value to local in frame
                                 Instruction::Gpush => {} // TODO: read global from vm

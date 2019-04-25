@@ -15,23 +15,26 @@ use super::*;
 //
 // ---- explanation
 
+#[derive(PartialEq)]
+enum Access {
+    Read,
+    Write,
+}
+
 pub type Function = CodeObject;
 
+#[derive(Clone, Debug)]
 pub struct FunctionBuilder {
-    args: Vec<Name>,
-    consts: HashMap<Name, Value>,
-    locals: Set<Name>,
-    globals: Set<Name>,
+    argc: usize,
+    space: Space,
     seq: Sequence,
 }
 
 impl FunctionBuilder {
     pub fn new() -> Self {
         Self {
-            args: vec![],
-            consts: HashMap::new(),
-            locals: Set::new(),
-            globals: Set::new(),
+            argc: 0,
+            space: Space::new(),
             seq: Sequence::new(),
         }
     }
@@ -40,17 +43,120 @@ impl FunctionBuilder {
     where
         T: std::string::ToString,
     {
+        assert!(self.space.locals.is_empty());
+        self.argc = args.len();
         // TODO: optimize this
-        self.args = args.iter().map(|arg| arg.to_string()).collect::<Vec<_>>();
-        for arg in self.args.iter() {
-            self.locals.insert(arg.to_string(), ());
+        self.space.locals = args.iter().map(|arg| arg.to_string()).collect::<Vec<_>>();
+        self
+    }
+
+    pub fn step(mut self, op: Operation) -> Self {
+        for c in op.consts() {
+            if !self.space.consts.contains(c) {
+                self.space.consts.push(c.clone());
+            }
         }
+
+        if let Some(target) = op.target() {
+            let name = target.as_name();
+            if !self.space.locals.contains(&name) {
+                self.space.locals.push(name.clone());
+            }
+        } else {
+            // TODO: add error for empty operation
+            unimplemented!();
+        }
+
+        self.seq.push(op);
         self
     }
 
     pub fn build(mut self) -> BuildResult<Function> {
+        println!("building func {:#?}", self);
+
         let mut func = Function::new();
-        // TODO: compile `seq` into bytecode
+        func.space = self.space;
+
+        for op in self.seq.iter() {
+            let target = op.target().unwrap();
+            let mut ops = op.ops();
+            let arg1 = ops.next().unwrap();
+
+            if let Some(inx) = op.as_inx() {
+                if op.is_update() {
+                    func.inner
+                        .extend(translate_operand(&mut func.space, &target, Access::Read)?);
+                }
+
+                func.inner
+                    .extend(translate_operand(&mut func.space, &arg1, Access::Read)?);
+
+                func.inner.push(Code::Instruction(inx));
+
+                func.inner
+                    .extend(translate_operand(&mut func.space, &target, Access::Write)?);
+            } else {
+                match op.ty {
+                    OperationType::Ass => {
+                        func.inner
+                            .extend(translate_operand(&mut func.space, &arg1, Access::Read)?);
+                        func.inner.extend(translate_operand(
+                            &mut func.space,
+                            &target,
+                            Access::Write,
+                        )?);
+                    }
+                    _ => unimplemented!(),
+                }
+            }
+        }
+
         Ok(func)
+    }
+}
+
+fn index_of<T>(ls: &Vec<T>, item: &T) -> usize
+where
+    T: PartialEq,
+{
+    ls.iter().position(|a| a == item).unwrap()
+}
+
+fn translate_operand(space: &mut Space, op: &Operand, acc: Access) -> BuildResult<CodeBlock> {
+    match op {
+        Operand::Name(n) if space.locals.contains(n) => {
+            let idx = space.locals.iter().position(|local| local == n).unwrap();
+            Ok(vec![
+                Code::Instruction(if acc == Access::Write {
+                    Instruction::Lpop
+                } else {
+                    Instruction::Lpush
+                }),
+                Code::Value(Value::Ref(idx)),
+            ])
+        }
+        Operand::Name(n) => {
+            let idx = if !space.globals.contains(n) {
+                space.globals.push(n.clone());
+                space.globals.len()
+            } else {
+                space.globals.iter().position(|global| global == n).unwrap()
+            };
+            Ok(vec![
+                Code::Instruction(if acc == Access::Write {
+                    Instruction::Gpop
+                } else {
+                    Instruction::Gpush
+                }),
+                Code::Value(Value::Ref(idx)),
+            ])
+        }
+        Operand::Const(v) => {
+            let idx = index_of(&space.consts, &v);
+            Ok(vec![
+                Code::Instruction(Instruction::Cpush),
+                Code::Value(Value::Ref(idx)),
+            ])
+        }
     }
 }
