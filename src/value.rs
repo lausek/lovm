@@ -73,6 +73,12 @@ impl std::convert::From<bool> for Value {
     }
 }
 
+impl std::convert::From<&str> for Value {
+    fn from(s: &str) -> Value {
+        Value::Str(s.into())
+    }
+}
+
 impl std::str::FromStr for Value {
     type Err = String;
     fn from_str(from: &str) -> Result<Self, Self::Err> {

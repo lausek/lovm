@@ -26,13 +26,14 @@ pub const VM_STACK_SIZE: usize = 256;
 
 pub type VmResult = Result<(), String>;
 
-#[derive(PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum VmState {
     Initial,
     Running,
     Exited,
 }
 
+#[derive(Clone, Debug)]
 pub struct VmData {
     pub globals: HashMap<Name, Value>,
     pub modules: Vec<Module>,
@@ -74,13 +75,27 @@ impl Vm {
 }
 
 impl Vm {
+    // TODO: return `Rc` over `CodeObject` here because it could reassign itself
+    fn call_lookup(&self, name: &Name) -> Result<&CodeObject, String> {
+        for module in self.data.modules.iter() {
+            if let Some(co) = module.get(name) {
+                return Ok(co);
+            }
+        }
+        Err(format!("function `{}` is unknown", name))
+    }
+
     // TODO: passing return address around is probably not needed anymore
     fn run_object(&mut self, co: &CodeObject) -> VmResult {
         let bl = &co.inner;
         let len = bl.len();
         let mut ip = 0;
 
-        self.push_frame(co.argc);
+        self.push_frame(co.space.locals.len());
+
+        for i in 0..co.argc {
+            register_mut(&mut self.data).locals[i] = self.data.vstack.pop().expect("no argument");
+        }
 
         while self.data.state == VmState::Running && ip < len {
             match &bl[ip] {
@@ -110,8 +125,8 @@ impl Vm {
                         }
                         Instruction::Call => {
                             let fname = self.data.vstack.pop().expect("no function name");
-                            // TODO: lookup the name in loaded modules
-                            // TODO: call `run` again with new `CodeObject`
+                            let co = self.call_lookup(&fname.to_string())?.clone();
+                            self.run_object(&co)?;
                         }
                         Instruction::Lpop | Instruction::Gpop => {
                             let idx = read_arg(&args[0]);
@@ -233,6 +248,9 @@ impl Vm {
     pub fn run(&mut self, module: &Module) -> VmResult {
         // loads the programs main function
         let co = &module.code();
+
+        // TODO: something better than cloning?
+        self.data.modules.push(module.clone());
         self.data.state = VmState::Running;
         self.run_object(co)
     }

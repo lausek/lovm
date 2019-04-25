@@ -25,27 +25,46 @@ fn simple_module() {
 fn fib_function() {
     let fib = FunctionBuilder::new()
         .with_args(vec!["x"])
-        .step(Operation::new(OperationType::Cmp).op("x").op(0))
-        .branch(
-            Operation::new(OperationType::Jeq),
-            vec![Operation::new(OperationType::Ret)],
-        )
-        .step(Operation::new(OperationType::Cmp).op("x").op(1))
-        .branch(
-            Operation::new(OperationType::Jeq),
-            vec![Operation::new(OperationType::Ret)],
-        )
         .debug()
+        .step(Operation::new(OperationType::Cmp).var("x").op(0))
+        .branch(
+            Operation::new(OperationType::Jeq),
+            vec![
+                Operation::new(OperationType::Add).var("x").op(0), // TODO: this is a hack for pushing x
+                Operation::new(OperationType::Ret),
+            ],
+        )
+        .step(Operation::new(OperationType::Cmp).var("x").op(1))
+        .branch(
+            Operation::new(OperationType::Jeq),
+            vec![
+                Operation::new(OperationType::Add).var("x").op(0), // TODO: this is a hack for pushing x
+                Operation::new(OperationType::Ret),
+            ],
+        )
+        .step(Operation::new(OperationType::Sub).var("x").op(1))
+        .step(Operation::new(OperationType::Call).op("fib"))
+        .step(Operation::new(OperationType::Sub).var("x").op(2))
+        .step(Operation::new(OperationType::Call).op("fib"))
+        .step(Operation::new(OperationType::Add))
+        .step(Operation::new(OperationType::Ret))
         .build()
         .expect("building function failed");
 
-    let module = ModuleBuilder::from_object(fib)
+    let main = FunctionBuilder::new()
+        .step(Operation::new(OperationType::Call).op("fib").op(8))
         .build()
-        .expect("building module failed");
+        .expect("building function failed");
+
+    let mut module = ModuleBuilder::new();
+    module.decl("fib", fib);
+    module.decl("main", main);
+    let module = module.build().expect("building module failed");
     println!("{:?}", module);
 
     fn debug(data: &mut vm::VmData) -> vm::VmResult {
-        println!("locals: {:?}", data.stack.last().unwrap().locals);
+        let frame = data.stack.last_mut().unwrap();
+        println!("locals: {:?}", frame.locals);
         Ok(())
     }
 

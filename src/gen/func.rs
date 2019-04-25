@@ -58,6 +58,12 @@ impl FunctionBuilder {
     }
 
     pub fn branch(mut self, jmp: Operation, seq: Sequence) -> Self {
+        for c in seq.iter().flat_map(|op| op.consts()) {
+            if !self.space.consts.contains(c) {
+                self.space.consts.push(c.clone());
+            }
+        }
+
         self.seq.push(jmp.op(self.branches.len()));
         self.branches.push(seq);
         self
@@ -75,9 +81,6 @@ impl FunctionBuilder {
             if !self.space.locals.contains(&name) {
                 self.space.locals.push(name.clone());
             }
-        } else {
-            // TODO: add error for empty operation
-            unimplemented!();
         }
 
         self.seq.push(op);
@@ -112,7 +115,7 @@ impl FunctionBuilder {
 
 fn index_of<T>(ls: &Vec<T>, item: &T) -> usize
 where
-    T: PartialEq,
+    T: PartialEq + std::fmt::Debug,
 {
     ls.iter().position(|a| a == item).unwrap()
 }
@@ -124,33 +127,45 @@ fn translate_sequence(
 ) -> BuildResult<CodeBlock> {
     let mut co = vec![];
     for op in seq.iter() {
-        let mut ops = op.ops();
-
         if let Some(inx) = op.as_inx() {
-            let target = op.target().unwrap();
-            let arg1 = ops.next().unwrap();
+            if let Some(target) = op.target() {
+                let arg1 = op.rest().next().unwrap();
 
-            if op.is_update() {
                 co.extend(translate_operand(space, &target, Access::Read)?);
-            }
+                co.extend(translate_operand(space, &arg1, Access::Read)?);
+                co.push(Code::Instruction(inx));
 
-            co.extend(translate_operand(space, &arg1, Access::Read)?);
-            co.push(Code::Instruction(inx));
-            co.extend(translate_operand(space, &target, Access::Write)?);
+                if op.is_update() {
+                    co.extend(translate_operand(space, &target, Access::Write)?);
+                }
+            } else {
+                co.push(Code::Instruction(inx));
+            }
         } else {
             match op.ty {
                 OperationType::Ass => {
                     let target = op.target().unwrap();
-                    let arg1 = ops.next().unwrap();
+                    let arg1 = op.rest().next().unwrap();
                     co.extend(translate_operand(space, &arg1, Access::Read)?);
                     co.extend(translate_operand(space, &target, Access::Write)?);
+                }
+                OperationType::Call => {
+                    for arg in op.rest() {
+                        co.extend(translate_operand(space, &arg, Access::Read)?);
+                    }
+                    co.extend(translate_operand(
+                        space,
+                        &op.target().unwrap(),
+                        Access::Read,
+                    )?);
+                    co.push(Code::Instruction(Instruction::Call));
                 }
                 OperationType::Ret => {
                     co.push(Code::Instruction(Instruction::Ret));
                 }
                 OperationType::Cmp => {
                     let target = op.target().unwrap();
-                    let arg1 = ops.next().unwrap();
+                    let arg1 = op.rest().next().unwrap();
                     co.extend(translate_operand(space, &arg1, Access::Read)?);
                     co.extend(translate_operand(space, &target, Access::Read)?);
                     co.push(Code::Instruction(Instruction::Cmp));

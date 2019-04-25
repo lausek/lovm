@@ -8,6 +8,7 @@ pub enum OperationType {
     Ass,
     Debug,
 
+    Call,
     Ret,
 
     Cmp,
@@ -100,6 +101,14 @@ impl Operation {
         })
     }
 
+    pub fn var<T>(mut self, name: T) -> Self
+    where
+        T: Into<Name>,
+    {
+        self.ops.push(Operand::Name(name.into().to_string()));
+        self
+    }
+
     pub fn op<T>(mut self, op: T) -> Self
     where
         T: Into<Operand>,
@@ -113,8 +122,12 @@ impl Operation {
     }
 
     pub fn ops(&self) -> impl Iterator<Item = &Operand> {
+        self.ops.iter()
+    }
+
+    pub fn rest(&self) -> impl Iterator<Item = &Operand> {
         // skip first item as it is the target
-        self.ops.iter().skip(1)
+        self.ops().skip(1)
     }
 }
 
@@ -127,7 +140,7 @@ pub enum Operand {
 impl Operand {
     pub fn as_name(&self) -> &Name {
         match self {
-            Operand::Name(n) => n,
+            Operand::Name(n) | Operand::Const(Value::Str(n)) => n,
             _ => unimplemented!(),
         }
     }
@@ -137,12 +150,6 @@ impl Operand {
             Operand::Const(v) => v,
             _ => unimplemented!(),
         }
-    }
-}
-
-impl From<&str> for Operand {
-    fn from(s: &str) -> Self {
-        Operand::Name(s.into())
     }
 }
 

@@ -35,6 +35,15 @@ impl Module {
             inner: vec![],
         }
     }
+
+    pub fn get(&self, name: &Name) -> Option<&CodeObject> {
+        for (sname, co) in self.inner.iter() {
+            if sname == name {
+                return Some(co);
+            }
+        }
+        None
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -182,7 +191,6 @@ impl Instruction {
             | Instruction::Jgt
             | Instruction::Jle
             | Instruction::Jlt
-            | Instruction::Call
             | Instruction::Push
             | Instruction::Pop
             | Instruction::Cpush
@@ -191,7 +199,8 @@ impl Instruction {
             | Instruction::Gpush
             | Instruction::Gpop => 1,
 
-            Instruction::Cmp
+            Instruction::Call
+            | Instruction::Cmp
             | Instruction::Add
             | Instruction::Sub
             | Instruction::Mul
