@@ -25,7 +25,6 @@ fn simple_module() {
 fn fib_function() {
     let fib = FunctionBuilder::new()
         .with_args(vec!["x"])
-        .debug()
         .step(Operation::new(OperationType::Cmp).var("x").op(0))
         .branch(
             Operation::new(OperationType::Jeq),
@@ -53,6 +52,7 @@ fn fib_function() {
 
     let main = FunctionBuilder::new()
         .step(Operation::new(OperationType::Call).op("fib").op(8))
+        .debug()
         .build()
         .expect("building function failed");
 
@@ -60,11 +60,11 @@ fn fib_function() {
     module.decl("fib", fib);
     module.decl("main", main);
     let module = module.build().expect("building module failed");
-    println!("{:?}", module);
 
     fn debug(data: &mut vm::VmData) -> vm::VmResult {
         let frame = data.stack.last_mut().unwrap();
-        println!("locals: {:?}", frame.locals);
+        let result = data.vstack.pop().expect("no value");
+        assert!(result == Value::I(21));
         Ok(())
     }
 
@@ -72,8 +72,6 @@ fn fib_function() {
     vm.interrupts_mut()
         .set(vm::Interrupt::Debug as usize, &debug);
     vm.run(&module).expect("error in code");
-
-    assert!(false);
 }
 
 fn gen_foo() -> BuildResult<Function> {
