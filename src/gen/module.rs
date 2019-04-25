@@ -38,7 +38,7 @@ impl ModuleBuilder {
         self.slots.push((name.to_string(), co));
     }
 
-    pub fn build(mut self) -> BuildResult<Module> {
+    pub fn build(self) -> BuildResult<Module> {
         let mut module = Module::new();
         module.inner = self.slots;
         Ok(module)

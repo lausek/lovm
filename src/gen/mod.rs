@@ -8,8 +8,6 @@ pub use op::*;
 
 use super::*;
 
-use std::collections::HashMap;
-
 pub type BuildResult<T> = Result<T, ()>;
 
 pub fn mkref(from: usize) -> Code {

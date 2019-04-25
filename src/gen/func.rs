@@ -87,7 +87,7 @@ impl FunctionBuilder {
         self
     }
 
-    pub fn build(mut self) -> BuildResult<Function> {
+    pub fn build(self) -> BuildResult<Function> {
         println!("building func {:#?}", self);
 
         // used for resolving branch offsets

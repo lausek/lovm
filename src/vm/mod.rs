@@ -260,7 +260,7 @@ impl Vm {
     }
 
     fn pop_frame(&mut self) {
-        let frame = self.data.stack.pop().expect("frame to pop");
+        self.data.stack.pop().expect("frame to pop");
 
         if self.data.stack.is_empty() {
             self.data.state = VmState::Exited;
@@ -273,7 +273,7 @@ impl Vm {
 fn write(vm: &mut Vm, code: &'_ Code, value: Value) {
     match code {
         Code::Register(reg) => register_mut(&mut vm.data)[*reg] = value,
-        Code::Value(vaddr) => {
+        Code::Value(_vaddr) => {
             unimplemented!()
             //let addr = usize::from(*vaddr);
             //vm.data.memory[addr] = Code::Value(value);
@@ -297,15 +297,6 @@ fn read<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Code) -> &'read Value {
         Code::Value(value) => value,
         _ => unimplemented!(),
     }
-}
-
-fn read_memory<'read, 'vm: 'read>(vm: &'vm Vm, code: &'read Value) -> &'read Value {
-    unimplemented!()
-    //let addr = usize::from(*code);
-    //match &vm.data.memory[addr] {
-    //    Code::Value(value) => &value,
-    //    code => panic!("unreadable memory accessed: {:?}, addr {}", code, addr),
-    //}
 }
 
 fn take<'bl>(bl: &'bl [Code], ip: &mut usize, n: usize) -> &'bl [Code] {

@@ -63,6 +63,7 @@ fn fib_function() {
 
     fn debug(data: &mut vm::VmData) -> vm::VmResult {
         let frame = data.stack.last_mut().unwrap();
+        println!("{:?}", frame);
         let result = data.vstack.pop().expect("no value");
         assert!(result == Value::I(21));
         Ok(())
