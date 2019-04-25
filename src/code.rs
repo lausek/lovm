@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 // for the generation of lovm programs a library (WIP: module name) is exported.
 
 pub type Name = String;
-pub type CodeBlock = Vec<Code>;
+pub type CodeBlock = Vec<Instruction>;
 
 pub type Program = Module;
 
@@ -79,8 +79,6 @@ impl Space {
         }
     }
 }
-
-pub type Code = Instruction;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 #[repr(u8)]
