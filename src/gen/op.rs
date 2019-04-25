@@ -8,6 +8,17 @@ pub enum OperationType {
     Ass,
     Debug,
 
+    Ret,
+
+    Cmp,
+    Jmp,
+    Jeq,
+    Jne,
+    Jge,
+    Jgt,
+    Jle,
+    Jlt,
+
     Add,
     Sub,
     Mul,
@@ -41,6 +52,15 @@ impl Operation {
 
     pub fn as_inx(&self) -> Option<Instruction> {
         match self.ty {
+            //OperationType::Ret => Some(Instruction::Ret),
+            //OperationType::Cmp => Some(Instruction::Cmp),
+            //OperationType::Jmp => Some(Instruction::Jmp),
+            //OperationType::Jeq => Some(Instruction::Jeq),
+            //OperationType::Jne => Some(Instruction::Jne),
+            //OperationType::Jge => Some(Instruction::Jge),
+            //OperationType::Jgt => Some(Instruction::Jgt),
+            //OperationType::Jle => Some(Instruction::Jle),
+            //OperationType::Jlt => Some(Instruction::Jlt),
             OperationType::Add => Some(Instruction::Add),
             OperationType::Sub => Some(Instruction::Sub),
             OperationType::Mul => Some(Instruction::Mul),
@@ -108,6 +128,13 @@ impl Operand {
     pub fn as_name(&self) -> &Name {
         match self {
             Operand::Name(n) => n,
+            _ => unimplemented!(),
+        }
+    }
+
+    pub fn as_const(&self) -> &Value {
+        match self {
+            Operand::Const(v) => v,
             _ => unimplemented!(),
         }
     }

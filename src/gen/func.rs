@@ -26,6 +26,7 @@ pub type Function = CodeObject;
 #[derive(Clone, Debug)]
 pub struct FunctionBuilder {
     argc: usize,
+    branches: Vec<Sequence>,
     space: Space,
     seq: Sequence,
 }
@@ -34,6 +35,7 @@ impl FunctionBuilder {
     pub fn new() -> Self {
         Self {
             argc: 0,
+            branches: vec![],
             space: Space::new(),
             seq: Sequence::new(),
         }
@@ -52,6 +54,12 @@ impl FunctionBuilder {
 
     pub fn debug(mut self) -> Self {
         self.seq.push(Operation::new(OperationType::Debug));
+        self
+    }
+
+    pub fn branch(mut self, jmp: Operation, seq: Sequence) -> Self {
+        self.seq.push(jmp.op(self.branches.len()));
+        self.branches.push(seq);
         self
     }
 
@@ -79,50 +87,25 @@ impl FunctionBuilder {
     pub fn build(mut self) -> BuildResult<Function> {
         println!("building func {:#?}", self);
 
+        // used for resolving branch offsets
+        // arg1: branch index, arg2: func.inner index
+        let mut offsets: Vec<(usize, usize)> = vec![];
+
         let mut func = Function::new();
         func.argc = self.argc;
         func.space = self.space;
+        func.inner = translate_sequence(&mut func.space, self.seq, &mut offsets)?;
 
-        for op in self.seq.iter() {
-            let mut ops = op.ops();
-
-            if let Some(inx) = op.as_inx() {
-                let target = op.target().unwrap();
-                let arg1 = ops.next().unwrap();
-                if op.is_update() {
-                    func.inner
-                        .extend(translate_operand(&mut func.space, &target, Access::Read)?);
-                }
-
-                func.inner
-                    .extend(translate_operand(&mut func.space, &arg1, Access::Read)?);
-
-                func.inner.push(Code::Instruction(inx));
-
-                func.inner
-                    .extend(translate_operand(&mut func.space, &target, Access::Write)?);
-            } else {
-                match op.ty {
-                    OperationType::Ass => {
-                        let target = op.target().unwrap();
-                        let arg1 = ops.next().unwrap();
-                        func.inner
-                            .extend(translate_operand(&mut func.space, &arg1, Access::Read)?);
-                        func.inner.extend(translate_operand(
-                            &mut func.space,
-                            &target,
-                            Access::Write,
-                        )?);
-                    }
-                    OperationType::Debug => {
-                        func.inner.extend(vec![
-                            Code::Instruction(Instruction::Int),
-                            Code::Value(Value::Ref(vm::Interrupt::Debug as usize)),
-                        ]);
-                    }
-                    _ => unimplemented!(),
-                }
+        println!("{:?}", offsets);
+        for (bidx, branch) in self.branches.into_iter().enumerate() {
+            let boffset = func.inner.len();
+            for (offset, _) in offsets.iter().filter(|(_, i)| *i == bidx) {
+                println!("write {}", offset);
+                func.inner[*offset] = mkref(boffset);
             }
+
+            let branch_co = translate_sequence(&mut func.space, branch, &mut offsets)?;
+            func.inner.extend(branch_co);
         }
 
         Ok(func)
@@ -134,6 +117,80 @@ where
     T: PartialEq,
 {
     ls.iter().position(|a| a == item).unwrap()
+}
+
+fn translate_sequence(
+    space: &mut Space,
+    seq: Sequence,
+    offsets: &mut Vec<(usize, usize)>,
+) -> BuildResult<CodeBlock> {
+    let mut co = vec![];
+    for op in seq.iter() {
+        let mut ops = op.ops();
+
+        if let Some(inx) = op.as_inx() {
+            let target = op.target().unwrap();
+            let arg1 = ops.next().unwrap();
+
+            if op.is_update() {
+                co.extend(translate_operand(space, &target, Access::Read)?);
+            }
+
+            co.extend(translate_operand(space, &arg1, Access::Read)?);
+            co.push(Code::Instruction(inx));
+            co.extend(translate_operand(space, &target, Access::Write)?);
+        } else {
+            match op.ty {
+                OperationType::Ass => {
+                    let target = op.target().unwrap();
+                    let arg1 = ops.next().unwrap();
+                    co.extend(translate_operand(space, &arg1, Access::Read)?);
+                    co.extend(translate_operand(space, &target, Access::Write)?);
+                }
+                OperationType::Ret => {
+                    co.push(Code::Instruction(Instruction::Ret));
+                }
+                OperationType::Cmp => {
+                    let target = op.target().unwrap();
+                    let arg1 = ops.next().unwrap();
+                    co.extend(translate_operand(space, &arg1, Access::Read)?);
+                    co.extend(translate_operand(space, &target, Access::Read)?);
+                    co.push(Code::Instruction(Instruction::Cmp));
+                }
+                OperationType::Jmp
+                | OperationType::Jeq
+                | OperationType::Jne
+                | OperationType::Jge
+                | OperationType::Jgt
+                | OperationType::Jle
+                | OperationType::Jlt => {
+                    let target = op.target().unwrap();
+                    let inx = match op.ty {
+                        OperationType::Jmp => Instruction::Jmp,
+                        OperationType::Jeq => Instruction::Jeq,
+                        OperationType::Jne => Instruction::Jne,
+                        OperationType::Jge => Instruction::Jge,
+                        OperationType::Jgt => Instruction::Jgt,
+                        OperationType::Jle => Instruction::Jle,
+                        OperationType::Jlt => Instruction::Jlt,
+                        _ => unreachable!(),
+                    };
+                    co.push(Code::Instruction(inx));
+
+                    offsets.push((co.len(), target.as_const().clone().into()));
+                    co.push(mkref(std::usize::MAX));
+                }
+                OperationType::Debug => {
+                    co.extend(vec![
+                        Code::Instruction(Instruction::Int),
+                        Code::Value(Value::Ref(vm::Interrupt::Debug as usize)),
+                    ]);
+                }
+                _ => unimplemented!(),
+            }
+        }
+    }
+    Ok(co)
 }
 
 fn translate_operand(space: &mut Space, op: &Operand, acc: Access) -> BuildResult<CodeBlock> {

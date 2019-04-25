@@ -25,7 +25,16 @@ fn simple_module() {
 fn fib_function() {
     let fib = FunctionBuilder::new()
         .with_args(vec!["x"])
-        .step(Operation::new(OperationType::Add).update().op("x").op(1))
+        .step(Operation::new(OperationType::Cmp).op("x").op(0))
+        .branch(
+            Operation::new(OperationType::Jeq),
+            vec![Operation::new(OperationType::Ret)],
+        )
+        .step(Operation::new(OperationType::Cmp).op("x").op(1))
+        .branch(
+            Operation::new(OperationType::Jeq),
+            vec![Operation::new(OperationType::Ret)],
+        )
         .debug()
         .build()
         .expect("building function failed");
