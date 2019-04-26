@@ -57,14 +57,14 @@ impl FunctionBuilder {
         self
     }
 
-    pub fn branch(&mut self, jmp: Operation, seq: Sequence) -> &mut Self {
+    pub fn branch(&mut self, mut jmp: Operation, seq: Sequence) -> &mut Self {
         for c in seq.iter().flat_map(|op| op.consts()) {
             if !self.space.consts.contains(c) {
                 self.space.consts.push(c.clone());
             }
         }
 
-        self.seq.push(jmp.op(self.branches.len()));
+        self.seq.push(jmp.op(self.branches.len()).end());
         self.branches.push(seq);
         self
     }

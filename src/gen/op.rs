@@ -46,7 +46,7 @@ pub enum OperationType {
 
 impl Operation {
     pub fn call(fname: &str) -> Self {
-        Operation::new(OperationType::Call).op(fname)
+        Operation::new(OperationType::Call).op(fname).end()
     }
 }
 
@@ -141,7 +141,7 @@ impl Operation {
         })
     }
 
-    pub fn var<T>(mut self, name: T) -> Self
+    pub fn var<T>(&mut self, name: T) -> &mut Self
     where
         T: Into<Name>,
     {
@@ -149,12 +149,16 @@ impl Operation {
         self
     }
 
-    pub fn op<T>(mut self, op: T) -> Self
+    pub fn op<T>(&mut self, op: T) -> &mut Self
     where
         T: Into<Operand>,
     {
         self.ops.push(op.into());
         self
+    }
+
+    pub fn end(&self) -> Self {
+        self.clone()
     }
 
     pub fn target(&self) -> Option<&Operand> {

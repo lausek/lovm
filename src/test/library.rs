@@ -23,32 +23,32 @@ fn simple_module() {
 #[test]
 fn fib_function() {
     let mut fib = FunctionBuilder::new().with_args(vec!["x"]);
-    fib.step(Operation::cmp().var("x").op(0))
+    fib.step(Operation::cmp().var("x").op(0).end())
         .branch(
             Operation::jeq(),
             vec![
-                Operation::add().var("x").op(0), // TODO: this is a hack for pushing x
+                Operation::add().var("x").op(0).end(), // TODO: this is a hack for pushing x
                 Operation::ret(),
             ],
         )
-        .step(Operation::cmp().var("x").op(1))
+        .step(Operation::cmp().var("x").op(1).end())
         .branch(
             Operation::jeq(),
             vec![
-                Operation::add().var("x").op(0), // TODO: this is a hack for pushing x
+                Operation::add().var("x").op(0).end(), // TODO: this is a hack for pushing x
                 Operation::ret(),
             ],
         )
-        .step(Operation::sub().var("x").op(1))
+        .step(Operation::sub().var("x").op(1).end())
         .step(Operation::call("fib"))
-        .step(Operation::sub().var("x").op(2))
+        .step(Operation::sub().var("x").op(2).end())
         .step(Operation::call("fib"))
         .step(Operation::add())
         .step(Operation::ret());
     let fib = fib.build().expect("building function failed");
 
     let mut main = FunctionBuilder::new();
-    main.step(Operation::call("fib").op(8)).debug();
+    main.step(Operation::call("fib").op(8).end()).debug();
     let main = main.build().expect("building function failed");
 
     let mut module = ModuleBuilder::new();
@@ -77,8 +77,8 @@ fn gen_foo() -> BuildResult<Function> {
     //          z += y
     //          return z ; not implemented
     let mut func = FunctionBuilder::new().with_args(vec!["x", "y"]);
-    func.step(Operation::ass().op("z").op(1))
-        .step(Operation::add().update().op("z").op("x"))
-        .step(Operation::add().update().op("z").op("y"));
+    func.step(Operation::ass().op("z").op(1).end())
+        .step(Operation::add().update().op("z").op("x").end())
+        .step(Operation::add().update().op("z").op("y").end());
     func.build()
 }
