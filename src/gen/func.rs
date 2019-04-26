@@ -76,10 +76,12 @@ impl FunctionBuilder {
             }
         }
 
-        if let Some(target) = op.target() {
-            let name = target.as_name();
-            if !self.space.locals.contains(&name) {
-                self.space.locals.push(name.clone());
+        if op.is_update() {
+            if let Some(target) = op.target() {
+                let name = target.as_name();
+                if !self.space.locals.contains(&name) {
+                    self.space.locals.push(name.clone());
+                }
             }
         }
 
