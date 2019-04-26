@@ -140,10 +140,12 @@ fn translate_sequence(
                         co.extend(translate_operand(space, &next, Access::Read)?);
                         co.push(inx);
                     }
+                } else {
+                    co.push(inx);
                 }
+            } else {
+                co.push(inx);
             }
-
-            co.push(inx);
 
             if op.is_update() {
                 co.extend(translate_operand(
@@ -154,6 +156,7 @@ fn translate_sequence(
             }
         } else {
             match op.ty {
+                OperationType::Ret => co.push(Instruction::Ret),
                 OperationType::Ass => {
                     let target = op.target().unwrap();
                     let arg1 = op.rest().next().unwrap();
@@ -171,8 +174,15 @@ fn translate_sequence(
                     )?);
                     co.push(Instruction::Call);
                 }
-                OperationType::Ret => {
-                    co.push(Instruction::Ret);
+                OperationType::Push => {
+                    for arg in op.ops() {
+                        co.extend(translate_operand(space, &arg, Access::Read)?);
+                    }
+                }
+                OperationType::Pop => {
+                    for arg in op.ops() {
+                        co.extend(translate_operand(space, &arg, Access::Write)?);
+                    }
                 }
                 OperationType::Cmp => {
                     let target = op.target().unwrap();
