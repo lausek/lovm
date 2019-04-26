@@ -26,18 +26,12 @@ fn fib_function() {
     fib.step(Operation::cmp().var("x").op(0).end())
         .branch(
             Operation::jeq(),
-            vec![
-                Operation::add().var("x").op(0).end(), // TODO: this is a hack for pushing x
-                Operation::ret(),
-            ],
+            vec![Operation::push().var("x").end(), Operation::ret()],
         )
         .step(Operation::cmp().var("x").op(1).end())
         .branch(
             Operation::jeq(),
-            vec![
-                Operation::add().var("x").op(0).end(), // TODO: this is a hack for pushing x
-                Operation::ret(),
-            ],
+            vec![Operation::push().var("x").end(), Operation::ret()],
         )
         .step(Operation::sub().var("x").op(1).end())
         .step(Operation::call("fib"))

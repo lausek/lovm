@@ -20,6 +20,8 @@ pub enum OperationType {
 
     Call,
     Ret,
+    Push,
+    Pop,
 
     Cmp,
     Jmp,
@@ -53,6 +55,9 @@ impl Operation {
 derive_constructor!(OperationType::Ass, ass);
 derive_constructor!(OperationType::Debug, debug);
 derive_constructor!(OperationType::Ret, ret);
+derive_constructor!(OperationType::Push, push);
+derive_constructor!(OperationType::Pop, pop);
+
 derive_constructor!(OperationType::Cmp, cmp);
 derive_constructor!(OperationType::Jmp, jmp);
 derive_constructor!(OperationType::Jeq, jeq);

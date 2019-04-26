@@ -130,21 +130,20 @@ fn translate_sequence(
     let mut co = vec![];
     for op in seq.iter() {
         if let Some(inx) = op.as_inx() {
-            co.extend(translate_operand(
-                space,
-                &op.target().unwrap(),
-                Access::Read,
-            )?);
-
-            let args = op.rest().collect::<Vec<_>>();
-            if args.is_empty() {
-                co.push(inx);
-            } else {
-                for arg in args.iter() {
-                    co.extend(translate_operand(space, &arg, Access::Read)?);
+            let mut ops = op.ops();
+            if let Some(first) = ops.next() {
+                co.extend(translate_operand(space, &first, Access::Read)?);
+                if let Some(second) = ops.next() {
+                    co.extend(translate_operand(space, &second, Access::Read)?);
                     co.push(inx);
+                    while let Some(next) = ops.next() {
+                        co.extend(translate_operand(space, &next, Access::Read)?);
+                        co.push(inx);
+                    }
                 }
             }
+
+            co.push(inx);
 
             if op.is_update() {
                 co.extend(translate_operand(
