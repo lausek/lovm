@@ -130,18 +130,23 @@ fn translate_sequence(
     let mut co = vec![];
     for op in seq.iter() {
         if let Some(inx) = op.as_inx() {
-            if let Some(target) = op.target() {
-                let arg1 = op.rest().next().unwrap();
+            co.extend(translate_operand(
+                space,
+                op.target().as_ref().unwrap(),
+                Access::Read,
+            )?);
 
-                co.extend(translate_operand(space, &target, Access::Read)?);
-                co.extend(translate_operand(space, &arg1, Access::Read)?);
+            for arg in op.rest() {
+                co.extend(translate_operand(space, &arg, Access::Read)?);
                 co.push(inx);
+            }
 
-                if op.is_update() {
-                    co.extend(translate_operand(space, &target, Access::Write)?);
-                }
-            } else {
-                co.push(inx);
+            if op.is_update() {
+                co.extend(translate_operand(
+                    space,
+                    op.target().as_ref().unwrap(),
+                    Access::Write,
+                )?);
             }
         } else {
             match op.ty {
