@@ -136,9 +136,14 @@ fn translate_sequence(
                 Access::Read,
             )?);
 
-            for arg in op.rest() {
-                co.extend(translate_operand(space, &arg, Access::Read)?);
+            let args = op.rest().collect::<Vec<_>>();
+            if args.is_empty() {
                 co.push(inx);
+            } else {
+                for arg in args.iter() {
+                    co.extend(translate_operand(space, &arg, Access::Read)?);
+                    co.push(inx);
+                }
             }
 
             if op.is_update() {
