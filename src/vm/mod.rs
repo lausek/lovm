@@ -90,7 +90,7 @@ impl Vm {
         Err(format!("function `{}` is unknown", name))
     }
 
-    fn run_object(&mut self, co: &CodeObject) -> VmResult {
+    pub fn run_object(&mut self, co: &CodeObject) -> VmResult {
         let bl = &co.inner;
         let len = bl.len();
         let mut ip = 0;
