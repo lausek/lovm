@@ -130,13 +130,7 @@ fn translate_sequence(
     let mut co = vec![];
     for op in seq.iter() {
         if let Some(inx) = op.as_inx() {
-            co.extend(translate_operand(
-                space,
-                op.target().as_ref().unwrap(),
-                Access::Read,
-            )?);
-
-            for arg in op.rest() {
+            for arg in op.ops() {
                 co.extend(translate_operand(space, &arg, Access::Read)?);
                 co.push(inx);
             }
