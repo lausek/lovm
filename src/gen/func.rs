@@ -158,10 +158,16 @@ fn translate_sequence(
             match op.ty {
                 OperationType::Ret => co.push(Instruction::Ret),
                 OperationType::Ass => {
-                    let target = op.target().unwrap();
-                    let arg1 = op.rest().next().unwrap();
-                    co.extend(translate_operand(space, &arg1, Access::Read)?);
-                    co.extend(translate_operand(space, &target, Access::Write)?);
+                    co.extend(translate_operand(
+                        space,
+                        &op.target().unwrap(),
+                        Access::Write,
+                    )?);
+                    co.extend(translate_operand(
+                        space,
+                        &op.rest().next().unwrap(),
+                        Access::Read,
+                    )?);
                 }
                 OperationType::Call => {
                     for arg in op.rest() {
@@ -187,8 +193,8 @@ fn translate_sequence(
                 OperationType::Cmp => {
                     let target = op.target().unwrap();
                     let arg1 = op.rest().next().unwrap();
-                    co.extend(translate_operand(space, &arg1, Access::Read)?);
                     co.extend(translate_operand(space, &target, Access::Read)?);
+                    co.extend(translate_operand(space, &arg1, Access::Read)?);
                     co.push(Instruction::Cmp);
                 }
                 OperationType::Jmp

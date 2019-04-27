@@ -103,8 +103,6 @@ impl Vm {
 
         while self.data.state == VmState::Running && ip < len {
             let inx = &bl[ip];
-            //let argc = inx.arguments();
-            //let args = take(bl, &mut ip, argc);
 
             if cfg!(debug_assertions) {
                 println!("{}: {:?}", ip, inx);
@@ -178,33 +176,34 @@ impl Vm {
                 | Instruction::Xor
                 | Instruction::Shl
                 | Instruction::Shr => {
-                    let op2 = self.data.vstack.pop().expect("no operand");
-                    let op1 = self.data.vstack.last_mut().expect("no target");
+                    let op = self.data.vstack.pop().expect("no operand");
+                    let target = self.data.vstack.last_mut().expect("no target");
 
                     if cfg!(debug_assertions) {
-                        println!("{:?}, {:?}", op1, op2);
+                        println!("target({:?}) {:?} {:?}", target, inx, op);
                     }
 
-                    *op1 = match inx {
-                        Instruction::Add => op1.add(&op2),
-                        Instruction::Sub => op1.sub(&op2),
-                        Instruction::Mul => op1.mul(&op2),
-                        Instruction::Div => op1.div(&op2),
-                        Instruction::Rem => op1.rem(&op2),
-                        Instruction::Pow => op1.pow(&op2),
-                        Instruction::Neg => op1.neg(),
-                        Instruction::And => op1.and(&op2),
-                        Instruction::Or => op1.or(&op2),
-                        Instruction::Xor => op1.xor(&op2),
-                        Instruction::Shl => op1.shl(&op2),
-                        Instruction::Shr => op1.shr(&op2),
+                    *target = match inx {
+                        Instruction::Add => target.add(&op),
+                        Instruction::Sub => target.sub(&op),
+                        Instruction::Mul => target.mul(&op),
+                        Instruction::Div => target.div(&op),
+                        Instruction::Rem => target.rem(&op),
+                        Instruction::Pow => target.pow(&op),
+                        // TODO: Neg does not not an operand
+                        Instruction::Neg => op.neg(),
+                        Instruction::And => target.and(&op),
+                        Instruction::Or => target.or(&op),
+                        Instruction::Xor => target.xor(&op),
+                        Instruction::Shl => target.shl(&op),
+                        Instruction::Shr => target.shr(&op),
                         _ => unimplemented!(),
                     };
                 }
                 Instruction::Cmp => {
-                    let op2 = self.data.vstack.pop().expect("missing op2");
                     let op1 = self.data.vstack.pop().expect("missing op1");
-                    (*register_mut(&mut self.data)).cmp = op1.partial_cmp(&op2);
+                    let op2 = self.data.vstack.pop().expect("missing op2");
+                    (*register_mut(&mut self.data)).cmp = op2.partial_cmp(&op1);
                 }
                 Instruction::Jmp(nip)
                 | Instruction::Jeq(nip)
