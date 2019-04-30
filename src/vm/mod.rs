@@ -35,6 +35,7 @@ pub type VmResult = Result<(), String>;
 pub enum VmState {
     Initial,
     Running,
+    Panic,
     Exited,
 }
 
@@ -84,7 +85,7 @@ impl Vm {
     where
         T: Into<String>,
     {
-        self.data.state = VmState::Exited;
+        self.data.state = VmState::Panic;
         Err(msg.into())
     }
 
