@@ -125,11 +125,11 @@ impl FunctionBuilder {
     }
 }
 
-fn index_of<T>(ls: &Vec<T>, item: &T) -> usize
+fn index_of<T>(ls: &Vec<T>, item: &T) -> Option<usize>
 where
     T: PartialEq + std::fmt::Debug,
 {
-    ls.iter().position(|a| a == item).unwrap()
+    ls.iter().position(|a| a == item)
 }
 
 fn translate_sequence(func: &mut Function, seq: Sequence) -> BuildResult<()> {
@@ -180,7 +180,7 @@ fn translate_operand(func: &mut Function, op: &Operand, acc: Access) -> BuildRes
             });
         }
         Operand::Const(v) => {
-            let idx = index_of(&func.space.consts, &v);
+            let idx = index_of(&func.space.consts, &v).unwrap();
             func.inner.push(Instruction::Cpush(idx));
         }
     }
@@ -213,11 +213,15 @@ fn translate_operation(func: &mut Function, op: &Operation) -> BuildResult<()> {
                 translate(func, &op.rest().next().unwrap(), Access::Read)?;
             }
             OperationType::Call => {
+                let fname = op.target().unwrap().as_name();
                 for arg in op.rest() {
                     translate(func, arg, Access::Read)?;
                 }
-                translate_operand(func, &op.target().unwrap(), Access::Read)?;
-                func.inner.push(Instruction::Call);
+                let idx = index_of(&func.space.globals, &fname).unwrap_or_else(|| {
+                    func.space.globals.push(fname.clone());
+                    func.space.globals.len() - 1
+                });
+                func.inner.push(Instruction::Gcall(idx));
             }
             OperationType::Push => {
                 for arg in op.ops() {

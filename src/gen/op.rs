@@ -80,7 +80,7 @@ derive_constructor!(OperationType::Xor, xor);
 derive_constructor!(OperationType::Shl, shl);
 derive_constructor!(OperationType::Shr, shr);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum OpValue {
     Operand(Operand),
     Operation(Operation),
@@ -101,7 +101,7 @@ impl From<Operation> for OpValue {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Operation {
     ops: Vec<OpValue>,
     pub ty: OperationType,
@@ -201,7 +201,7 @@ impl Operation {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Operand {
     Const(Value),
     Name(Name),
@@ -210,7 +210,7 @@ pub enum Operand {
 impl Operand {
     pub fn as_name(&self) -> &Name {
         match self {
-            Operand::Name(n) => n,
+            Operand::Name(n) | Operand::Const(Value::Str(n)) => n,
             _ => unimplemented!(),
         }
     }

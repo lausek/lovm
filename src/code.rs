@@ -110,11 +110,12 @@ pub enum Instruction {
     Cpush(usize), // push constant
     Lpush(usize), // push local value
     Lpop(usize),  // pop to local
+    Lcall(usize),
     Gpush(usize), // push global value
     Gpop(usize),  // pop to global
+    Gcall(usize),
 
     Cast(usize),
-    Call,
     Int(usize),
     Ret,
     Pusha,
@@ -136,8 +137,10 @@ impl Instruction {
             | Instruction::Cpush(c)
             | Instruction::Lpush(c)
             | Instruction::Lpop(c)
+            | Instruction::Lcall(c)
             | Instruction::Gpush(c)
-            | Instruction::Gpop(c) => *c = arg,
+            | Instruction::Gpop(c)
+            | Instruction::Gcall(c) => *c = arg,
             _ => unimplemented!(),
         }
     }
@@ -156,12 +159,13 @@ impl Instruction {
             | Instruction::Cpush(_)
             | Instruction::Lpush(_)
             | Instruction::Lpop(_)
+            | Instruction::Lcall(_)
             | Instruction::Gpush(_)
-            | Instruction::Gpop(_) => 1,
+            | Instruction::Gpop(_)
+            | Instruction::Gcall(_) => 1,
 
             Instruction::Inc
             | Instruction::Dec
-            | Instruction::Call
             | Instruction::Cmp
             | Instruction::Add
             | Instruction::Sub

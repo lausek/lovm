@@ -131,11 +131,6 @@ impl Vm {
                     let val = self.data.vstack.last_mut().expect("no value");
                     *val = val.cast(&Value::from_type(*ty_idx));
                 }
-                Instruction::Call => {
-                    let fname = self.data.vstack.pop().expect("no function name");
-                    let co = self.call_lookup(&fname.to_string())?.clone();
-                    self.run_object(&co)?;
-                }
                 Instruction::Lpop(idx) | Instruction::Gpop(idx) => {
                     let value = self.data.vstack.pop().expect("no value");
                     match inx {
@@ -163,6 +158,14 @@ impl Vm {
                         _ => unreachable!(),
                     };
                     self.data.vstack.push(value);
+                }
+                Instruction::Lcall(_idx) => {
+                    unimplemented!();
+                }
+                Instruction::Gcall(idx) => {
+                    let fname = &co.space.globals[*idx];
+                    let co = self.call_lookup(&fname.to_string())?.clone();
+                    self.run_object(&co)?;
                 }
                 Instruction::Inc | Instruction::Dec => {
                     unimplemented!();
