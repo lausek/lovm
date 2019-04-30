@@ -1,6 +1,5 @@
 use super::*;
 
-// ---- example
 // pseudocode:
 //      f(x, y):
 //          z = x + y
@@ -21,7 +20,36 @@ enum Access {
     Write,
 }
 
-pub type Function = CodeObject;
+#[derive(Clone, Debug, PartialEq)]
+pub struct Function {
+    pub argc: usize,
+    pub space: Space,
+    pub inner: CodeBlock,
+    offsets: Vec<(usize, usize)>,
+}
+
+impl Function {
+    pub fn new() -> Self {
+        Self {
+            argc: 0,
+            space: Space::new(),
+            inner: CodeBlock::new(),
+            offsets: vec![],
+        }
+    }
+}
+
+impl From<Function> for CodeObject {
+    fn from(from: Function) -> Self {
+        Self {
+    argc: from.argc,
+    space: from.space,
+    inner: from.inner,
+        }
+    }
+}
+
+//pub type Function = CodeObject;
 
 #[derive(Clone, Debug)]
 pub struct FunctionBuilder {
@@ -76,14 +104,14 @@ impl FunctionBuilder {
             }
         }
 
-        if op.is_update() {
-            if let Some(target) = op.target() {
-                let name = target.as_name();
-                if !self.space.locals.contains(&name) {
-                    self.space.locals.push(name.clone());
-                }
-            }
-        }
+        //if op.is_update() {
+        //    if let Some(target) = op.target() {
+        //        let name = target.as_name();
+        //        if !self.space.locals.contains(&name) {
+        //            self.space.locals.push(name.clone());
+        //        }
+        //    }
+        //}
 
         self.seq.push(op);
         self
@@ -98,8 +126,8 @@ impl FunctionBuilder {
 
         let mut func = Function::new();
         func.argc = self.argc.clone();
-        func.space = self.space.clone();
-        func.inner = translate_sequence(&mut func.space, self.seq.clone(), &mut offsets)?;
+        //func.space = self.space.clone();
+        translate_sequence(&mut func, self.seq.clone())?;
 
         for (bidx, branch) in self.branches.iter().enumerate() {
             let boffset = func.inner.len();
@@ -107,8 +135,8 @@ impl FunctionBuilder {
                 func.inner[*offset].set_arg(boffset);
             }
 
-            let branch_co = translate_sequence(&mut func.space, branch.clone(), &mut offsets)?;
-            func.inner.extend(branch_co);
+            translate_sequence(&mut func, branch.clone())?;
+            //func.inner.extend(tmp.);
         }
 
         Ok(func)
@@ -122,138 +150,136 @@ where
     ls.iter().position(|a| a == item).unwrap()
 }
 
-fn translate_sequence(
-    space: &mut Space,
-    seq: Sequence,
-    offsets: &mut Vec<(usize, usize)>,
-) -> BuildResult<CodeBlock> {
-    let mut co = vec![];
+fn translate_sequence(func: &mut Function, seq: Sequence) -> BuildResult<()> {
     for op in seq.iter() {
-        if let Some(inx) = op.as_inx() {
-            let mut ops = op.ops();
-            if let Some(first) = ops.next() {
-                co.extend(translate_operand(space, &first, Access::Read)?);
-                if let Some(second) = ops.next() {
-                    co.extend(translate_operand(space, &second, Access::Read)?);
-                    co.push(inx);
-                    while let Some(next) = ops.next() {
-                        co.extend(translate_operand(space, &next, Access::Read)?);
-                        co.push(inx);
-                    }
-                } else {
-                    co.push(inx);
-                }
-            } else {
-                co.push(inx);
-            }
-
-            if op.is_update() {
-                co.extend(translate_operand(
-                    space,
-                    op.target().as_ref().unwrap(),
-                    Access::Write,
-                )?);
-            }
-        } else {
-            match op.ty {
-                OperationType::Ret => co.push(Instruction::Ret),
-                OperationType::Ass => {
-                    co.extend(translate_operand(
-                        space,
-                        &op.target().unwrap(),
-                        Access::Write,
-                    )?);
-                    co.extend(translate_operand(
-                        space,
-                        &op.rest().next().unwrap(),
-                        Access::Read,
-                    )?);
-                }
-                OperationType::Call => {
-                    for arg in op.rest() {
-                        co.extend(translate_operand(space, &arg, Access::Read)?);
-                    }
-                    co.extend(translate_operand(
-                        space,
-                        &op.target().unwrap(),
-                        Access::Read,
-                    )?);
-                    co.push(Instruction::Call);
-                }
-                OperationType::Push => {
-                    for arg in op.ops() {
-                        co.extend(translate_operand(space, &arg, Access::Read)?);
-                    }
-                }
-                OperationType::Pop => {
-                    for arg in op.ops() {
-                        co.extend(translate_operand(space, &arg, Access::Write)?);
-                    }
-                }
-                OperationType::Cmp => {
-                    let target = op.target().unwrap();
-                    let arg1 = op.rest().next().unwrap();
-                    co.extend(translate_operand(space, &target, Access::Read)?);
-                    co.extend(translate_operand(space, &arg1, Access::Read)?);
-                    co.push(Instruction::Cmp);
-                }
-                OperationType::Jmp
-                | OperationType::Jeq
-                | OperationType::Jne
-                | OperationType::Jge
-                | OperationType::Jgt
-                | OperationType::Jle
-                | OperationType::Jlt => {
-                    let target = op.target().unwrap();
-                    let inx = match op.ty {
-                        OperationType::Jmp => Instruction::Jmp(std::usize::MAX),
-                        OperationType::Jeq => Instruction::Jeq(std::usize::MAX),
-                        OperationType::Jne => Instruction::Jne(std::usize::MAX),
-                        OperationType::Jge => Instruction::Jge(std::usize::MAX),
-                        OperationType::Jgt => Instruction::Jgt(std::usize::MAX),
-                        OperationType::Jle => Instruction::Jle(std::usize::MAX),
-                        OperationType::Jlt => Instruction::Jlt(std::usize::MAX),
-                        _ => unreachable!(),
-                    };
-                    offsets.push((co.len(), target.as_const().clone().into()));
-                    co.push(inx);
-                }
-                OperationType::Debug => {
-                    co.extend(vec![Instruction::Int(vm::Interrupt::Debug as usize)]);
-                }
-                _ => unimplemented!(),
-            }
-        }
+        translate_operation(func, op)?;
     }
-    Ok(co)
+    Ok(())
 }
 
-fn translate_operand(space: &mut Space, op: &Operand, acc: Access) -> BuildResult<CodeBlock> {
+fn translate(func: &mut Function, op: &OpValue, acc: Access) -> BuildResult<()> {
     match op {
-        Operand::Name(n) if space.locals.contains(n) => {
-            let idx = space.locals.iter().position(|local| local == n).unwrap();
-            Ok(vec![if acc == Access::Write {
+        OpValue::Operand(op) => translate_operand(func, op, acc),
+        OpValue::Operation(op) => translate_operation(func, op),
+    }
+}
+
+fn translate_operand(func: &mut Function, op: &Operand, acc: Access) -> BuildResult<()> {
+    match op {
+        Operand::Name(n) if func.space.locals.contains(n) => {
+            let idx = func.space.locals.iter().position(|local| local == n).unwrap();
+            func.inner.push(if acc == Access::Write {
                 Instruction::Lpop(idx)
             } else {
                 Instruction::Lpush(idx)
-            }])
+            });
         }
         Operand::Name(n) => {
-            let idx = if !space.globals.contains(n) {
-                space.globals.push(n.clone());
-                space.globals.len()
+            let idx = if !func.space.globals.contains(n) {
+                func.space.globals.push(n.clone());
+                func.space.globals.len()
             } else {
-                space.globals.iter().position(|global| global == n).unwrap()
+                func.space.globals.iter().position(|global| global == n).unwrap()
             };
-            Ok(vec![if acc == Access::Write {
+            func.inner.push(if acc == Access::Write {
                 Instruction::Gpop(idx)
             } else {
                 Instruction::Gpush(idx)
-            }])
+            });
         }
         Operand::Const(v) => {
-            let idx = index_of(&space.consts, &v);
-            Ok(vec![Instruction::Cpush(idx)])
+            let idx = index_of(&func.space.consts, &v);
+            func.inner.push(Instruction::Cpush(idx));
         }
     }
+    Ok(())
+}
+
+fn translate_operation(func: &mut Function, op: &Operation) -> BuildResult<()> {
+    if let Some(inx) = op.as_inx() {
+        let mut ops = op.ops();
+        if let Some(first) = ops.next() {
+            translate(func, &first, Access::Read)?;
+            if let Some(second) = ops.next() {
+                translate(func, &second, Access::Read)?;
+                func.inner.push(inx);
+                while let Some(next) = ops.next() {
+                    translate(func, next, Access::Read)?;
+                    func.inner.push(inx);
+                }
+            } else {
+                func.inner.push(inx);
+            }
+        } else {
+            func.inner.push(inx);
+        }
+
+    //if op.is_update() {
+    //    co.extend(translate_operand(
+    //        space,
+    //        op.target().as_ref().unwrap(),
+    //        Access::Write,
+    //    )?);
+    //}
+    } else {
+        match op.ty {
+            OperationType::Ret => func.inner.push(Instruction::Ret),
+            OperationType::Ass => {
+                translate_operand(func, &op.target().unwrap(), Access::Write)?;
+                translate(func, &op.rest().next().unwrap(), Access::Read)?;
+            }
+            OperationType::Call => {
+                for arg in op.rest() {
+                    translate(func, arg, Access::Read)?;
+                }
+                translate_operand(func, &op.target().unwrap(), Access::Read)?;
+                func.inner.push(Instruction::Call);
+            }
+            OperationType::Push => {
+                for arg in op.ops() {
+                    translate(func, arg, Access::Read)?;
+                }
+            }
+            OperationType::Pop => {
+                for arg in op.ops() {
+                    translate(func, arg, Access::Write)?;
+                }
+            }
+            OperationType::Cmp => {
+                let target = op.target().unwrap();
+                let arg1 = op.rest().next().unwrap();
+                translate_operand(func, target, Access::Read)?;
+                translate(func, arg1, Access::Read)?;
+                func.inner.push(Instruction::Cmp);
+            }
+            OperationType::Jmp
+            | OperationType::Jeq
+            | OperationType::Jne
+            | OperationType::Jge
+            | OperationType::Jgt
+            | OperationType::Jle
+            | OperationType::Jlt => {
+                let target = op.target().unwrap();
+                let inx = match op.ty {
+                    OperationType::Jmp => Instruction::Jmp(std::usize::MAX),
+                    OperationType::Jeq => Instruction::Jeq(std::usize::MAX),
+                    OperationType::Jne => Instruction::Jne(std::usize::MAX),
+                    OperationType::Jge => Instruction::Jge(std::usize::MAX),
+                    OperationType::Jgt => Instruction::Jgt(std::usize::MAX),
+                    OperationType::Jle => Instruction::Jle(std::usize::MAX),
+                    OperationType::Jlt => Instruction::Jlt(std::usize::MAX),
+                    _ => unreachable!(),
+                };
+                func.offsets
+                    .push((func.inner.len(), target.as_const().clone().into()));
+                func.inner.push(inx);
+            }
+            OperationType::Debug => {
+                func.inner
+                    .extend(vec![Instruction::Int(vm::Interrupt::Debug as usize)]);
+            }
+            _ => unimplemented!(),
+        }
+    }
+    Ok(())
 }

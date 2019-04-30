@@ -15,7 +15,7 @@ fn simple_module() {
     let bar = gen_foo().expect("building `bar` failed");
 
     let mut builder = ModuleBuilder::new();
-    builder.decl("foo", foo).decl("bar", bar);
+    builder.decl("foo", foo.into()).decl("bar", bar.into());
 
     let module = builder.build().expect("building module failed");
 }
@@ -33,11 +33,16 @@ fn fib_function() {
             Operation::jeq(),
             vec![Operation::push().var("x").end(), Operation::ret()],
         )
-        .step(Operation::sub().var("x").op(1).end())
-        .step(Operation::call("fib"))
-        .step(Operation::sub().var("x").op(2).end())
-        .step(Operation::call("fib"))
-        .step(Operation::add())
+        .step(
+            Operation::add()
+                .op(Operation::call("fib")
+                    .op(Operation::sub().var("x").op(1).end())
+                    .end())
+                .op(Operation::call("fib")
+                    .op(Operation::sub().var("x").op(2).end())
+                    .end())
+                .end(),
+        )
         .step(Operation::ret());
     let fib = fib.build().expect("building function failed");
 
@@ -46,7 +51,7 @@ fn fib_function() {
     let main = main.build().expect("building function failed");
 
     let mut module = ModuleBuilder::new();
-    module.decl("fib", fib).decl("main", main);
+    module.decl("fib", fib.into()).decl("main", main.into());
     let module = module.build().expect("building module failed");
 
     fn debug(data: &mut vm::VmData) -> vm::VmResult {
@@ -72,7 +77,7 @@ fn gen_foo() -> BuildResult<Function> {
     //          return z ; not implemented
     let mut func = FunctionBuilder::new().with_args(vec!["x", "y"]);
     func.step(Operation::ass().op("z").op(1).end())
-        .step(Operation::add().update().op("z").op("x").end())
-        .step(Operation::add().update().op("z").op("y").end());
+        .step(Operation::add().op("z").op("x").end())
+        .step(Operation::add().op("z").op("y").end());
     func.build()
 }

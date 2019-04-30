@@ -81,8 +81,29 @@ derive_constructor!(OperationType::Shl, shl);
 derive_constructor!(OperationType::Shr, shr);
 
 #[derive(Clone, Debug)]
+pub enum OpValue {
+    Operand(Operand),
+    Operation(Operation),
+}
+
+impl<T> From<T> for OpValue
+where
+    T: Into<Operand>,
+{
+    fn from(from: T) -> Self {
+        OpValue::Operand(from.into())
+    }
+}
+
+impl From<Operation> for OpValue {
+    fn from(from: Operation) -> Self {
+        OpValue::Operation(from)
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Operation {
-    ops: Vec<Operand>,
+    ops: Vec<OpValue>,
     pub ty: OperationType,
     update: bool,
 }
@@ -123,6 +144,7 @@ impl Operation {
         }
     }
 
+    /*
     pub fn update(mut self) -> Self {
         self.update = true;
         self
@@ -131,17 +153,18 @@ impl Operation {
     pub fn is_update(&self) -> bool {
         self.update
     }
+    */
 
     pub fn consts(&self) -> impl Iterator<Item = &Value> {
         self.ops.iter().filter_map(|op| match op {
-            Operand::Const(v) => Some(v),
+            OpValue::Operand(Operand::Const(v)) => Some(v),
             _ => None,
         })
     }
 
     pub fn idents(&self) -> impl Iterator<Item = &Name> {
         self.ops.iter().filter_map(|op| match op {
-            Operand::Name(name) => Some(name),
+            OpValue::Operand(Operand::Name(name)) => Some(name),
             _ => None,
         })
     }
@@ -150,13 +173,14 @@ impl Operation {
     where
         T: Into<Name>,
     {
-        self.ops.push(Operand::Name(name.into().to_string()));
+        self.ops
+            .push(OpValue::Operand(Operand::Name(name.into().to_string())));
         self
     }
 
     pub fn op<T>(&mut self, op: T) -> &mut Self
     where
-        T: Into<Operand>,
+        T: Into<OpValue>,
     {
         self.ops.push(op.into());
         self
@@ -167,14 +191,17 @@ impl Operation {
     }
 
     pub fn target(&self) -> Option<&Operand> {
-        self.ops.get(0)
+        self.ops.get(0).and_then(|op| match op {
+            OpValue::Operand(target) => Some(target),
+            _ => None,
+        })
     }
 
-    pub fn ops(&self) -> impl Iterator<Item = &Operand> {
+    pub fn ops(&self) -> impl Iterator<Item = &OpValue> {
         self.ops.iter()
     }
 
-    pub fn rest(&self) -> impl Iterator<Item = &Operand> {
+    pub fn rest(&self) -> impl Iterator<Item = &OpValue> {
         // skip first item as it is the target
         self.ops().skip(1)
     }
