@@ -48,7 +48,7 @@ pub enum OperationType {
 
 impl Operation {
     pub fn call(fname: &str) -> Self {
-        Operation::new(OperationType::Call).op(fname).end()
+        Operation::new(OperationType::Call).var(fname).end()
     }
 }
 
@@ -105,16 +105,11 @@ impl From<Operation> for OpValue {
 pub struct Operation {
     ops: Vec<OpValue>,
     pub ty: OperationType,
-    update: bool,
 }
 
 impl Operation {
     pub fn new(ty: OperationType) -> Self {
-        Self {
-            ops: vec![],
-            ty,
-            update: false,
-        }
+        Self { ops: vec![], ty }
     }
 
     pub fn as_inx(&self) -> Option<Instruction> {
@@ -215,7 +210,7 @@ pub enum Operand {
 impl Operand {
     pub fn as_name(&self) -> &Name {
         match self {
-            Operand::Name(n) | Operand::Const(Value::Str(n)) => n,
+            Operand::Name(n) => n,
             _ => unimplemented!(),
         }
     }

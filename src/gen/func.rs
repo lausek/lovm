@@ -106,12 +106,11 @@ impl FunctionBuilder {
     }
 
     pub fn build(&self) -> BuildResult<Function> {
-        println!("building func {:#?}", self);
-
         let mut func = Function::new();
         func.argc = self.argc.clone();
         func.space = self.space.clone();
         translate_sequence(&mut func, self.seq.clone())?;
+        println!("building func {:#?}", func);
 
         for (bidx, branch) in self.branches.iter().enumerate() {
             let boffset = func.inner.len();
