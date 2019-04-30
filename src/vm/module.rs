@@ -1,7 +1,7 @@
 use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Modules(Vec<Module>);
+pub struct Modules(pub Vec<Module>);
 
 impl Modules {
     pub fn new() -> Self {
