@@ -1,19 +1,5 @@
 use super::*;
 
-// pseudocode:
-//      f(x, y):
-//          z = x + y
-//          return z
-// rust
-//      gen::FunctionBuilder::new()
-//          .with_args(vec!["x", "y"])      // TODO: is it `args` or `params` here? there was a difference...
-//          .step(gen::Op::Add, "x", "y")
-//          .store("z")
-//          .end()
-//          .build()
-//
-// ---- explanation
-
 #[derive(PartialEq)]
 enum Access {
     Read,
@@ -25,6 +11,7 @@ pub struct Function {
     pub argc: usize,
     pub space: Space,
     pub inner: CodeBlock,
+    // used for resolving branch offsets
     offsets: Vec<(usize, usize)>,
 }
 
@@ -42,14 +29,12 @@ impl Function {
 impl From<Function> for CodeObject {
     fn from(from: Function) -> Self {
         Self {
-    argc: from.argc,
-    space: from.space,
-    inner: from.inner,
+            argc: from.argc,
+            space: from.space,
+            inner: from.inner,
         }
     }
 }
-
-//pub type Function = CodeObject;
 
 #[derive(Clone, Debug)]
 pub struct FunctionBuilder {
@@ -104,14 +89,17 @@ impl FunctionBuilder {
             }
         }
 
-        //if op.is_update() {
-        //    if let Some(target) = op.target() {
-        //        let name = target.as_name();
-        //        if !self.space.locals.contains(&name) {
-        //            self.space.locals.push(name.clone());
-        //        }
-        //    }
-        //}
+        match op.ty {
+            OperationType::Ass => {
+                if let Some(target) = op.target() {
+                    let name = target.as_name();
+                    if !self.space.locals.contains(&name) {
+                        self.space.locals.push(name.clone());
+                    }
+                }
+            }
+            _ => {}
+        }
 
         self.seq.push(op);
         self
@@ -120,23 +108,18 @@ impl FunctionBuilder {
     pub fn build(&self) -> BuildResult<Function> {
         println!("building func {:#?}", self);
 
-        // used for resolving branch offsets
-        // arg1: branch index, arg2: func.inner index
-        let mut offsets: Vec<(usize, usize)> = vec![];
-
         let mut func = Function::new();
         func.argc = self.argc.clone();
-        //func.space = self.space.clone();
+        func.space = self.space.clone();
         translate_sequence(&mut func, self.seq.clone())?;
 
         for (bidx, branch) in self.branches.iter().enumerate() {
             let boffset = func.inner.len();
-            for (offset, _) in offsets.iter().filter(|(_, i)| *i == bidx) {
+            for (offset, _) in func.offsets.iter().filter(|(_, i)| *i == bidx) {
                 func.inner[*offset].set_arg(boffset);
             }
 
             translate_sequence(&mut func, branch.clone())?;
-            //func.inner.extend(tmp.);
         }
 
         Ok(func)
@@ -167,7 +150,12 @@ fn translate(func: &mut Function, op: &OpValue, acc: Access) -> BuildResult<()> 
 fn translate_operand(func: &mut Function, op: &Operand, acc: Access) -> BuildResult<()> {
     match op {
         Operand::Name(n) if func.space.locals.contains(n) => {
-            let idx = func.space.locals.iter().position(|local| local == n).unwrap();
+            let idx = func
+                .space
+                .locals
+                .iter()
+                .position(|local| local == n)
+                .unwrap();
             func.inner.push(if acc == Access::Write {
                 Instruction::Lpop(idx)
             } else {
@@ -179,7 +167,11 @@ fn translate_operand(func: &mut Function, op: &Operand, acc: Access) -> BuildRes
                 func.space.globals.push(n.clone());
                 func.space.globals.len()
             } else {
-                func.space.globals.iter().position(|global| global == n).unwrap()
+                func.space
+                    .globals
+                    .iter()
+                    .position(|global| global == n)
+                    .unwrap()
             };
             func.inner.push(if acc == Access::Write {
                 Instruction::Gpop(idx)
@@ -213,14 +205,6 @@ fn translate_operation(func: &mut Function, op: &Operation) -> BuildResult<()> {
         } else {
             func.inner.push(inx);
         }
-
-    //if op.is_update() {
-    //    co.extend(translate_operand(
-    //        space,
-    //        op.target().as_ref().unwrap(),
-    //        Access::Write,
-    //    )?);
-    //}
     } else {
         match op.ty {
             OperationType::Ret => func.inner.push(Instruction::Ret),

@@ -144,29 +144,28 @@ impl Operation {
         }
     }
 
-    /*
-    pub fn update(mut self) -> Self {
-        self.update = true;
-        self
-    }
-
-    pub fn is_update(&self) -> bool {
-        self.update
-    }
-    */
-
     pub fn consts(&self) -> impl Iterator<Item = &Value> {
-        self.ops.iter().filter_map(|op| match op {
-            OpValue::Operand(Operand::Const(v)) => Some(v),
-            _ => None,
-        })
+        let mut consts = vec![];
+        for op in self.ops.iter() {
+            match op {
+                OpValue::Operand(Operand::Const(v)) => consts.push(v),
+                OpValue::Operation(op) => consts.extend(op.consts().collect::<Vec<_>>()),
+                _ => {}
+            }
+        }
+        consts.into_iter()
     }
 
     pub fn idents(&self) -> impl Iterator<Item = &Name> {
-        self.ops.iter().filter_map(|op| match op {
-            OpValue::Operand(Operand::Name(name)) => Some(name),
-            _ => None,
-        })
+        let mut idents = vec![];
+        for op in self.ops.iter() {
+            match op {
+                OpValue::Operand(Operand::Name(name)) => idents.push(name),
+                OpValue::Operation(op) => idents.extend(op.idents().collect::<Vec<_>>()),
+                _ => {}
+            }
+        }
+        idents.into_iter()
     }
 
     pub fn var<T>(&mut self, name: T) -> &mut Self
