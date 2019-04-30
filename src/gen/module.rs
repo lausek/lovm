@@ -31,6 +31,18 @@ impl ModuleBuilder {
         }
     }
 
+    pub fn set<T>(&mut self, name: T, co: CodeObject) -> &mut Self
+    where
+        T: std::string::ToString,
+    {
+        let sname = name.to_string();
+        match self.slots.iter_mut().find(|slot| slot.0 == sname) {
+            Some(slot) => slot.1 = co,
+            _ => self.slots.push((name.to_string(), co)),
+        }
+        self
+    }
+
     pub fn decl<T>(&mut self, name: T, co: CodeObject) -> &mut Self
     where
         T: std::string::ToString,
