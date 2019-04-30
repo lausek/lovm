@@ -1,11 +1,13 @@
 pub mod frame;
 pub mod interrupt;
+pub mod module;
 pub mod operation;
 
 use super::*;
 
 pub use self::frame::*;
 pub use self::interrupt::*;
+pub use self::module::*;
 
 pub use std::collections::HashMap;
 
@@ -42,7 +44,7 @@ pub enum VmState {
 #[derive(Clone, Debug)]
 pub struct VmData {
     pub globals: HashMap<Name, Value>,
-    pub modules: Vec<Module>,
+    pub modules: Modules,
     pub obj_pool: HashMap<Name, ()>,
     pub state: VmState,
     pub stack: Vec<VmFrame>,
@@ -53,7 +55,7 @@ impl VmData {
     pub fn new() -> Self {
         Self {
             globals: HashMap::new(),
-            modules: vec![],
+            modules: Modules::new(),
             obj_pool: HashMap::new(),
             state: VmState::Initial,
             stack: vec![],
@@ -91,12 +93,10 @@ impl Vm {
 
     // TODO: return `Rc` over `CodeObject` here because it could reassign itself
     fn call_lookup(&self, name: &Name) -> Result<&CodeObject, String> {
-        for module in self.data.modules.iter() {
-            if let Some(co) = module.get(name) {
-                return Ok(co);
-            }
+        match self.data.modules.lookup(name) {
+            Some(item) => Ok(item),
+            _ => Err(format!("function `{}` is unknown", name)),
         }
-        Err(format!("function `{}` is unknown", name))
     }
 
     pub fn run_object(&mut self, co: &CodeObject) -> VmResult {
@@ -250,7 +250,7 @@ impl Vm {
         let co = &module.code();
 
         // TODO: something better than cloning?
-        self.data.modules.push(module.clone());
+        self.data.modules.load(module)?;
         self.data.state = VmState::Running;
         self.run_object(co)
     }
