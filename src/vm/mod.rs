@@ -80,6 +80,14 @@ impl Vm {
 }
 
 impl Vm {
+    fn panic<T, V>(&mut self, msg: T) -> Result<V, String>
+    where
+        T: Into<String>,
+    {
+        self.data.state = VmState::Exited;
+        Err(msg.into())
+    }
+
     // TODO: return `Rc` over `CodeObject` here because it could reassign itself
     fn call_lookup(&self, name: &Name) -> Result<&CodeObject, String> {
         for module in self.data.modules.iter() {
@@ -115,7 +123,7 @@ impl Vm {
                     if let Some(irh) = self.interrupts.get(*idx) {
                         irh(&mut self.data)?;
                     } else {
-                        return Err(format!("interrupt {} not defined", idx));
+                        self.panic(format!("interrupt {} not defined", idx))?;
                     }
                 }
                 Instruction::Cast(ty_idx) => {
@@ -146,7 +154,10 @@ impl Vm {
                         Instruction::Lpush(_) => register(&self.data).locals[*idx].clone(),
                         Instruction::Gpush(_) => {
                             let name = co.space.globals.get(*idx).unwrap();
-                            self.data.globals.get(name).unwrap().clone()
+                            match self.data.globals.get(name) {
+                                Some(value) => value.clone(),
+                                _ => self.panic(format!("`{}` was not declared", name))?,
+                            }
                         }
                         _ => unreachable!(),
                     };

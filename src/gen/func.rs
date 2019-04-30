@@ -164,8 +164,9 @@ fn translate_operand(func: &mut Function, op: &Operand, acc: Access) -> BuildRes
         }
         Operand::Name(n) => {
             let idx = if !func.space.globals.contains(n) {
+                let idx = func.space.globals.len();
                 func.space.globals.push(n.clone());
-                func.space.globals.len()
+                idx
             } else {
                 func.space
                     .globals
