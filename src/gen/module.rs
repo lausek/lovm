@@ -39,9 +39,9 @@ impl ModuleBuilder {
         self
     }
 
-    pub fn build(self) -> BuildResult<Module> {
+    pub fn build(&self) -> BuildResult<Module> {
         let mut module = Module::new();
-        module.inner = self.slots;
+        module.inner = self.slots.clone();
         Ok(module)
     }
 }
