@@ -39,7 +39,7 @@ impl From<Function> for CodeObject {
 #[derive(Clone, Debug)]
 pub struct FunctionBuilder {
     argc: usize,
-    branches: Vec<Sequence>,
+    branches: Vec<FunctionBuilder>,
     space: Space,
     seq: Sequence,
 }
@@ -70,15 +70,12 @@ impl FunctionBuilder {
         self
     }
 
-    pub fn branch(&mut self, mut jmp: Operation, seq: Sequence) -> &mut Self {
-        for c in seq.iter().flat_map(|op| op.consts()) {
-            if !self.space.consts.contains(c) {
-                self.space.consts.push(c.clone());
-            }
-        }
-
+    pub fn branch<T>(&mut self, mut jmp: Operation, func: T) -> &mut Self
+    where
+        T: Into<FunctionBuilder>,
+    {
         self.seq.push(jmp.op(self.branches.len()).end());
-        self.branches.push(seq);
+        self.branches.push(func.into());
         self
     }
 
@@ -110,7 +107,7 @@ impl FunctionBuilder {
         func.argc = self.argc.clone();
         func.space = self.space.clone();
         translate_sequence(&mut func, self.seq.clone())?;
-        println!("building func {:#?}", func);
+        println!("building func {:#?}", self);
 
         for (bidx, branch) in self.branches.iter().enumerate() {
             let boffset = func.inner.len();
@@ -118,10 +115,23 @@ impl FunctionBuilder {
                 func.inner[*offset].set_arg(boffset);
             }
 
-            translate_sequence(&mut func, branch.clone())?;
+            translate_sequence(&mut func, branch.seq.clone())?;
         }
 
         Ok(func)
+    }
+}
+
+impl From<Sequence> for FunctionBuilder {
+    fn from(seq: Sequence) -> Self {
+        let mut new = Self::new();
+        for c in seq.iter().flat_map(|op| op.consts()) {
+            if !new.space.consts.contains(c) {
+                new.space.consts.push(c.clone());
+            }
+        }
+        new.seq = seq;
+        new
     }
 }
 
