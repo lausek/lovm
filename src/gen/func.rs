@@ -54,14 +54,14 @@ impl FunctionBuilder {
         }
     }
 
-    pub fn with_args<T>(mut self, args: Vec<T>) -> Self
+    pub fn with_params<T>(mut self, params: Vec<T>) -> Self
     where
         T: std::string::ToString,
     {
         assert!(self.space.locals.is_empty());
-        self.argc = args.len();
+        self.argc = params.len();
         // TODO: optimize this
-        self.space.locals = args.iter().map(|arg| arg.to_string()).collect::<Vec<_>>();
+        self.space.locals = params.iter().map(|arg| arg.to_string()).collect::<Vec<_>>();
         self
     }
 

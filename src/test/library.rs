@@ -22,7 +22,7 @@ fn simple_module() {
 
 #[test]
 fn fib_function() {
-    let mut fib = FunctionBuilder::new().with_args(vec!["x"]);
+    let mut fib = FunctionBuilder::new().with_params(vec!["x"]);
     fib.step(Operation::cmp().var("x").op(0).end())
         .branch(
             Operation::jeq(),
@@ -75,7 +75,7 @@ fn gen_foo() -> BuildResult<Function> {
     //          z += x
     //          z += y
     //          return z ; not implemented
-    let mut func = FunctionBuilder::new().with_args(vec!["x", "y"]);
+    let mut func = FunctionBuilder::new().with_params(vec!["x", "y"]);
     func.step(Operation::ass().op("z").op(1).end())
         .step(Operation::add().op("z").op("x").end())
         .step(Operation::add().op("z").op("y").end());
