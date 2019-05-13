@@ -106,6 +106,7 @@ impl FunctionBuilder {
         let mut func = Function::new();
         func.argc = self.argc.clone();
         func.space = self.space.clone();
+
         translate_sequence(&mut func, self.seq.clone())?;
         println!("building func {:#?}", self);
 
@@ -135,11 +136,17 @@ impl From<Sequence> for FunctionBuilder {
     }
 }
 
-fn index_of<T>(ls: &Vec<T>, item: &T) -> Option<usize>
+fn index_of<T>(ls: &mut Vec<T>, item: &T) -> usize
 where
-    T: PartialEq + std::fmt::Debug,
+    T: Clone + PartialEq + std::fmt::Debug,
 {
-    ls.iter().position(|a| a == item)
+    match ls.iter().position(|a| a == item) {
+        Some(idx) => idx,
+        _ => {
+            ls.push(item.clone());
+            ls.len() - 1
+        }
+    }
 }
 
 fn translate_sequence(func: &mut Function, seq: Sequence) -> BuildResult<()> {
@@ -190,7 +197,7 @@ fn translate_operand(func: &mut Function, op: &Operand, acc: Access) -> BuildRes
             });
         }
         Operand::Const(v) => {
-            let idx = index_of(&func.space.consts, &v).unwrap();
+            let idx = index_of(&mut func.space.consts, &v);
             func.inner.push(Instruction::Cpush(idx));
         }
     }
@@ -227,10 +234,7 @@ fn translate_operation(func: &mut Function, op: &Operation) -> BuildResult<()> {
                 for arg in op.rest() {
                     translate(func, arg, Access::Read)?;
                 }
-                let idx = index_of(&func.space.globals, &fname).unwrap_or_else(|| {
-                    func.space.globals.push(fname.clone());
-                    func.space.globals.len() - 1
-                });
+                let idx = index_of(&mut func.space.globals, &fname);
                 func.inner.push(Instruction::Gcall(idx));
             }
             OperationType::Push => {
