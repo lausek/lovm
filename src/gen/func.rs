@@ -310,15 +310,16 @@ fn translate_operation(func: &mut Frame, op: &Operation) -> BuildResult<()> {
                 func.inner.push(op.as_inx().unwrap());
             }
             OperationType::Jmp | OperationType::Jt | OperationType::Jf => {
-                let target = op.target().unwrap();
                 let inx = match op.ty {
                     OperationType::Jmp => Instruction::Jmp(std::usize::MAX),
                     OperationType::Jt => Instruction::Jt(std::usize::MAX),
                     OperationType::Jf => Instruction::Jf(std::usize::MAX),
                     _ => unreachable!(),
                 };
-                func.offsets
-                    .push((func.inner.len(), target.as_const().clone().into()));
+                if let Some(target) = op.target() {
+                    func.offsets
+                        .push((func.inner.len(), target.as_const().clone().into()));
+                }
                 func.inner.push(inx);
             }
             OperationType::Debug => {
