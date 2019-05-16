@@ -79,6 +79,15 @@ impl std::convert::From<&str> for Value {
     }
 }
 
+impl std::convert::From<Value> for bool {
+    fn from(s: Value) -> bool {
+        match s {
+            Value::T(t) => t,
+            _ => panic!("cannot convert `{:?}` into bool", s),
+        }
+    }
+}
+
 impl std::str::FromStr for Value {
     type Err = String;
     fn from_str(from: &str) -> Result<Self, Self::Err> {

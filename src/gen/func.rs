@@ -49,7 +49,7 @@ impl Frame {
                             match inx.clone() {
                                 Instruction::Gpush(_) => *inx = Instruction::Lpush(new_idx),
                                 Instruction::Gpop(_) => *inx = Instruction::Lpop(new_idx),
-                                Instruction::Gcall(_) => unimplemented!(),
+                                Instruction::Gcall(_) => *inx = Instruction::Lcall(new_idx),
                                 _ => unimplemented!(),
                             }
                             continue;
@@ -112,11 +112,12 @@ impl FunctionBuilder {
         self
     }
 
-    pub fn branch<T>(&mut self, mut jmp: Operation, func: T) -> &mut Self
+    pub fn branch<T>(&mut self, jmp: Operation, func: T) -> &mut Self
     where
         T: Into<FunctionBuilder>,
     {
-        self.seq.push(jmp.op(self.branches.len()).end());
+        self.seq.push(jmp);
+        self.seq.push(Operation::jt().op(self.branches.len()).end());
         self.branches.push(func.into());
         self
     }
@@ -296,29 +297,24 @@ fn translate_operation(func: &mut Frame, op: &Operation) -> BuildResult<()> {
                     translate(func, arg, Access::Write)?;
                 }
             }
-            OperationType::Cmp => {
+            OperationType::CmpEq
+            | OperationType::CmpNe
+            | OperationType::CmpGe
+            | OperationType::CmpGt
+            | OperationType::CmpLe
+            | OperationType::CmpLt => {
                 let target = op.target().unwrap();
                 let arg1 = op.rest().next().unwrap();
                 translate_operand(func, target, Access::Read)?;
                 translate(func, arg1, Access::Read)?;
-                func.inner.push(Instruction::Cmp);
+                func.inner.push(op.as_inx().unwrap());
             }
-            OperationType::Jmp
-            | OperationType::Jeq
-            | OperationType::Jne
-            | OperationType::Jge
-            | OperationType::Jgt
-            | OperationType::Jle
-            | OperationType::Jlt => {
+            OperationType::Jmp | OperationType::Jt | OperationType::Jf => {
                 let target = op.target().unwrap();
                 let inx = match op.ty {
                     OperationType::Jmp => Instruction::Jmp(std::usize::MAX),
-                    OperationType::Jeq => Instruction::Jeq(std::usize::MAX),
-                    OperationType::Jne => Instruction::Jne(std::usize::MAX),
-                    OperationType::Jge => Instruction::Jge(std::usize::MAX),
-                    OperationType::Jgt => Instruction::Jgt(std::usize::MAX),
-                    OperationType::Jle => Instruction::Jle(std::usize::MAX),
-                    OperationType::Jlt => Instruction::Jlt(std::usize::MAX),
+                    OperationType::Jt => Instruction::Jt(std::usize::MAX),
+                    OperationType::Jf => Instruction::Jf(std::usize::MAX),
                     _ => unreachable!(),
                 };
                 func.offsets

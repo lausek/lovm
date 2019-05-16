@@ -98,14 +98,16 @@ pub enum Instruction {
     Shl,
     Shr,
 
-    Cmp,
+    CmpEq,
+    CmpNe, // actually short for `CmpEq; Not`
+    CmpGe,
+    CmpGt,
+    CmpLe,
+    CmpLt,
+
     Jmp(usize),
-    Jeq(usize),
-    Jne(usize),
-    Jge(usize),
-    Jgt(usize),
-    Jle(usize),
-    Jlt(usize),
+    Jt(usize),
+    Jf(usize),
 
     Cpush(usize), // push constant
     Lpush(usize), // push local value
@@ -128,12 +130,8 @@ impl Instruction {
             Instruction::Int(c)
             | Instruction::Cast(c)
             | Instruction::Jmp(c)
-            | Instruction::Jeq(c)
-            | Instruction::Jne(c)
-            | Instruction::Jge(c)
-            | Instruction::Jgt(c)
-            | Instruction::Jle(c)
-            | Instruction::Jlt(c)
+            | Instruction::Jt(c)
+            | Instruction::Jf(c)
             | Instruction::Cpush(c)
             | Instruction::Lpush(c)
             | Instruction::Lpop(c)
@@ -151,12 +149,8 @@ impl Instruction {
             Instruction::Int(c)
             | Instruction::Cast(c)
             | Instruction::Jmp(c)
-            | Instruction::Jeq(c)
-            | Instruction::Jne(c)
-            | Instruction::Jge(c)
-            | Instruction::Jgt(c)
-            | Instruction::Jle(c)
-            | Instruction::Jlt(c)
+            | Instruction::Jt(c)
+            | Instruction::Jf(c)
             | Instruction::Cpush(c)
             | Instruction::Lpush(c)
             | Instruction::Lpop(c)
@@ -173,12 +167,8 @@ impl Instruction {
             Instruction::Int(_)
             | Instruction::Cast(_)
             | Instruction::Jmp(_)
-            | Instruction::Jeq(_)
-            | Instruction::Jne(_)
-            | Instruction::Jge(_)
-            | Instruction::Jgt(_)
-            | Instruction::Jle(_)
-            | Instruction::Jlt(_)
+            | Instruction::Jt(_)
+            | Instruction::Jf(_)
             | Instruction::Cpush(_)
             | Instruction::Lpush(_)
             | Instruction::Lpop(_)
@@ -189,7 +179,12 @@ impl Instruction {
 
             Instruction::Inc
             | Instruction::Dec
-            | Instruction::Cmp
+            | Instruction::CmpEq
+            | Instruction::CmpNe
+            | Instruction::CmpGe
+            | Instruction::CmpGt
+            | Instruction::CmpLe
+            | Instruction::CmpLt
             | Instruction::Add
             | Instruction::Sub
             | Instruction::Mul

@@ -217,19 +217,43 @@ impl Vm {
                         _ => unimplemented!(),
                     };
                 }
-                Instruction::Cmp => {
+                Instruction::CmpEq
+                | Instruction::CmpNe
+                | Instruction::CmpGe
+                | Instruction::CmpGt
+                | Instruction::CmpLe
+                | Instruction::CmpLt => {
+                    use std::cmp::Ordering;
                     let op1 = self.data.vstack.pop().expect("missing op1");
                     let op2 = self.data.vstack.pop().expect("missing op2");
-                    (*register_mut(&mut self.data)).cmp = op2.partial_cmp(&op1);
+                    let inx = *inx;
+                    let cond = match op2.partial_cmp(&op1).unwrap() {
+                        Ordering::Equal => {
+                            inx == Instruction::CmpEq
+                                || inx == Instruction::CmpGe
+                                || inx == Instruction::CmpLe
+                        }
+                        Ordering::Greater => {
+                            inx == Instruction::CmpNe
+                                || inx == Instruction::CmpGe
+                                || inx == Instruction::CmpGt
+                        }
+                        Ordering::Less => {
+                            inx == Instruction::CmpNe
+                                || inx == Instruction::CmpLe
+                                || inx == Instruction::CmpLt
+                        }
+                    };
+                    self.data.vstack.push(Value::T(cond));
                 }
-                Instruction::Jmp(nip)
-                | Instruction::Jeq(nip)
-                | Instruction::Jne(nip)
-                | Instruction::Jge(nip)
-                | Instruction::Jgt(nip)
-                | Instruction::Jle(nip)
-                | Instruction::Jlt(nip) => {
-                    if register(&self.data).is_jmp_needed(&inx) {
+                Instruction::Jmp(nip) | Instruction::Jt(nip) | Instruction::Jf(nip) => {
+                    let cond: bool = self.data.vstack.pop().expect("no condition").into();
+                    if match inx {
+                        Instruction::Jmp(_) => true,
+                        Instruction::Jt(_) => cond,
+                        Instruction::Jf(_) => !cond,
+                        _ => unreachable!(),
+                    } {
                         ip = *nip;
                         continue;
                     }
