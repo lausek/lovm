@@ -60,7 +60,7 @@ impl Frame {
                     _ => unreachable!(),
                 };
                 if prev_idx != new_idx {
-                    inx.set_arg(new_idx);
+                    *inx.arg_mut().unwrap() = new_idx;
                 }
             }
         }
@@ -155,7 +155,7 @@ impl FunctionBuilder {
         for (bidx, branch) in self.branches.iter().enumerate() {
             let boffset = func.inner.len();
             for (offset, _) in func.offsets.iter().filter(|(_, i)| *i == bidx) {
-                func.inner[*offset].set_arg(boffset);
+                *func.inner[*offset].arg_mut().unwrap() = boffset;
             }
 
             let mut branch_co = Frame::new();

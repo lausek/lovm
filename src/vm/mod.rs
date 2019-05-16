@@ -207,7 +207,7 @@ impl Vm {
                         Instruction::Div => target.div(&op),
                         Instruction::Rem => target.rem(&op),
                         Instruction::Pow => target.pow(&op),
-                        // TODO: Neg does not not an operand
+                        // TODO: Neg does not have an operand
                         Instruction::Neg => op.neg(),
                         Instruction::And => target.and(&op),
                         Instruction::Or => target.or(&op),

@@ -143,8 +143,7 @@ impl Instruction {
         }
     }
 
-    // TODO: rename to `arg_mut`
-    pub fn set_arg(&mut self, arg: usize) {
+    pub fn arg_mut(&mut self) -> Option<&mut usize> {
         match self {
             Instruction::Int(c)
             | Instruction::Cast(c)
@@ -157,8 +156,8 @@ impl Instruction {
             | Instruction::Lcall(c)
             | Instruction::Gpush(c)
             | Instruction::Gpop(c)
-            | Instruction::Gcall(c) => *c = arg,
-            _ => unimplemented!(),
+            | Instruction::Gcall(c) => Some(c),
+            _ => None,
         }
     }
 
