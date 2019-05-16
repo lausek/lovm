@@ -6,8 +6,10 @@ enum Access {
     Write,
 }
 
+pub type Function = Frame;
+
 #[derive(Clone, Debug, PartialEq)]
-pub struct Function {
+pub struct Frame {
     pub argc: usize,
     pub space: Space,
     pub inner: CodeBlock,
@@ -15,7 +17,7 @@ pub struct Function {
     offsets: Vec<(usize, usize)>,
 }
 
-impl Function {
+impl Frame {
     pub fn new() -> Self {
         Self {
             argc: 0,
@@ -24,10 +26,50 @@ impl Function {
             offsets: vec![],
         }
     }
+
+    pub fn merge(&mut self, other: &Self) {
+        let mut other = other.clone();
+        for inx in other.inner.iter_mut() {
+            if let Some(prev_idx) = inx.arg() {
+                let new_idx = match inx {
+                    Instruction::Cpush(_) => {
+                        let prev_val = &other.space.consts[prev_idx];
+                        index_of(&mut self.space.consts, prev_val)
+                    }
+                    Instruction::Lpush(_) | Instruction::Lpop(_) => {
+                        let prev_val = &other.space.locals[prev_idx];
+                        index_of(&mut self.space.locals, prev_val)
+                    }
+                    Instruction::Gpush(_) | Instruction::Gpop(_) | Instruction::Gcall(_) => {
+                        let prev_val = &other.space.globals[prev_idx];
+                        // if ident was defined in parent frame, translate global operations
+                        // to local scope
+                        if self.space.locals.contains(prev_val) {
+                            let new_idx = index_of(&mut self.space.locals, prev_val);
+                            match inx.clone() {
+                                Instruction::Gpush(_) => *inx = Instruction::Lpush(new_idx),
+                                Instruction::Gpop(_) => *inx = Instruction::Lpop(new_idx),
+                                Instruction::Gcall(_) => unimplemented!(),
+                                _ => unimplemented!(),
+                            }
+                            continue;
+                        } else {
+                            index_of(&mut self.space.globals, prev_val)
+                        }
+                    }
+                    _ => unreachable!(),
+                };
+                if prev_idx != new_idx {
+                    inx.set_arg(new_idx);
+                }
+            }
+        }
+        self.inner.extend(other.inner);
+    }
 }
 
-impl From<Function> for CodeObject {
-    fn from(from: Function) -> Self {
+impl From<Frame> for CodeObject {
+    fn from(from: Frame) -> Self {
         Self {
             argc: from.argc,
             space: from.space,
@@ -102,13 +144,12 @@ impl FunctionBuilder {
         self
     }
 
-    pub fn build(&self) -> BuildResult<Function> {
-        let mut func = Function::new();
+    pub fn build(&self) -> BuildResult<Frame> {
+        let mut func = Frame::new();
         func.argc = self.argc.clone();
         func.space = self.space.clone();
 
         translate_sequence(&mut func, self.seq.clone())?;
-        println!("building func {:#?}", self);
 
         for (bidx, branch) in self.branches.iter().enumerate() {
             let boffset = func.inner.len();
@@ -116,7 +157,10 @@ impl FunctionBuilder {
                 func.inner[*offset].set_arg(boffset);
             }
 
-            translate_sequence(&mut func, branch.seq.clone())?;
+            let mut branch_co = Frame::new();
+            translate_sequence(&mut branch_co, branch.seq.clone())?;
+
+            func.merge(&branch_co);
         }
 
         Ok(func)
@@ -149,21 +193,21 @@ where
     }
 }
 
-fn translate_sequence(func: &mut Function, seq: Sequence) -> BuildResult<()> {
+fn translate_sequence(func: &mut Frame, seq: Sequence) -> BuildResult<()> {
     for op in seq.iter() {
         translate_operation(func, op)?;
     }
     Ok(())
 }
 
-fn translate(func: &mut Function, op: &OpValue, acc: Access) -> BuildResult<()> {
+fn translate(func: &mut Frame, op: &OpValue, acc: Access) -> BuildResult<()> {
     match op {
         OpValue::Operand(op) => translate_operand(func, op, acc),
         OpValue::Operation(op) => translate_operation(func, op),
     }
 }
 
-fn translate_operand(func: &mut Function, op: &Operand, acc: Access) -> BuildResult<()> {
+fn translate_operand(func: &mut Frame, op: &Operand, acc: Access) -> BuildResult<()> {
     match op {
         Operand::Name(n) if func.space.locals.contains(n) => {
             let idx = func
@@ -204,7 +248,7 @@ fn translate_operand(func: &mut Function, op: &Operand, acc: Access) -> BuildRes
     Ok(())
 }
 
-fn translate_operation(func: &mut Function, op: &Operation) -> BuildResult<()> {
+fn translate_operation(func: &mut Frame, op: &Operation) -> BuildResult<()> {
     if let Some(inx) = op.as_inx() {
         let mut ops = op.ops();
         if let Some(first) = ops.next() {
@@ -224,7 +268,12 @@ fn translate_operation(func: &mut Function, op: &Operation) -> BuildResult<()> {
         }
     } else {
         match op.ty {
-            OperationType::Ret => func.inner.push(Instruction::Ret),
+            OperationType::Ret => {
+                for arg in op.ops() {
+                    translate(func, arg, Access::Read);
+                }
+                func.inner.push(Instruction::Ret);
+            }
             OperationType::Ass => {
                 translate_operand(func, &op.target().unwrap(), Access::Write)?;
                 translate(func, &op.rest().next().unwrap(), Access::Read)?;

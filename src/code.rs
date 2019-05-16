@@ -123,6 +123,29 @@ pub enum Instruction {
 }
 
 impl Instruction {
+    pub fn arg(&self) -> Option<usize> {
+        match self {
+            Instruction::Int(c)
+            | Instruction::Cast(c)
+            | Instruction::Jmp(c)
+            | Instruction::Jeq(c)
+            | Instruction::Jne(c)
+            | Instruction::Jge(c)
+            | Instruction::Jgt(c)
+            | Instruction::Jle(c)
+            | Instruction::Jlt(c)
+            | Instruction::Cpush(c)
+            | Instruction::Lpush(c)
+            | Instruction::Lpop(c)
+            | Instruction::Lcall(c)
+            | Instruction::Gpush(c)
+            | Instruction::Gpop(c)
+            | Instruction::Gcall(c) => Some(*c),
+            _ => None,
+        }
+    }
+
+    // TODO: rename to `arg_mut`
     pub fn set_arg(&mut self, arg: usize) {
         match self {
             Instruction::Int(c)

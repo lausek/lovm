@@ -23,16 +23,11 @@ fn simple_module() {
 #[test]
 fn fib_function() {
     let mut fib = FunctionBuilder::new().with_params(vec!["x"]);
+    let ret_x = vec![Operation::ret().var("x").end()];
     fib.step(Operation::cmp().var("x").op(0).end())
-        .branch(
-            Operation::jeq(),
-            vec![Operation::push().var("x").end(), Operation::ret()],
-        )
+        .branch(Operation::jeq(), ret_x.clone())
         .step(Operation::cmp().var("x").op(1).end())
-        .branch(
-            Operation::jeq(),
-            vec![Operation::push().var("x").end(), Operation::ret()],
-        )
+        .branch(Operation::jeq(), ret_x.clone())
         .step(
             Operation::add()
                 .op(Operation::call("fib")
@@ -45,6 +40,7 @@ fn fib_function() {
         )
         .step(Operation::ret());
     let fib = fib.build().expect("building function failed");
+    println!("fib {:?}", fib);
 
     let mut main = FunctionBuilder::new();
     main.step(Operation::call("fib").op(8).end()).debug();

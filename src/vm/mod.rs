@@ -41,6 +41,8 @@ pub enum VmState {
     Exited,
 }
 
+// TODO: add `lru_cache` (least-recently used optimization) to
+// improve runtime speed e.g. for `fib`
 #[derive(Clone, Debug)]
 pub struct VmData {
     pub globals: HashMap<Name, Value>,
