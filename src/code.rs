@@ -46,6 +46,15 @@ impl Module {
     }
 }
 
+impl std::fmt::Display for Module {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        for (name, co) in self.inner.iter() {
+            writeln!(f, "\t{}:\t{}", name, co)?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CodeObject {
     pub argc: usize,
@@ -203,6 +212,12 @@ impl Instruction {
     }
 }
 
+impl std::fmt::Display for Instruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "{:?}", self)
+    }
+}
+
 impl Module {
     pub fn serialize(&self) -> Result<Vec<u8>, bincode::Error> {
         bincode::serialize(&self)
@@ -234,24 +249,5 @@ impl Module {
 
     pub fn slots_mut(&mut self) -> &mut Vec<(Name, CodeObject)> {
         &mut self.inner
-    }
-}
-
-impl std::fmt::Display for Program {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        let mut it = self.code().inner.iter();
-        let mut offset = 0;
-
-        writeln!(f, "program:")?;
-        while let Some(inx) = it.next() {
-            write!(f, "{:04}: {:?}", offset, inx)?;
-            offset += 1;
-            for _ in 0..inx.arguments() {
-                write!(f, "\t{:?}", it.next().unwrap())?;
-                offset += 1;
-            }
-            write!(f, "\n")?;
-        }
-        Ok(())
     }
 }

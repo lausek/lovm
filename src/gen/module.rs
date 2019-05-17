@@ -1,20 +1,5 @@
 use super::*;
 
-// ---- example
-// pseudocode:
-//      foo(x, y): ...
-//      bar(x):    ...
-//
-// rust
-//      let foo = gen::FunctionBuilder::new()...;
-//      let bar = gen::FunctionBuilder::new()...;
-//      gen::ModuleBuilder::new()
-//          .decl("foo", foo)
-//          .decl("bar", bar)
-//          .build()
-//
-// ---- explanation
-
 #[derive(Clone, Debug)]
 pub struct ModuleBuilder {
     slots: Vec<(Name, CodeObject)>,

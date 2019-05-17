@@ -88,6 +88,8 @@ impl std::convert::From<Value> for bool {
     }
 }
 
+impl std::cmp::Eq for Value {}
+
 impl std::str::FromStr for Value {
     type Err = String;
     fn from_str(from: &str) -> Result<Self, Self::Err> {
@@ -102,6 +104,20 @@ impl std::str::FromStr for Value {
                     val => Ok(Value::I64(val)),
                 }
             }
+        }
+    }
+}
+
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        match self {
+            Value::I(arg) => write!(f, "{}", arg),
+            Value::I64(arg) => write!(f, "{}", arg),
+            Value::F64(arg) => write!(f, "{}", arg),
+            Value::Ref(arg) => write!(f, "{}", arg),
+            Value::T(arg) => write!(f, "{}", arg),
+            Value::C(arg) => write!(f, "{}", arg),
+            Value::Str(arg) => write!(f, "{}", arg),
         }
     }
 }

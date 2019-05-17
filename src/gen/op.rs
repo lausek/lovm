@@ -83,10 +83,21 @@ derive_constructor!(OperationType::Xor, xor);
 derive_constructor!(OperationType::Shl, shl);
 derive_constructor!(OperationType::Shr, shr);
 
+// TODO: add `int`
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum OpValue {
     Operand(Operand),
     Operation(Operation),
+}
+
+impl std::fmt::Display for OpValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        match self {
+            OpValue::Operand(op) => write!(f, "{}", op),
+            OpValue::Operation(op) => write!(f, "{}", op),
+        }
+    }
 }
 
 impl<T> From<T> for OpValue
@@ -202,10 +213,34 @@ impl Operation {
     }
 }
 
+impl std::fmt::Display for Operation {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "({:?}", self.ty)?;
+        for (i, op) in self.ops().enumerate() {
+            if 0 < i {
+                write!(f, ",")?;
+            } else {
+            }
+            write!(f, " {}", op)?;
+        }
+        write!(f, ")")?;
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operand {
     Const(Value),
     Name(Name),
+}
+
+impl std::fmt::Display for Operand {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        match self {
+            Operand::Const(c) => write!(f, "{}", c),
+            Operand::Name(n) => write!(f, "{}", n),
+        }
+    }
 }
 
 impl Operand {

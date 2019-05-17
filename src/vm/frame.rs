@@ -1,7 +1,5 @@
 use super::*;
 
-use std::cmp;
-
 #[derive(Clone, Debug)]
 pub struct VmFrame {
     pub locals: Vec<Value>,

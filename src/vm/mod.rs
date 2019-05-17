@@ -108,15 +108,30 @@ impl Vm {
 
         self.push_frame(co.space.locals.len());
 
-        for i in 0..co.argc {
-            register_mut(&mut self.data).locals[i] = self.data.vstack.pop().expect("no argument");
-        }
+        // TODO: should code handle argument popping itself?
+        //for i in 0..co.argc {
+        //    register_mut(&mut self.data).locals[i] = self.data.vstack.pop().expect("no argument");
+        //}
 
         while self.data.state == VmState::Running && ip < len {
             let inx = &bl[ip];
 
             if cfg!(debug_assertions) {
-                println!("{}: {:?}", ip, inx);
+                println!(
+                    "{}: {:?} {}",
+                    ip,
+                    inx,
+                    inx.arg().map_or("".to_string(), |arg| match inx {
+                        Instruction::Cpush(_) => format!(":= {}", co.space.consts[arg]),
+                        Instruction::Lpush(_) | Instruction::Lpop(_) => {
+                            format!(":= {}", co.space.locals[arg])
+                        }
+                        Instruction::Gpush(_) | Instruction::Gpop(_) | Instruction::Gcall(_) => {
+                            format!(":= {}", co.space.globals[arg])
+                        }
+                        _ => "".to_string(),
+                    })
+                );
             }
 
             match inx {
@@ -289,7 +304,10 @@ impl Vm {
     }
 
     fn pop_frame(&mut self) {
-        self.data.stack.pop().expect("frame to pop");
+        let _last = self.data.stack.pop().expect("frame to pop");
+        if cfg!(debug_assertions) {
+            println!("last frame {:?}", _last);
+        }
 
         if self.data.stack.is_empty() {
             self.data.state = VmState::Exited;
