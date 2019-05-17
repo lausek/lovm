@@ -48,6 +48,7 @@ impl Module {
 
 impl std::fmt::Display for Module {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        writeln!(f, "Module(slots: {})", self.inner.len())?;
         for (name, co) in self.inner.iter() {
             writeln!(f, "\t{}:\t{}", name, co)?;
         }
