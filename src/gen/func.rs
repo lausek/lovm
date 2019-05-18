@@ -1,11 +1,5 @@
 use super::*;
 
-#[derive(PartialEq)]
-enum Access {
-    Read,
-    Write,
-}
-
 impl CodeObject {
     pub fn merge(&mut self, other: &Self) {
         // at which location will the branch be added?
@@ -114,35 +108,43 @@ impl FunctionBuilder {
         self
     }
 
-    // method for `jmp` (jump) instruction
-    pub fn branch<T>(&mut self, func: T) -> &mut Self
-    where
-        T: Into<FunctionBuilder>,
-    {
-        self.seq
-            .push(Operation::jmp().op(self.branches.len()).end());
-        self.branches.push(func.into());
+    fn jump(&mut self, target: BranchTarget, ty: OperationType) -> &mut Self {
+        let target = target.into();
+        match target {
+            BranchTarget::Index(idx) => {
+                self.seq.push(Operation::new(ty).op(idx).end());
+            }
+            BranchTarget::Block(bl) => {
+                self.seq
+                    .push(Operation::new(ty).op(self.branches.len()).end());
+                self.branches.push(bl);
+            }
+        }
         self
+    }
+
+    // method for `jmp` (jump) instruction
+    pub fn branch<T>(&mut self, target: T) -> &mut Self
+    where
+        T: Into<BranchTarget>,
+    {
+        self.jump(target.into(), OperationType::Jmp)
     }
 
     // method for `jt` (jump-if-true) instruction
-    pub fn branch_if<T>(&mut self, func: T) -> &mut Self
+    pub fn branch_if<T>(&mut self, target: T) -> &mut Self
     where
-        T: Into<FunctionBuilder>,
+        T: Into<BranchTarget>,
     {
-        self.seq.push(Operation::jt().op(self.branches.len()).end());
-        self.branches.push(func.into());
-        self
+        self.jump(target.into(), OperationType::Jt)
     }
 
     // method for `jf` (jump-if-false) instruction
-    pub fn branch_else<T>(&mut self, func: T) -> &mut Self
+    pub fn branch_else<T>(&mut self, target: T) -> &mut Self
     where
-        T: Into<FunctionBuilder>,
+        T: Into<BranchTarget>,
     {
-        self.seq.push(Operation::jf().op(self.branches.len()).end());
-        self.branches.push(func.into());
-        self
+        self.jump(target.into(), OperationType::Jf)
     }
 
     pub fn step(&mut self, op: Operation) -> &mut Self {

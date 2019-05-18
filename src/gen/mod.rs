@@ -10,4 +10,28 @@ use super::*;
 
 pub type BuildResult<T> = Result<T, ()>;
 
-// TODO: export functionality for generating lovm programs
+#[derive(PartialEq)]
+enum Access {
+    Read,
+    Write,
+}
+
+pub enum BranchTarget {
+    Index(usize),
+    Block(FunctionBuilder),
+}
+
+impl From<usize> for BranchTarget {
+    fn from(from: usize) -> Self {
+        BranchTarget::Index(from)
+    }
+}
+
+impl<T> From<T> for BranchTarget
+where
+    T: Into<FunctionBuilder>,
+{
+    fn from(from: T) -> Self {
+        BranchTarget::Block(from.into())
+    }
+}
