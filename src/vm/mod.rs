@@ -140,9 +140,10 @@ impl Vm {
                 Instruction::Int(idx) => {
                     if let Some(irh) = self.interrupts.get(*idx) {
                         irh(&mut self.data)?;
-                    } else {
-                        self.panic(format!("interrupt {} not defined", idx))?;
                     }
+                    //else {
+                    //    self.panic(format!("interrupt {} not defined", idx))?;
+                    //}
                 }
                 Instruction::Cast(ty_idx) => {
                     let val = self.data.vstack.last_mut().expect("no value");

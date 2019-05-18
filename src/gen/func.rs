@@ -205,6 +205,12 @@ impl FunctionBuilder {
             };
         }
 
+        // TODO: check if last instruction already is return
+        match func.inner.last() {
+            Some(Instruction::Ret) | Some(Instruction::Jmp(_)) => {}
+            _ => func.inner.push(Instruction::Ret),
+        }
+
         Ok(func)
     }
 }
@@ -331,6 +337,7 @@ fn translate_operation(
                 for arg in op.rest() {
                     translate(func, arg, Access::Read, offsets)?;
                 }
+                // TODO: look at locals first
                 let idx = index_of(&mut func.space.globals, &fname);
                 func.inner.push(Instruction::Gcall(idx));
             }
