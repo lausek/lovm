@@ -92,8 +92,7 @@ impl FunctionBuilder {
         // param order: last in, first out
         for i in (0..new.argc).rev() {
             let param = new.space.locals[i].clone();
-            new.step(gen::Operation::ass().var(param.to_string()).op(0).end());
-            new.step(gen::Operation::pop().var(param.to_string()).end());
+            new.step(gen::Operation::ass().var(param.to_string()).end());
         }
         new
     }
@@ -115,12 +114,33 @@ impl FunctionBuilder {
         self
     }
 
-    pub fn branch<T>(&mut self, cond: Operation, func: T) -> &mut Self
+    // method for `jmp` (jump) instruction
+    pub fn branch<T>(&mut self, func: T) -> &mut Self
     where
         T: Into<FunctionBuilder>,
     {
-        self.seq.push(cond);
+        self.seq
+            .push(Operation::jmp().op(self.branches.len()).end());
+        self.branches.push(func.into());
+        self
+    }
+
+    // method for `jt` (jump-if-true) instruction
+    pub fn branch_if<T>(&mut self, func: T) -> &mut Self
+    where
+        T: Into<FunctionBuilder>,
+    {
         self.seq.push(Operation::jt().op(self.branches.len()).end());
+        self.branches.push(func.into());
+        self
+    }
+
+    // method for `jf` (jump-if-false) instruction
+    pub fn branch_else<T>(&mut self, func: T) -> &mut Self
+    where
+        T: Into<FunctionBuilder>,
+    {
+        self.seq.push(Operation::jf().op(self.branches.len()).end());
         self.branches.push(func.into());
         self
     }
@@ -299,7 +319,9 @@ fn translate_operation(
                 func.inner.push(Instruction::Ret);
             }
             OperationType::Ass => {
-                translate(func, &op.rest().next().unwrap(), Access::Read, offsets)?;
+                if let Some(next) = op.rest().next() {
+                    translate(func, &next, Access::Read, offsets)?;
+                }
                 translate_operand(func, &op.target().unwrap(), Access::Write)?;
             }
             OperationType::Call => {

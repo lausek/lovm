@@ -261,10 +261,13 @@ impl Vm {
                     };
                     self.data.vstack.push(Value::T(cond));
                 }
-                Instruction::Jmp(nip) | Instruction::Jt(nip) | Instruction::Jf(nip) => {
+                Instruction::Jmp(nip) => {
+                    ip = *nip;
+                    continue;
+                }
+                Instruction::Jt(nip) | Instruction::Jf(nip) => {
                     let cond: bool = self.data.vstack.pop().expect("no condition").into();
                     if match inx {
-                        Instruction::Jmp(_) => true,
                         Instruction::Jt(_) => cond,
                         Instruction::Jf(_) => !cond,
                         _ => unreachable!(),

@@ -24,8 +24,10 @@ fn simple_module() {
 fn fib_function() {
     let mut fib = FunctionBuilder::new().with_params(vec!["x"]);
     let ret_x = vec![Operation::ret().var("x").end()];
-    fib.branch(Operation::cmp_eq().var("x").op(0).end(), ret_x.clone())
-        .branch(Operation::cmp_eq().var("x").op(1).end(), ret_x.clone())
+    fib.step(Operation::cmp_eq().var("x").op(0).end())
+        .branch_if(ret_x.clone())
+        .step(Operation::cmp_eq().var("x").op(1).end())
+        .branch_if(ret_x.clone())
         .step(
             Operation::add()
                 .op(Operation::call("fib")
