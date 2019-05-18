@@ -21,7 +21,7 @@ impl CodeObject {
                         let prev_val = &other.space.consts[prev_idx];
                         index_of(&mut self.space.consts, prev_val)
                     }
-                    Instruction::Lpush(_) | Instruction::Lpop(_) => {
+                    Instruction::Lpush(_) | Instruction::Lpop(_) | Instruction::Lcall(_) => {
                         let prev_val = &other.space.locals[prev_idx];
                         index_of(&mut self.space.locals, prev_val)
                     }
