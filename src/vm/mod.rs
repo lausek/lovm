@@ -102,8 +102,7 @@ impl Vm {
     }
 
     pub fn run_object(&mut self, co: &CodeObject) -> VmResult {
-        let bl = &co.inner;
-        let len = bl.len();
+        let len = co.inner.len();
         let mut ip = 0;
 
         self.push_frame(co.space.locals.len());
@@ -114,7 +113,7 @@ impl Vm {
         //}
 
         while self.data.state == VmState::Running && ip < len {
-            let inx = &bl[ip];
+            let inx = &co.inner[ip];
 
             if cfg!(debug_assertions) {
                 println!(
