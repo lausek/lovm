@@ -14,7 +14,7 @@ pub use std::collections::HashMap;
 // the vm is meant to be used as a dynamic runtime. it keeps track of:
 //  - globals: area for storing global vm values
 //  - modules: loaded vm modules; used for name lookup (e.g. in function call)
-//  - obj_pool: all allocated custom objects
+//  - objects: all allocated custom objects
 //  - state: status flag for vm flow control
 //  - stack: callstack consisting of local frames
 //  - vstack: global value stack; used for returning values (?)
@@ -45,7 +45,7 @@ pub enum VmState {
 pub struct VmData {
     pub globals: HashMap<Name, Value>,
     pub modules: Modules,
-    pub obj_pool: HashMap<Name, ()>,
+    pub objects: HashMap<Name, ()>,
     pub state: VmState,
     pub stack: Vec<VmFrame>,
     pub vstack: Vec<Value>,
@@ -56,7 +56,7 @@ impl VmData {
         Self {
             globals: HashMap::new(),
             modules: Modules::new(),
-            obj_pool: HashMap::new(),
+            objects: HashMap::new(),
             state: VmState::Initial,
             stack: vec![],
             vstack: vec![],
