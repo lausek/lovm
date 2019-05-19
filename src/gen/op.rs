@@ -23,14 +23,15 @@ pub enum OperationType {
     Push,
     Pop,
 
-    Cmp,
+    CmpEq,
+    CmpNe, // actually short for `CmpEq; Not`
+    CmpGe,
+    CmpGt,
+    CmpLe,
+    CmpLt,
     Jmp,
-    Jeq,
-    Jne,
-    Jge,
-    Jgt,
-    Jle,
-    Jlt,
+    Jt,
+    Jf,
 
     Add,
     Sub,
@@ -58,14 +59,16 @@ derive_constructor!(OperationType::Ret, ret);
 derive_constructor!(OperationType::Push, push);
 derive_constructor!(OperationType::Pop, pop);
 
-derive_constructor!(OperationType::Cmp, cmp);
+derive_constructor!(OperationType::CmpEq, cmp_eq);
+derive_constructor!(OperationType::CmpNe, cmp_ne);
+derive_constructor!(OperationType::CmpGe, cmp_ge);
+derive_constructor!(OperationType::CmpGt, cmp_gt);
+derive_constructor!(OperationType::CmpLe, cmp_le);
+derive_constructor!(OperationType::CmpLt, cmp_lt);
+
 derive_constructor!(OperationType::Jmp, jmp);
-derive_constructor!(OperationType::Jeq, jeq);
-derive_constructor!(OperationType::Jne, jne);
-derive_constructor!(OperationType::Jge, jge);
-derive_constructor!(OperationType::Jgt, jgt);
-derive_constructor!(OperationType::Jle, jle);
-derive_constructor!(OperationType::Jlt, jlt);
+derive_constructor!(OperationType::Jt, jt);
+derive_constructor!(OperationType::Jf, jf);
 
 derive_constructor!(OperationType::Add, add);
 derive_constructor!(OperationType::Sub, sub);
@@ -80,10 +83,21 @@ derive_constructor!(OperationType::Xor, xor);
 derive_constructor!(OperationType::Shl, shl);
 derive_constructor!(OperationType::Shr, shr);
 
+// TODO: add `int`
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum OpValue {
     Operand(Operand),
     Operation(Operation),
+}
+
+impl std::fmt::Display for OpValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        match self {
+            OpValue::Operand(op) => write!(f, "{}", op),
+            OpValue::Operation(op) => write!(f, "{}", op),
+        }
+    }
 }
 
 impl<T> From<T> for OpValue
@@ -114,15 +128,13 @@ impl Operation {
 
     pub fn as_inx(&self) -> Option<Instruction> {
         match self.ty {
-            //OperationType::Ret => Some(Instruction::Ret),
-            //OperationType::Cmp => Some(Instruction::Cmp),
-            //OperationType::Jmp => Some(Instruction::Jmp),
-            //OperationType::Jeq => Some(Instruction::Jeq),
-            //OperationType::Jne => Some(Instruction::Jne),
-            //OperationType::Jge => Some(Instruction::Jge),
-            //OperationType::Jgt => Some(Instruction::Jgt),
-            //OperationType::Jle => Some(Instruction::Jle),
-            //OperationType::Jlt => Some(Instruction::Jlt),
+            OperationType::CmpEq => Some(Instruction::CmpEq),
+            OperationType::CmpNe => Some(Instruction::CmpNe),
+            OperationType::CmpGe => Some(Instruction::CmpGe),
+            OperationType::CmpGt => Some(Instruction::CmpGt),
+            OperationType::CmpLe => Some(Instruction::CmpLe),
+            OperationType::CmpLt => Some(Instruction::CmpLt),
+
             OperationType::Add => Some(Instruction::Add),
             OperationType::Sub => Some(Instruction::Sub),
             OperationType::Mul => Some(Instruction::Mul),
@@ -201,10 +213,34 @@ impl Operation {
     }
 }
 
+impl std::fmt::Display for Operation {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "({:?}", self.ty)?;
+        for (i, op) in self.ops().enumerate() {
+            if 0 < i {
+                write!(f, ",")?;
+            } else {
+            }
+            write!(f, " {}", op)?;
+        }
+        write!(f, ")")?;
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operand {
     Const(Value),
     Name(Name),
+}
+
+impl std::fmt::Display for Operand {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        match self {
+            Operand::Const(c) => write!(f, "{}", c),
+            Operand::Name(n) => write!(f, "{}", n),
+        }
+    }
 }
 
 impl Operand {

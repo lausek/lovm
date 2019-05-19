@@ -6,7 +6,7 @@ use crate::gen::*;
 
 #[test]
 fn simple_function() {
-    let func = gen_foo().expect("building function failed");
+    let _func = gen_foo().expect("building function failed");
 }
 
 #[test]
@@ -17,22 +17,17 @@ fn simple_module() {
     let mut builder = ModuleBuilder::new();
     builder.decl("foo", foo.into()).decl("bar", bar.into());
 
-    let module = builder.build().expect("building module failed");
+    let _module = builder.build().expect("building module failed");
 }
 
 #[test]
 fn fib_function() {
     let mut fib = FunctionBuilder::new().with_params(vec!["x"]);
-    fib.step(Operation::cmp().var("x").op(0).end())
-        .branch(
-            Operation::jeq(),
-            vec![Operation::push().var("x").end(), Operation::ret()],
-        )
-        .step(Operation::cmp().var("x").op(1).end())
-        .branch(
-            Operation::jeq(),
-            vec![Operation::push().var("x").end(), Operation::ret()],
-        )
+    let ret_x = vec![Operation::ret().var("x").end()];
+    fib.step(Operation::cmp_eq().var("x").op(0).end())
+        .branch_if(ret_x.clone())
+        .step(Operation::cmp_eq().var("x").op(1).end())
+        .branch_if(ret_x.clone())
         .step(
             Operation::add()
                 .op(Operation::call("fib")
@@ -44,6 +39,7 @@ fn fib_function() {
                 .end(),
         )
         .step(Operation::ret());
+    println!("{}", fib);
     let fib = fib.build().expect("building function failed");
 
     let mut main = FunctionBuilder::new();
@@ -58,7 +54,7 @@ fn fib_function() {
         let frame = data.stack.last_mut().unwrap();
         println!("{:?}", frame);
         let result = data.vstack.pop().expect("no value");
-        assert!(result == Value::I(21));
+        assert!(result == Value::I64(21));
         Ok(())
     }
 
@@ -68,7 +64,8 @@ fn fib_function() {
     vm.run(&module).expect("error in code");
 }
 
-fn gen_foo() -> BuildResult<Function> {
+#[allow(dead_code)]
+fn gen_foo() -> BuildResult<CodeObject> {
     // pseudocode:
     //      f(x, y):
     //          z = 1
@@ -76,8 +73,8 @@ fn gen_foo() -> BuildResult<Function> {
     //          z += y
     //          return z ; not implemented
     let mut func = FunctionBuilder::new().with_params(vec!["x", "y"]);
-    func.step(Operation::ass().op("z").op(1).end())
-        .step(Operation::add().op("z").op("x").end())
-        .step(Operation::add().op("z").op("y").end());
+    func.step(Operation::ass().var("z").op(1).end())
+        .step(Operation::add().var("z").op("x").end())
+        .step(Operation::add().var("z").op("y").end());
     func.build()
 }

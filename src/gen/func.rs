@@ -1,38 +1,62 @@
 use super::*;
 
-#[derive(PartialEq)]
-enum Access {
-    Read,
-    Write,
-}
+impl CodeObject {
+    pub fn merge(&mut self, other: &Self) {
+        // at which location will the branch be added?
+        let branch_offset = self.inner.len();
+        let mut other = other.clone();
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct Function {
-    pub argc: usize,
-    pub space: Space,
-    pub inner: CodeBlock,
-    // used for resolving branch offsets
-    offsets: Vec<(usize, usize)>,
-}
+        // when we merge two functions, we have to adjust the indices of `other`s constants, locals,
+        // and globals using the following routine:
+        // - for each instruction in `other`s body
+        // - if instruction has an argument
+        // - lookup the value behind index in `other`s body
+        // - lookup the value inside `self`s body (will be added if not present)
+        // - place the new index in argument location
 
-impl Function {
-    pub fn new() -> Self {
-        Self {
-            argc: 0,
-            space: Space::new(),
-            inner: CodeBlock::new(),
-            offsets: vec![],
+        for inx in other.inner.iter_mut() {
+            if let Some(prev_idx) = inx.arg() {
+                let new_idx = match inx {
+                    Instruction::Cpush(_) => {
+                        let prev_val = &other.space.consts[prev_idx];
+                        index_of(&mut self.space.consts, prev_val)
+                    }
+                    Instruction::Lpush(_) | Instruction::Lpop(_) | Instruction::Lcall(_) => {
+                        let prev_val = &other.space.locals[prev_idx];
+                        index_of(&mut self.space.locals, prev_val)
+                    }
+                    Instruction::Gpush(_) | Instruction::Gpop(_) | Instruction::Gcall(_) => {
+                        let prev_val = &other.space.globals[prev_idx];
+                        // if ident was defined in parent frame, translate global operations
+                        // to local scope
+                        if self.space.locals.contains(prev_val) {
+                            let new_idx = index_of(&mut self.space.locals, prev_val);
+                            match inx.clone() {
+                                Instruction::Gpush(_) => *inx = Instruction::Lpush(new_idx),
+                                Instruction::Gpop(_) => *inx = Instruction::Lpop(new_idx),
+                                Instruction::Gcall(_) => *inx = Instruction::Lcall(new_idx),
+                                _ => unimplemented!(),
+                            }
+                            continue;
+                        } else {
+                            index_of(&mut self.space.globals, prev_val)
+                        }
+                    }
+                    Instruction::Jmp(bidx) | Instruction::Jt(bidx) | Instruction::Jf(bidx) => {
+                        // if this panics, no branch resolve was done
+                        assert!(*bidx < std::usize::MAX);
+
+                        // jumps are now padded with the branch location
+                        *bidx + branch_offset
+                    }
+                    _ => panic!("`{:?}` not implemented for merge", inx),
+                };
+
+                *inx.arg_mut().unwrap() = new_idx;
+            }
         }
-    }
-}
 
-impl From<Function> for CodeObject {
-    fn from(from: Function) -> Self {
-        Self {
-            argc: from.argc,
-            space: from.space,
-            inner: from.inner,
-        }
+        self.inner.extend(other.inner);
     }
 }
 
@@ -54,7 +78,21 @@ impl FunctionBuilder {
         }
     }
 
-    pub fn with_params<T>(mut self, params: Vec<T>) -> Self
+    pub fn with_params<T>(self, params: Vec<T>) -> Self
+    where
+        T: std::string::ToString,
+    {
+        let mut new = self.with_params_loose(params);
+        // param order: last in, first out
+        for i in (0..new.argc).rev() {
+            let param = new.space.locals[i].clone();
+            new.step(gen::Operation::ass().var(param.to_string()).end());
+        }
+        new
+    }
+
+    // does not enforce argument popping; needed when branches are compiled (?)
+    pub fn with_params_loose<T>(mut self, params: Vec<T>) -> Self
     where
         T: std::string::ToString,
     {
@@ -70,13 +108,43 @@ impl FunctionBuilder {
         self
     }
 
-    pub fn branch<T>(&mut self, mut jmp: Operation, func: T) -> &mut Self
-    where
-        T: Into<FunctionBuilder>,
-    {
-        self.seq.push(jmp.op(self.branches.len()).end());
-        self.branches.push(func.into());
+    fn jump(&mut self, target: BranchTarget, ty: OperationType) -> &mut Self {
+        let target = target.into();
+        match target {
+            BranchTarget::Index(idx) => {
+                self.seq.push(Operation::new(ty).op(idx).end());
+            }
+            BranchTarget::Block(bl) => {
+                self.seq
+                    .push(Operation::new(ty).op(self.branches.len()).end());
+                self.branches.push(bl);
+            }
+        }
         self
+    }
+
+    // method for `jmp` (jump) instruction
+    pub fn branch<T>(&mut self, target: T) -> &mut Self
+    where
+        T: Into<BranchTarget>,
+    {
+        self.jump(target.into(), OperationType::Jmp)
+    }
+
+    // method for `jt` (jump-if-true) instruction
+    pub fn branch_if<T>(&mut self, target: T) -> &mut Self
+    where
+        T: Into<BranchTarget>,
+    {
+        self.jump(target.into(), OperationType::Jt)
+    }
+
+    // method for `jf` (jump-if-false) instruction
+    pub fn branch_else<T>(&mut self, target: T) -> &mut Self
+    where
+        T: Into<BranchTarget>,
+    {
+        self.jump(target.into(), OperationType::Jf)
     }
 
     pub fn step(&mut self, op: Operation) -> &mut Self {
@@ -102,21 +170,45 @@ impl FunctionBuilder {
         self
     }
 
-    pub fn build(&self) -> BuildResult<Function> {
-        let mut func = Function::new();
+    pub fn build(&self) -> BuildResult<CodeObject> {
+        // used for resolving branch offsets
+        let mut offsets = vec![];
+
+        let mut func = CodeObject::new();
         func.argc = self.argc.clone();
         func.space = self.space.clone();
 
-        translate_sequence(&mut func, self.seq.clone())?;
-        println!("building func {:#?}", self);
+        translate_sequence(&mut func, self.seq.clone(), &mut offsets)?;
 
         for (bidx, branch) in self.branches.iter().enumerate() {
-            let boffset = func.inner.len();
-            for (offset, _) in func.offsets.iter().filter(|(_, i)| *i == bidx) {
-                func.inner[*offset].set_arg(boffset);
+            let branch_co = branch.build()?;
+
+            // replace branch index with the branche's entry point inside `func` CodeObject
+            for (_, link_arg) in offsets.iter_mut().filter(|(_, i)| *i == bidx) {
+                *link_arg = func.inner.len();
             }
 
-            translate_sequence(&mut func, branch.seq.clone())?;
+            func.merge(&branch_co);
+        }
+
+        for (offset, link_arg) in offsets.iter() {
+            match &mut func.inner[*offset] {
+                Instruction::Jmp(prev_idx)
+                | Instruction::Jt(prev_idx)
+                | Instruction::Jf(prev_idx)
+                    // only take uninitialized jumps for now
+                    if *prev_idx == std::usize::MAX =>
+                {
+                    *prev_idx = *link_arg;
+                }
+                e => println!("vad är {}", e),
+            };
+        }
+
+        // TODO: check if last instruction already is return
+        match func.inner.last() {
+            Some(Instruction::Ret) | Some(Instruction::Jmp(_)) => {}
+            _ => func.inner.push(Instruction::Ret),
         }
 
         Ok(func)
@@ -130,6 +222,7 @@ impl From<Sequence> for FunctionBuilder {
             if !new.space.consts.contains(c) {
                 new.space.consts.push(c.clone());
             }
+            // TODO: add locals and globals (?)
         }
         new.seq = seq;
         new
@@ -138,7 +231,7 @@ impl From<Sequence> for FunctionBuilder {
 
 fn index_of<T>(ls: &mut Vec<T>, item: &T) -> usize
 where
-    T: Clone + PartialEq + std::fmt::Debug,
+    T: Clone + Eq + std::fmt::Debug,
 {
     match ls.iter().position(|a| a == item) {
         Some(idx) => idx,
@@ -149,21 +242,30 @@ where
     }
 }
 
-fn translate_sequence(func: &mut Function, seq: Sequence) -> BuildResult<()> {
+fn translate_sequence(
+    func: &mut CodeObject,
+    seq: Sequence,
+    offsets: &mut Vec<(usize, usize)>,
+) -> BuildResult<()> {
     for op in seq.iter() {
-        translate_operation(func, op)?;
+        translate_operation(func, op, offsets)?;
     }
     Ok(())
 }
 
-fn translate(func: &mut Function, op: &OpValue, acc: Access) -> BuildResult<()> {
+fn translate(
+    func: &mut CodeObject,
+    op: &OpValue,
+    acc: Access,
+    offsets: &mut Vec<(usize, usize)>,
+) -> BuildResult<()> {
     match op {
         OpValue::Operand(op) => translate_operand(func, op, acc),
-        OpValue::Operation(op) => translate_operation(func, op),
+        OpValue::Operation(op) => translate_operation(func, op, offsets),
     }
 }
 
-fn translate_operand(func: &mut Function, op: &Operand, acc: Access) -> BuildResult<()> {
+fn translate_operand(func: &mut CodeObject, op: &Operand, acc: Access) -> BuildResult<()> {
     match op {
         Operand::Name(n) if func.space.locals.contains(n) => {
             let idx = func
@@ -179,17 +281,7 @@ fn translate_operand(func: &mut Function, op: &Operand, acc: Access) -> BuildRes
             });
         }
         Operand::Name(n) => {
-            let idx = if !func.space.globals.contains(n) {
-                let idx = func.space.globals.len();
-                func.space.globals.push(n.clone());
-                idx
-            } else {
-                func.space
-                    .globals
-                    .iter()
-                    .position(|global| global == n)
-                    .unwrap()
-            };
+            let idx = index_of(&mut func.space.globals, n);
             func.inner.push(if acc == Access::Write {
                 Instruction::Gpop(idx)
             } else {
@@ -204,16 +296,20 @@ fn translate_operand(func: &mut Function, op: &Operand, acc: Access) -> BuildRes
     Ok(())
 }
 
-fn translate_operation(func: &mut Function, op: &Operation) -> BuildResult<()> {
+fn translate_operation(
+    func: &mut CodeObject,
+    op: &Operation,
+    offsets: &mut Vec<(usize, usize)>,
+) -> BuildResult<()> {
     if let Some(inx) = op.as_inx() {
         let mut ops = op.ops();
         if let Some(first) = ops.next() {
-            translate(func, &first, Access::Read)?;
+            translate(func, &first, Access::Read, offsets)?;
             if let Some(second) = ops.next() {
-                translate(func, &second, Access::Read)?;
+                translate(func, &second, Access::Read, offsets)?;
                 func.inner.push(inx);
                 while let Some(next) = ops.next() {
-                    translate(func, next, Access::Read)?;
+                    translate(func, next, Access::Read, offsets)?;
                     func.inner.push(inx);
                 }
             } else {
@@ -224,56 +320,59 @@ fn translate_operation(func: &mut Function, op: &Operation) -> BuildResult<()> {
         }
     } else {
         match op.ty {
-            OperationType::Ret => func.inner.push(Instruction::Ret),
+            OperationType::Ret => {
+                for arg in op.ops() {
+                    translate(func, arg, Access::Read, offsets)?;
+                }
+                func.inner.push(Instruction::Ret);
+            }
             OperationType::Ass => {
+                if let Some(next) = op.rest().next() {
+                    translate(func, &next, Access::Read, offsets)?;
+                }
                 translate_operand(func, &op.target().unwrap(), Access::Write)?;
-                translate(func, &op.rest().next().unwrap(), Access::Read)?;
             }
             OperationType::Call => {
                 let fname = op.target().unwrap().as_name();
                 for arg in op.rest() {
-                    translate(func, arg, Access::Read)?;
+                    translate(func, arg, Access::Read, offsets)?;
                 }
+                // TODO: look at locals first
                 let idx = index_of(&mut func.space.globals, &fname);
                 func.inner.push(Instruction::Gcall(idx));
             }
             OperationType::Push => {
                 for arg in op.ops() {
-                    translate(func, arg, Access::Read)?;
+                    translate(func, arg, Access::Read, offsets)?;
                 }
             }
             OperationType::Pop => {
                 for arg in op.ops() {
-                    translate(func, arg, Access::Write)?;
+                    translate(func, arg, Access::Write, offsets)?;
                 }
             }
-            OperationType::Cmp => {
+            OperationType::CmpEq
+            | OperationType::CmpNe
+            | OperationType::CmpGe
+            | OperationType::CmpGt
+            | OperationType::CmpLe
+            | OperationType::CmpLt => {
                 let target = op.target().unwrap();
                 let arg1 = op.rest().next().unwrap();
                 translate_operand(func, target, Access::Read)?;
-                translate(func, arg1, Access::Read)?;
-                func.inner.push(Instruction::Cmp);
+                translate(func, arg1, Access::Read, offsets)?;
+                func.inner.push(op.as_inx().unwrap());
             }
-            OperationType::Jmp
-            | OperationType::Jeq
-            | OperationType::Jne
-            | OperationType::Jge
-            | OperationType::Jgt
-            | OperationType::Jle
-            | OperationType::Jlt => {
-                let target = op.target().unwrap();
+            OperationType::Jmp | OperationType::Jt | OperationType::Jf => {
                 let inx = match op.ty {
                     OperationType::Jmp => Instruction::Jmp(std::usize::MAX),
-                    OperationType::Jeq => Instruction::Jeq(std::usize::MAX),
-                    OperationType::Jne => Instruction::Jne(std::usize::MAX),
-                    OperationType::Jge => Instruction::Jge(std::usize::MAX),
-                    OperationType::Jgt => Instruction::Jgt(std::usize::MAX),
-                    OperationType::Jle => Instruction::Jle(std::usize::MAX),
-                    OperationType::Jlt => Instruction::Jlt(std::usize::MAX),
+                    OperationType::Jt => Instruction::Jt(std::usize::MAX),
+                    OperationType::Jf => Instruction::Jf(std::usize::MAX),
                     _ => unreachable!(),
                 };
-                func.offsets
-                    .push((func.inner.len(), target.as_const().clone().into()));
+                if let Some(OpValue::Operand(jmp_offset)) = op.ops().next() {
+                    offsets.push((func.inner.len(), jmp_offset.as_const().clone().into()));
+                }
                 func.inner.push(inx);
             }
             OperationType::Debug => {
@@ -284,4 +383,50 @@ fn translate_operation(func: &mut Function, op: &Operation) -> BuildResult<()> {
         }
     }
     Ok(())
+}
+
+impl std::fmt::Display for CodeObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        writeln!(f, "CodeObject(argc: {})", self.argc)?;
+        if !self.space.consts.is_empty() {
+            writeln!(f, "\tconsts: {:?}", self.space.consts)?;
+        }
+        if !self.space.locals.is_empty() {
+            writeln!(f, "\tlocals: {:?}", self.space.locals)?;
+        }
+        if !self.space.globals.is_empty() {
+            writeln!(f, "\tglobals: {:?}", self.space.globals)?;
+        }
+        writeln!(f, "\tcode:")?;
+        for (ln, step) in self.inner.iter().enumerate() {
+            writeln!(f, "\t{}\t{}", ln, step.to_string())?;
+        }
+        Ok(())
+    }
+}
+
+impl std::fmt::Display for FunctionBuilder {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        writeln!(f, "Function Builder(argc: {})", self.argc)?;
+        if !self.space.consts.is_empty() {
+            writeln!(f, "\tconsts: {:?}", self.space.consts)?;
+        }
+        if !self.space.locals.is_empty() {
+            writeln!(f, "\tlocals: {:?}", self.space.locals)?;
+        }
+        if !self.space.globals.is_empty() {
+            writeln!(f, "\tglobals: {:?}", self.space.globals)?;
+        }
+        if !self.branches.is_empty() {
+            writeln!(f, "\tbranches:")?;
+            for branch in self.branches.iter() {
+                writeln!(f, "\t\t{:?}", branch)?;
+            }
+        }
+        writeln!(f, "\tcode:")?;
+        for step in self.seq.iter() {
+            writeln!(f, "\t\t{}", step)?;
+        }
+        Ok(())
+    }
 }

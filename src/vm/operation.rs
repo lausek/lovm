@@ -202,18 +202,20 @@ impl Value {
 
 impl std::cmp::PartialEq for Value {
     fn eq(&self, rhs: &Self) -> bool {
-        let rhs = rhs.try_cast(&self);
-        if rhs.is_err() {
-            return false;
-        }
-        match (&self, &rhs.unwrap()) {
+        // TODO: comparing values for equality must check the argument; add comparison for losely
+        // typed
+        //let rhs = rhs.try_cast(&self);
+        //if rhs.is_err() {
+        //    return false;
+        //}
+        match (&self, &rhs) {
             (I(lhs), I(rhs)) => lhs == rhs,
             (I64(lhs), I64(rhs)) => lhs == rhs,
             (F64(lhs), F64(rhs)) => lhs == rhs,
             (Ref(lhs), Ref(rhs)) => lhs == rhs,
             (T(lhs), T(rhs)) => lhs == rhs,
             (Str(lhs), Str(rhs)) => lhs == rhs,
-            _ => unreachable!(),
+            _ => false,
         }
     }
 }

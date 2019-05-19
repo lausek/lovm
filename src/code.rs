@@ -46,6 +46,16 @@ impl Module {
     }
 }
 
+impl std::fmt::Display for Module {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        writeln!(f, "Module(slots: {})", self.inner.len())?;
+        for (name, co) in self.inner.iter() {
+            writeln!(f, "\t{}:\t{}", name, co)?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CodeObject {
     pub argc: usize,
@@ -98,14 +108,16 @@ pub enum Instruction {
     Shl,
     Shr,
 
-    Cmp,
+    CmpEq,
+    CmpNe, // actually short for `CmpEq; Not`
+    CmpGe,
+    CmpGt,
+    CmpLe,
+    CmpLt,
+
     Jmp(usize),
-    Jeq(usize),
-    Jne(usize),
-    Jge(usize),
-    Jgt(usize),
-    Jle(usize),
-    Jlt(usize),
+    Jt(usize),
+    Jf(usize),
 
     Cpush(usize), // push constant
     Lpush(usize), // push local value
@@ -123,25 +135,39 @@ pub enum Instruction {
 }
 
 impl Instruction {
-    pub fn set_arg(&mut self, arg: usize) {
+    pub fn arg(&self) -> Option<usize> {
         match self {
             Instruction::Int(c)
             | Instruction::Cast(c)
             | Instruction::Jmp(c)
-            | Instruction::Jeq(c)
-            | Instruction::Jne(c)
-            | Instruction::Jge(c)
-            | Instruction::Jgt(c)
-            | Instruction::Jle(c)
-            | Instruction::Jlt(c)
+            | Instruction::Jt(c)
+            | Instruction::Jf(c)
             | Instruction::Cpush(c)
             | Instruction::Lpush(c)
             | Instruction::Lpop(c)
             | Instruction::Lcall(c)
             | Instruction::Gpush(c)
             | Instruction::Gpop(c)
-            | Instruction::Gcall(c) => *c = arg,
-            _ => unimplemented!(),
+            | Instruction::Gcall(c) => Some(*c),
+            _ => None,
+        }
+    }
+
+    pub fn arg_mut(&mut self) -> Option<&mut usize> {
+        match self {
+            Instruction::Int(c)
+            | Instruction::Cast(c)
+            | Instruction::Jmp(c)
+            | Instruction::Jt(c)
+            | Instruction::Jf(c)
+            | Instruction::Cpush(c)
+            | Instruction::Lpush(c)
+            | Instruction::Lpop(c)
+            | Instruction::Lcall(c)
+            | Instruction::Gpush(c)
+            | Instruction::Gpop(c)
+            | Instruction::Gcall(c) => Some(c),
+            _ => None,
         }
     }
 
@@ -150,12 +176,8 @@ impl Instruction {
             Instruction::Int(_)
             | Instruction::Cast(_)
             | Instruction::Jmp(_)
-            | Instruction::Jeq(_)
-            | Instruction::Jne(_)
-            | Instruction::Jge(_)
-            | Instruction::Jgt(_)
-            | Instruction::Jle(_)
-            | Instruction::Jlt(_)
+            | Instruction::Jt(_)
+            | Instruction::Jf(_)
             | Instruction::Cpush(_)
             | Instruction::Lpush(_)
             | Instruction::Lpop(_)
@@ -166,7 +188,12 @@ impl Instruction {
 
             Instruction::Inc
             | Instruction::Dec
-            | Instruction::Cmp
+            | Instruction::CmpEq
+            | Instruction::CmpNe
+            | Instruction::CmpGe
+            | Instruction::CmpGt
+            | Instruction::CmpLe
+            | Instruction::CmpLt
             | Instruction::Add
             | Instruction::Sub
             | Instruction::Mul
@@ -183,6 +210,12 @@ impl Instruction {
             | Instruction::Pusha
             | Instruction::Popa => 0,
         }
+    }
+}
+
+impl std::fmt::Display for Instruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "{:?}", self)
     }
 }
 
@@ -217,24 +250,5 @@ impl Module {
 
     pub fn slots_mut(&mut self) -> &mut Vec<(Name, CodeObject)> {
         &mut self.inner
-    }
-}
-
-impl std::fmt::Display for Program {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        let mut it = self.code().inner.iter();
-        let mut offset = 0;
-
-        writeln!(f, "program:")?;
-        while let Some(inx) = it.next() {
-            write!(f, "{:04}: {:?}", offset, inx)?;
-            offset += 1;
-            for _ in 0..inx.arguments() {
-                write!(f, "\t{:?}", it.next().unwrap())?;
-                offset += 1;
-            }
-            write!(f, "\n")?;
-        }
-        Ok(())
     }
 }

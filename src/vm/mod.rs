@@ -41,6 +41,8 @@ pub enum VmState {
     Exited,
 }
 
+// TODO: add `lru_cache` (least-recently used optimization) to
+// improve runtime speed e.g. for `fib`
 #[derive(Clone, Debug)]
 pub struct VmData {
     pub globals: HashMap<Name, Value>,
@@ -106,15 +108,30 @@ impl Vm {
 
         self.push_frame(co.space.locals.len());
 
-        for i in 0..co.argc {
-            register_mut(&mut self.data).locals[i] = self.data.vstack.pop().expect("no argument");
-        }
+        // TODO: should code handle argument popping itself?
+        //for i in 0..co.argc {
+        //    register_mut(&mut self.data).locals[i] = self.data.vstack.pop().expect("no argument");
+        //}
 
         while self.data.state == VmState::Running && ip < len {
             let inx = &bl[ip];
 
             if cfg!(debug_assertions) {
-                println!("{}: {:?}", ip, inx);
+                println!(
+                    "{}: {:?} {}",
+                    ip,
+                    inx,
+                    inx.arg().map_or("".to_string(), |arg| match inx {
+                        Instruction::Cpush(_) => format!(":= {}", co.space.consts[arg]),
+                        Instruction::Lpush(_) | Instruction::Lpop(_) => {
+                            format!(":= {}", co.space.locals[arg])
+                        }
+                        Instruction::Gpush(_) | Instruction::Gpop(_) | Instruction::Gcall(_) => {
+                            format!(":= {}", co.space.globals[arg])
+                        }
+                        _ => "".to_string(),
+                    })
+                );
             }
 
             match inx {
@@ -123,9 +140,10 @@ impl Vm {
                 Instruction::Int(idx) => {
                     if let Some(irh) = self.interrupts.get(*idx) {
                         irh(&mut self.data)?;
-                    } else {
-                        self.panic(format!("interrupt {} not defined", idx))?;
                     }
+                    //else {
+                    //    self.panic(format!("interrupt {} not defined", idx))?;
+                    //}
                 }
                 Instruction::Cast(ty_idx) => {
                     let val = self.data.vstack.last_mut().expect("no value");
@@ -205,7 +223,7 @@ impl Vm {
                         Instruction::Div => target.div(&op),
                         Instruction::Rem => target.rem(&op),
                         Instruction::Pow => target.pow(&op),
-                        // TODO: Neg does not not an operand
+                        // TODO: Neg does not have an operand
                         Instruction::Neg => op.neg(),
                         Instruction::And => target.and(&op),
                         Instruction::Or => target.or(&op),
@@ -215,19 +233,46 @@ impl Vm {
                         _ => unimplemented!(),
                     };
                 }
-                Instruction::Cmp => {
+                Instruction::CmpEq
+                | Instruction::CmpNe
+                | Instruction::CmpGe
+                | Instruction::CmpGt
+                | Instruction::CmpLe
+                | Instruction::CmpLt => {
+                    use std::cmp::Ordering;
                     let op1 = self.data.vstack.pop().expect("missing op1");
                     let op2 = self.data.vstack.pop().expect("missing op2");
-                    (*register_mut(&mut self.data)).cmp = op2.partial_cmp(&op1);
+                    let inx = *inx;
+                    let cond = match op2.partial_cmp(&op1).unwrap() {
+                        Ordering::Equal => {
+                            inx == Instruction::CmpEq
+                                || inx == Instruction::CmpGe
+                                || inx == Instruction::CmpLe
+                        }
+                        Ordering::Greater => {
+                            inx == Instruction::CmpNe
+                                || inx == Instruction::CmpGe
+                                || inx == Instruction::CmpGt
+                        }
+                        Ordering::Less => {
+                            inx == Instruction::CmpNe
+                                || inx == Instruction::CmpLe
+                                || inx == Instruction::CmpLt
+                        }
+                    };
+                    self.data.vstack.push(Value::T(cond));
                 }
-                Instruction::Jmp(nip)
-                | Instruction::Jeq(nip)
-                | Instruction::Jne(nip)
-                | Instruction::Jge(nip)
-                | Instruction::Jgt(nip)
-                | Instruction::Jle(nip)
-                | Instruction::Jlt(nip) => {
-                    if register(&self.data).is_jmp_needed(&inx) {
+                Instruction::Jmp(nip) => {
+                    ip = *nip;
+                    continue;
+                }
+                Instruction::Jt(nip) | Instruction::Jf(nip) => {
+                    let cond: bool = self.data.vstack.pop().expect("no condition").into();
+                    if match inx {
+                        Instruction::Jt(_) => cond,
+                        Instruction::Jf(_) => !cond,
+                        _ => unreachable!(),
+                    } {
                         ip = *nip;
                         continue;
                     }
@@ -263,7 +308,10 @@ impl Vm {
     }
 
     fn pop_frame(&mut self) {
-        self.data.stack.pop().expect("frame to pop");
+        let _last = self.data.stack.pop().expect("frame to pop");
+        if cfg!(debug_assertions) {
+            println!("last frame {:?}", _last);
+        }
 
         if self.data.stack.is_empty() {
             self.data.state = VmState::Exited;
