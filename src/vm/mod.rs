@@ -108,11 +108,6 @@ impl Vm {
 
         self.push_frame(co.space.locals.len());
 
-        // TODO: should code handle argument popping itself?
-        //for i in 0..co.argc {
-        //    register_mut(&mut self.data).locals[i] = self.data.vstack.pop().expect("no argument");
-        //}
-
         while self.data.state == VmState::Running && ip < len {
             let inx = &bl[ip];
 
@@ -153,7 +148,7 @@ impl Vm {
                     let value = self.data.vstack.pop().expect("no value");
                     match inx {
                         Instruction::Lpop(_) => {
-                            register_mut(&mut self.data).locals[*idx] = value;
+                            frame_mut(&mut self.data).locals[*idx] = value;
                         }
                         Instruction::Gpop(_) => {
                             let name = co.space.globals.get(*idx).unwrap();
@@ -165,7 +160,7 @@ impl Vm {
                 Instruction::Cpush(idx) | Instruction::Lpush(idx) | Instruction::Gpush(idx) => {
                     let value = match inx {
                         Instruction::Cpush(_) => co.space.consts[*idx].clone(),
-                        Instruction::Lpush(_) => register(&self.data).locals[*idx].clone(),
+                        Instruction::Lpush(_) => frame(&self.data).locals[*idx].clone(),
                         Instruction::Gpush(_) => {
                             let name = co.space.globals.get(*idx).unwrap();
                             match self.data.globals.get(name) {
@@ -197,13 +192,16 @@ impl Vm {
                     //    _ => unreachable!(),
                     //}
                 }
+                Instruction::Neg => {
+                    let target = self.data.vstack.last_mut().expect("no target");
+                    *target = target.neg();
+                }
                 Instruction::Add
                 | Instruction::Sub
                 | Instruction::Mul
                 | Instruction::Div
                 | Instruction::Rem
                 | Instruction::Pow
-                | Instruction::Neg
                 | Instruction::And
                 | Instruction::Or
                 | Instruction::Xor
@@ -223,8 +221,6 @@ impl Vm {
                         Instruction::Div => target.div(&op),
                         Instruction::Rem => target.rem(&op),
                         Instruction::Pow => target.pow(&op),
-                        // TODO: Neg does not have an operand
-                        Instruction::Neg => op.neg(),
                         Instruction::And => target.and(&op),
                         Instruction::Or => target.or(&op),
                         Instruction::Xor => target.xor(&op),
@@ -316,15 +312,15 @@ impl Vm {
         if self.data.stack.is_empty() {
             self.data.state = VmState::Exited;
         } else {
-            *register_mut(&mut self.data) = self.data.stack.last().expect("no last frame").clone();
+            *frame_mut(&mut self.data) = self.data.stack.last().expect("no last frame").clone();
         }
     }
 }
 
-fn register(vm: &VmData) -> &VmFrame {
+fn frame(vm: &VmData) -> &VmFrame {
     vm.stack.last().expect("no last frame")
 }
 
-fn register_mut(vm: &mut VmData) -> &mut VmFrame {
+fn frame_mut(vm: &mut VmData) -> &mut VmFrame {
     vm.stack.last_mut().expect("no last frame")
 }
