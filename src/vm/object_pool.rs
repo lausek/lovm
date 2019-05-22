@@ -17,7 +17,7 @@ impl ObjectPool {
     pub fn new_handle(&mut self) -> ObjectId {
         self.last_handle += 1;
         self.handles
-            .insert(self.last_handle, ObjectKind::Array(Array {}));
+            .insert(self.last_handle, ObjectKind::Array(Array::new()));
         self.last_handle
     }
 
@@ -40,9 +40,10 @@ impl ObjectPool {
     }
 }
 
-pub trait ObjectProtocol {
+pub trait ObjectProtocol: std::fmt::Debug {
     fn get(&self, _: &Value) -> Option<&Value>;
     fn set(&mut self, _: &Value, _: Value);
+    fn append(&mut self, _: Value);
 }
 
 #[derive(Clone, Debug)]
@@ -52,7 +53,13 @@ pub enum ObjectKind {
 }
 
 #[derive(Clone, Debug)]
-pub struct Array {}
+pub struct Array(Vec<Value>);
+
+impl Array {
+    pub fn new() -> Self {
+        Self(vec![])
+    }
+}
 
 impl ObjectProtocol for Array {
     fn get(&self, _: &Value) -> Option<&Value> {
@@ -60,6 +67,10 @@ impl ObjectProtocol for Array {
     }
 
     fn set(&mut self, _: &Value, _: Value) {}
+
+    fn append(&mut self, v: Value) {
+        self.0.push(v);
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -71,4 +82,6 @@ impl ObjectProtocol for Object {
     }
 
     fn set(&mut self, _: &Value, _: Value) {}
+
+    fn append(&mut self, _: Value) {}
 }

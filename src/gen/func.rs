@@ -291,6 +291,10 @@ fn translate_operand(func: &mut CodeObject, op: &Operand, acc: Access) -> BuildR
         Operand::Const(v) => {
             let idx = index_of(&mut func.space.consts, &v);
             func.inner.push(Instruction::CPush(idx));
+            match acc {
+                Access::Append => func.inner.push(Instruction::OAppend),
+                _ => {}
+            }
         }
     }
     Ok(())
@@ -382,7 +386,7 @@ fn translate_operation(
             OperationType::ONew => {
                 func.inner.extend(vec![Instruction::ONew]);
                 for arg in op.ops() {
-                    translate(func, arg, Access::Read, offsets)?;
+                    translate(func, arg, Access::Append, offsets)?;
                 }
             }
             other => panic!("`{:?}` not yet implemented", other),

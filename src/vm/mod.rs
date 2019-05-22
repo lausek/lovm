@@ -161,6 +161,10 @@ impl Vm {
                         _ => unreachable!(),
                     }
                 }
+                Instruction::OAppend => {
+                    let value = self.data.vstack.pop().expect("no value");
+                    object_mut(&mut self.data).append(value);
+                }
                 Instruction::CPush(idx) | Instruction::LPush(idx) | Instruction::GPush(idx) => {
                     let value = match inx {
                         Instruction::CPush(_) => co.space.consts[*idx].clone(),
@@ -347,7 +351,7 @@ impl Vm {
 }
 
 fn object_mut(vm: &mut VmData) -> &mut dyn ObjectProtocol {
-    match vm.vstack.pop().expect("no object ref") {
+    match vm.vstack.last().expect("no object ref") {
         Value::Ref(handle) => vm.obj_pool.get_mut(&handle).unwrap(),
         _ => unimplemented!(),
     }
