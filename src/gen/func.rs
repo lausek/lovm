@@ -17,24 +17,24 @@ impl CodeObject {
         for inx in other.inner.iter_mut() {
             if let Some(prev_idx) = inx.arg() {
                 let new_idx = match inx {
-                    Instruction::Cpush(_) => {
+                    Instruction::CPush(_) => {
                         let prev_val = &other.space.consts[prev_idx];
                         index_of(&mut self.space.consts, prev_val)
                     }
-                    Instruction::Lpush(_) | Instruction::Lpop(_) | Instruction::Lcall(_) => {
+                    Instruction::LPush(_) | Instruction::LPop(_) | Instruction::LCall(_) => {
                         let prev_val = &other.space.locals[prev_idx];
                         index_of(&mut self.space.locals, prev_val)
                     }
-                    Instruction::Gpush(_) | Instruction::Gpop(_) | Instruction::Gcall(_) => {
+                    Instruction::GPush(_) | Instruction::GPop(_) | Instruction::GCall(_) => {
                         let prev_val = &other.space.globals[prev_idx];
                         // if ident was defined in parent frame, translate global operations
                         // to local scope
                         if self.space.locals.contains(prev_val) {
                             let new_idx = index_of(&mut self.space.locals, prev_val);
                             match inx.clone() {
-                                Instruction::Gpush(_) => *inx = Instruction::Lpush(new_idx),
-                                Instruction::Gpop(_) => *inx = Instruction::Lpop(new_idx),
-                                Instruction::Gcall(_) => *inx = Instruction::Lcall(new_idx),
+                                Instruction::GPush(_) => *inx = Instruction::LPush(new_idx),
+                                Instruction::GPop(_) => *inx = Instruction::LPop(new_idx),
+                                Instruction::GCall(_) => *inx = Instruction::LCall(new_idx),
                                 _ => unimplemented!(),
                             }
                             continue;
@@ -275,22 +275,22 @@ fn translate_operand(func: &mut CodeObject, op: &Operand, acc: Access) -> BuildR
                 .position(|local| local == n)
                 .unwrap();
             func.inner.push(if acc == Access::Write {
-                Instruction::Lpop(idx)
+                Instruction::LPop(idx)
             } else {
-                Instruction::Lpush(idx)
+                Instruction::LPush(idx)
             });
         }
         Operand::Name(n) => {
             let idx = index_of(&mut func.space.globals, n);
             func.inner.push(if acc == Access::Write {
-                Instruction::Gpop(idx)
+                Instruction::GPop(idx)
             } else {
-                Instruction::Gpush(idx)
+                Instruction::GPush(idx)
             });
         }
         Operand::Const(v) => {
             let idx = index_of(&mut func.space.consts, &v);
-            func.inner.push(Instruction::Cpush(idx));
+            func.inner.push(Instruction::CPush(idx));
         }
     }
     Ok(())
@@ -339,7 +339,7 @@ fn translate_operation(
                 }
                 // TODO: look at locals first
                 let idx = index_of(&mut func.space.globals, &fname);
-                func.inner.push(Instruction::Gcall(idx));
+                func.inner.push(Instruction::GCall(idx));
             }
             OperationType::Push => {
                 for arg in op.ops() {

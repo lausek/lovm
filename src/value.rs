@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 //       that can be passed around easily over a StringPool (smth. like Rc<String> or Cow<String>)
 // TODO: implement Objects; stored in ObjectPool (requires well-designed memory layout)
 
+pub type ObjectId = usize;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Value {
     I(i8),

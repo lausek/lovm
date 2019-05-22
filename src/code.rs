@@ -119,19 +119,28 @@ pub enum Instruction {
     Jt(usize),
     Jf(usize),
 
-    Cpush(usize), // push constant
-    Lpush(usize), // push local value
-    Lpop(usize),  // pop to local
-    Lcall(usize),
-    Gpush(usize), // push global value
-    Gpop(usize),  // pop to global
-    Gcall(usize),
+    CPush(usize), // push constant
+    LPush(usize), // push local value
+    LPop(usize),  // pop to local
+    LCall(usize),
+    GPush(usize), // push global value
+    GPop(usize),  // pop to global
+    GCall(usize),
 
     Cast(usize),
     Int(usize),
     Ret,
     Pusha,
     Popa,
+
+    // create a new object pushing its handle onto the stack
+    ONew,
+    // dispose the last object on stack
+    ODispose,
+    // use constant at this index for accessing/calling object attributes
+    OGet(usize),
+    OSet(usize),
+    OCall(usize),
 }
 
 impl Instruction {
@@ -142,13 +151,16 @@ impl Instruction {
             | Instruction::Jmp(c)
             | Instruction::Jt(c)
             | Instruction::Jf(c)
-            | Instruction::Cpush(c)
-            | Instruction::Lpush(c)
-            | Instruction::Lpop(c)
-            | Instruction::Lcall(c)
-            | Instruction::Gpush(c)
-            | Instruction::Gpop(c)
-            | Instruction::Gcall(c) => Some(*c),
+            | Instruction::CPush(c)
+            | Instruction::LPush(c)
+            | Instruction::LPop(c)
+            | Instruction::LCall(c)
+            | Instruction::GPush(c)
+            | Instruction::GPop(c)
+            | Instruction::GCall(c)
+            | Instruction::OGet(c)
+            | Instruction::OSet(c)
+            | Instruction::OCall(c) => Some(*c),
             _ => None,
         }
     }
@@ -160,13 +172,16 @@ impl Instruction {
             | Instruction::Jmp(c)
             | Instruction::Jt(c)
             | Instruction::Jf(c)
-            | Instruction::Cpush(c)
-            | Instruction::Lpush(c)
-            | Instruction::Lpop(c)
-            | Instruction::Lcall(c)
-            | Instruction::Gpush(c)
-            | Instruction::Gpop(c)
-            | Instruction::Gcall(c) => Some(c),
+            | Instruction::CPush(c)
+            | Instruction::LPush(c)
+            | Instruction::LPop(c)
+            | Instruction::LCall(c)
+            | Instruction::GPush(c)
+            | Instruction::GPop(c)
+            | Instruction::GCall(c)
+            | Instruction::OGet(c)
+            | Instruction::OSet(c)
+            | Instruction::OCall(c) => Some(c),
             _ => None,
         }
     }
@@ -178,37 +193,17 @@ impl Instruction {
             | Instruction::Jmp(_)
             | Instruction::Jt(_)
             | Instruction::Jf(_)
-            | Instruction::Cpush(_)
-            | Instruction::Lpush(_)
-            | Instruction::Lpop(_)
-            | Instruction::Lcall(_)
-            | Instruction::Gpush(_)
-            | Instruction::Gpop(_)
-            | Instruction::Gcall(_) => 1,
-
-            Instruction::Inc
-            | Instruction::Dec
-            | Instruction::CmpEq
-            | Instruction::CmpNe
-            | Instruction::CmpGe
-            | Instruction::CmpGt
-            | Instruction::CmpLe
-            | Instruction::CmpLt
-            | Instruction::Add
-            | Instruction::Sub
-            | Instruction::Mul
-            | Instruction::Div
-            | Instruction::Rem
-            | Instruction::Pow
-            | Instruction::Neg
-            | Instruction::And
-            | Instruction::Or
-            | Instruction::Xor
-            | Instruction::Shl
-            | Instruction::Shr
-            | Instruction::Ret
-            | Instruction::Pusha
-            | Instruction::Popa => 0,
+            | Instruction::CPush(_)
+            | Instruction::LPush(_)
+            | Instruction::LPop(_)
+            | Instruction::LCall(_)
+            | Instruction::GPush(_)
+            | Instruction::GPop(_)
+            | Instruction::GCall(_)
+            | Instruction::OGet(_)
+            | Instruction::OSet(_)
+            | Instruction::OCall(_) => 1,
+            _ => 0,
         }
     }
 }

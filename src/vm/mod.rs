@@ -1,6 +1,7 @@
 pub mod frame;
 pub mod interrupt;
 pub mod module;
+pub mod object_pool;
 pub mod operation;
 
 use super::*;
@@ -8,6 +9,7 @@ use super::*;
 pub use self::frame::*;
 pub use self::interrupt::*;
 pub use self::module::*;
+pub use self::object_pool::*;
 
 pub use std::collections::HashMap;
 
@@ -47,7 +49,7 @@ pub enum VmState {
 pub struct VmData {
     pub globals: HashMap<Name, Value>,
     pub modules: Modules,
-    pub obj_pool: HashMap<Name, ()>,
+    pub obj_pool: ObjectPool,
     pub state: VmState,
     pub stack: Vec<VmFrame>,
     pub vstack: Vec<Value>,
@@ -58,7 +60,7 @@ impl VmData {
         Self {
             globals: HashMap::new(),
             modules: Modules::new(),
-            obj_pool: HashMap::new(),
+            obj_pool: ObjectPool::new(),
             state: VmState::Initial,
             stack: vec![],
             vstack: vec![],
@@ -117,11 +119,11 @@ impl Vm {
                     ip,
                     inx,
                     inx.arg().map_or("".to_string(), |arg| match inx {
-                        Instruction::Cpush(_) => format!(":= {}", co.space.consts[arg]),
-                        Instruction::Lpush(_) | Instruction::Lpop(_) => {
+                        Instruction::CPush(_) => format!(":= {}", co.space.consts[arg]),
+                        Instruction::LPush(_) | Instruction::LPop(_) => {
                             format!(":= {}", co.space.locals[arg])
                         }
-                        Instruction::Gpush(_) | Instruction::Gpop(_) | Instruction::Gcall(_) => {
+                        Instruction::GPush(_) | Instruction::GPop(_) | Instruction::GCall(_) => {
                             format!(":= {}", co.space.globals[arg])
                         }
                         _ => "".to_string(),
@@ -132,6 +134,8 @@ impl Vm {
             match inx {
                 // ret is needed for early returns
                 Instruction::Ret => break,
+                Instruction::Pusha => self.push_frame(0),
+                Instruction::Popa => self.pop_frame(),
                 Instruction::Int(idx) => {
                     if let Some(irh) = self.interrupts.get(*idx) {
                         irh(&mut self.data)?;
@@ -144,24 +148,24 @@ impl Vm {
                     let val = self.data.vstack.last_mut().expect("no value");
                     *val = val.cast(&Value::from_type(*ty_idx));
                 }
-                Instruction::Lpop(idx) | Instruction::Gpop(idx) => {
+                Instruction::LPop(idx) | Instruction::GPop(idx) => {
                     let value = self.data.vstack.pop().expect("no value");
                     match inx {
-                        Instruction::Lpop(_) => {
+                        Instruction::LPop(_) => {
                             frame_mut(&mut self.data).locals[*idx] = value;
                         }
-                        Instruction::Gpop(_) => {
+                        Instruction::GPop(_) => {
                             let name = co.space.globals.get(*idx).unwrap();
                             self.data.globals.insert(name.clone(), value);
                         }
                         _ => unreachable!(),
                     }
                 }
-                Instruction::Cpush(idx) | Instruction::Lpush(idx) | Instruction::Gpush(idx) => {
+                Instruction::CPush(idx) | Instruction::LPush(idx) | Instruction::GPush(idx) => {
                     let value = match inx {
-                        Instruction::Cpush(_) => co.space.consts[*idx].clone(),
-                        Instruction::Lpush(_) => frame(&self.data).locals[*idx].clone(),
-                        Instruction::Gpush(_) => {
+                        Instruction::CPush(_) => co.space.consts[*idx].clone(),
+                        Instruction::LPush(_) => frame(&self.data).locals[*idx].clone(),
+                        Instruction::GPush(_) => {
                             let name = co.space.globals.get(*idx).unwrap();
                             match self.data.globals.get(name) {
                                 Some(value) => value.clone(),
@@ -172,13 +176,18 @@ impl Vm {
                     };
                     self.data.vstack.push(value);
                 }
-                Instruction::Lcall(_idx) => {
+                Instruction::LCall(_idx) => {
                     unimplemented!();
                 }
-                Instruction::Gcall(idx) => {
+                Instruction::GCall(idx) => {
                     let fname = &co.space.globals[*idx];
                     let co = self.call_lookup(&fname.to_string())?.clone();
                     self.run_object(&co)?;
+                }
+                Instruction::OCall(idx) => {
+                    let _object = self.data.vstack.pop().expect("no object");
+                    let _aname = &co.space.consts[*idx];
+                    unimplemented!();
                 }
                 Instruction::Inc | Instruction::Dec => {
                     unimplemented!();
@@ -273,8 +282,28 @@ impl Vm {
                         continue;
                     }
                 }
-                Instruction::Pusha => self.push_frame(0),
-                Instruction::Popa => self.pop_frame(),
+                Instruction::OGet(idx) => {
+                    let value = self.data.vstack.pop().expect("no value");
+                    let object = object_mut(&mut self.data);
+                    let aname = &co.space.consts[*idx];
+                    object.set(&aname, value);
+                }
+                Instruction::OSet(idx) => {
+                    let aname = &co.space.consts[*idx];
+                    let value = {
+                        let object = object_mut(&mut self.data);
+                        object.get(&aname).expect("unknown attribute").clone()
+                    };
+                    self.data.vstack.push(value);
+                }
+                Instruction::ONew => {
+                    let handle = self.data.obj_pool.new_handle();
+                    self.data.vstack.push(Value::Ref(handle));
+                }
+                Instruction::ODispose => {
+                    let handle = 0;
+                    self.data.obj_pool.dispose_handle(&handle);
+                }
             }
 
             if cfg!(debug_assertions) {
@@ -314,6 +343,13 @@ impl Vm {
         } else {
             *frame_mut(&mut self.data) = self.data.stack.last().expect("no last frame").clone();
         }
+    }
+}
+
+fn object_mut(vm: &mut VmData) -> &mut dyn ObjectProtocol {
+    match vm.vstack.pop().expect("no object ref") {
+        Value::Ref(handle) => vm.obj_pool.get_mut(&handle).unwrap(),
+        _ => unimplemented!(),
     }
 }
 
