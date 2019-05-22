@@ -319,7 +319,7 @@ fn translate_operation(
             func.inner.push(inx);
         }
     } else {
-        match op.ty {
+        match &op.ty {
             OperationType::Ret => {
                 for arg in op.ops() {
                     translate(func, arg, Access::Read, offsets)?;
@@ -379,7 +379,13 @@ fn translate_operation(
                 func.inner
                     .extend(vec![Instruction::Int(vm::Interrupt::Debug as usize)]);
             }
-            _ => unimplemented!(),
+            OperationType::ONew => {
+                func.inner.extend(vec![Instruction::ONew]);
+                for arg in op.ops() {
+                    translate(func, arg, Access::Read, offsets)?;
+                }
+            }
+            other => panic!("`{:?}` not yet implemented", other),
         }
     }
     Ok(())

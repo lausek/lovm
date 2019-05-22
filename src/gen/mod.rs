@@ -10,6 +10,8 @@ use super::*;
 
 pub type BuildResult<T> = Result<T, ()>;
 
+//type AccessModifier = fn(_: usize) -> Instruction;
+
 #[derive(PartialEq)]
 enum Access {
     Read,

@@ -23,6 +23,8 @@ pub enum OperationType {
     Push,
     Pop,
 
+    ONew,
+
     CmpEq,
     CmpNe, // actually short for `CmpEq; Not`
     CmpGe,
@@ -58,6 +60,7 @@ derive_constructor!(OperationType::Debug, debug);
 derive_constructor!(OperationType::Ret, ret);
 derive_constructor!(OperationType::Push, push);
 derive_constructor!(OperationType::Pop, pop);
+derive_constructor!(OperationType::ONew, onew);
 
 derive_constructor!(OperationType::CmpEq, cmp_eq);
 derive_constructor!(OperationType::CmpNe, cmp_ne);
@@ -106,6 +109,20 @@ where
 {
     fn from(from: T) -> Self {
         OpValue::Operand(from.into())
+    }
+}
+
+// constructor for arrays
+impl<T> From<Vec<T>> for OpValue
+where
+    T: Into<OpValue>,
+{
+    fn from(from: Vec<T>) -> Self {
+        let mut ops = Operation::onew();
+        for item in from.into_iter() {
+            ops.op(item);
+        }
+        OpValue::Operation(ops)
     }
 }
 
