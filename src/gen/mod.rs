@@ -14,7 +14,6 @@ pub type BuildResult<T> = Result<T, ()>;
 enum Access {
     Read,
     Write,
-    Append,
 }
 
 pub enum BranchTarget {
