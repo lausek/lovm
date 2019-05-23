@@ -8,6 +8,9 @@ use serde::{Deserialize, Serialize};
 
 pub type ObjectId = usize;
 
+// TODO: replace this with `Cow<...>` to reduce memory usage and improve performance
+pub type Str = String;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Value {
     I(i8),
@@ -16,7 +19,7 @@ pub enum Value {
     Ref(usize),
     T(bool),
     C(char),
-    Str(String),
+    Str(Str),
 }
 
 impl std::convert::From<Value> for usize {
