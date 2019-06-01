@@ -32,14 +32,18 @@ impl ObjectPool {
         self.handles.remove(id);
     }
 
-    pub fn get(&self, id: &ObjectId) -> Option<&dyn ObjectProtocol> {
+    pub fn get(&self, id: &ObjectId) -> Option<&ObjectKind> {
+        self.handles.get(id)
+    }
+
+    pub fn get_handle(&self, id: &ObjectId) -> Option<&dyn ObjectProtocol> {
         self.handles.get(id).and_then(|kind| match kind {
             ObjectKind::Array(array) => Some(array as &ObjectProtocol),
             ObjectKind::Object(object) => Some(object as &ObjectProtocol),
         })
     }
 
-    pub fn get_mut(&mut self, id: &ObjectId) -> Option<&mut dyn ObjectProtocol> {
+    pub fn get_handle_mut(&mut self, id: &ObjectId) -> Option<&mut dyn ObjectProtocol> {
         self.handles.get_mut(id).and_then(|kind| match kind {
             ObjectKind::Array(array) => Some(array as &mut ObjectProtocol),
             ObjectKind::Object(object) => Some(object as &mut ObjectProtocol),
@@ -53,13 +57,13 @@ pub trait ObjectProtocol: std::fmt::Debug {
     fn append(&mut self, _: Value);
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ObjectKind {
     Array(Array),
     Object(Object),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Array(Vec<Value>);
 
 impl Array {
@@ -69,18 +73,22 @@ impl Array {
 }
 
 impl ObjectProtocol for Array {
-    fn get(&self, _: &Value) -> Option<&Value> {
-        None
+    fn get(&self, key: &Value) -> Option<&Value> {
+        let idx = usize::from(key.cast(&Value::I64(0)));
+        self.0.get(idx)
     }
 
-    fn set(&mut self, _: &Value, _: Value) {}
+    fn set(&mut self, key: &Value, val: Value) {
+        let idx = usize::from(key.cast(&Value::I64(0)));
+        self.0[idx] = val;
+    }
 
     fn append(&mut self, v: Value) {
         self.0.push(v);
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Object(HashMap<Value, Value>);
 
 impl Object {
@@ -90,11 +98,13 @@ impl Object {
 }
 
 impl ObjectProtocol for Object {
-    fn get(&self, _: &Value) -> Option<&Value> {
-        None
+    fn get(&self, key: &Value) -> Option<&Value> {
+        self.0.get(key)
     }
 
-    fn set(&mut self, _: &Value, _: Value) {}
+    fn set(&mut self, key: &Value, val: Value) {
+        self.0.insert(key.clone(), val);
+    }
 
     fn append(&mut self, val: Value) {
         let len = self.0.len();

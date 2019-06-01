@@ -136,6 +136,10 @@ impl Vm {
                 Instruction::Ret => break,
                 Instruction::Pusha => self.push_frame(0),
                 Instruction::Popa => self.pop_frame(),
+                Instruction::Dup => {
+                    let dup = self.data.vstack.last().expect("no value").clone();
+                    self.data.vstack.push(dup);
+                }
                 Instruction::Int(idx) => {
                     if let Some(irh) = self.interrupts.get(*idx) {
                         irh(&mut self.data)?;
@@ -161,10 +165,6 @@ impl Vm {
                         _ => unreachable!(),
                     }
                 }
-                Instruction::OAppend => {
-                    let value = self.data.vstack.pop().expect("no value");
-                    object_mut(&mut self.data).append(value);
-                }
                 Instruction::CPush(idx) | Instruction::LPush(idx) | Instruction::GPush(idx) => {
                     let value = match inx {
                         Instruction::CPush(_) => co.space.consts[*idx].clone(),
@@ -187,11 +187,6 @@ impl Vm {
                     let fname = &co.space.globals[*idx];
                     let co = self.call_lookup(&fname.to_string())?.clone();
                     self.run_object(&co)?;
-                }
-                Instruction::OCall(idx) => {
-                    let _object = self.data.vstack.pop().expect("no object");
-                    let _aname = &co.space.consts[*idx];
-                    unimplemented!();
                 }
                 Instruction::Inc | Instruction::Dec => {
                     unimplemented!();
@@ -286,20 +281,6 @@ impl Vm {
                         continue;
                     }
                 }
-                Instruction::OGet(idx) => {
-                    let value = self.data.vstack.pop().expect("no value");
-                    let object = object_mut(&mut self.data);
-                    let aname = &co.space.consts[*idx];
-                    object.set(&aname, value);
-                }
-                Instruction::OSet(idx) => {
-                    let aname = &co.space.consts[*idx];
-                    let value = {
-                        let object = object_mut(&mut self.data);
-                        object.get(&aname).expect("unknown attribute").clone()
-                    };
-                    self.data.vstack.push(value);
-                }
                 Instruction::ONew => {
                     let handle = self.data.obj_pool.new_handle();
                     self.data.vstack.push(Value::Ref(handle));
@@ -311,6 +292,29 @@ impl Vm {
                 Instruction::ODispose => {
                     let handle = 0;
                     self.data.obj_pool.dispose_handle(&handle);
+                }
+                Instruction::OCall(idx) => {
+                    let _object = self.data.vstack.pop().expect("no object");
+                    let _aname = &co.space.consts[*idx];
+                    unimplemented!();
+                }
+                Instruction::OAppend => {
+                    let value = self.data.vstack.pop().expect("no value");
+                    object_mut(&mut self.data).append(value);
+                }
+                Instruction::OGet(idx) => {
+                    let aname = &co.space.consts[*idx];
+                    let value = {
+                        let object = object_mut(&mut self.data);
+                        object.get(&aname).expect("unknown attribute").clone()
+                    };
+                    self.data.vstack.push(value);
+                }
+                Instruction::OSet(idx) => {
+                    let value = self.data.vstack.pop().expect("no value");
+                    let object = object_mut(&mut self.data);
+                    let aname = &co.space.consts[*idx];
+                    object.set(&aname, value);
                 }
             }
 
@@ -356,7 +360,7 @@ impl Vm {
 
 fn object_mut(vm: &mut VmData) -> &mut dyn ObjectProtocol {
     match vm.vstack.last().expect("no object ref") {
-        Value::Ref(handle) => vm.obj_pool.get_mut(&handle).unwrap(),
+        Value::Ref(handle) => vm.obj_pool.get_handle_mut(&handle).unwrap(),
         _ => unimplemented!(),
     }
 }

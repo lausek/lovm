@@ -93,6 +93,7 @@ impl Space {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 #[repr(u8)]
 pub enum Instruction {
+    Dup,
     Inc,
     Dec,
     Add,

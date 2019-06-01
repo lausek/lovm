@@ -382,8 +382,8 @@ fn translate_operation(
             OperationType::ONew => {
                 func.inner.extend(vec![Instruction::ONew]);
                 for arg in op.ops() {
+                    // arg is either oset or oappend
                     translate(func, arg, Access::Read, offsets)?;
-                    func.inner.push(Instruction::OAppend);
                 }
             }
             OperationType::ONewArray => {
@@ -391,6 +391,35 @@ fn translate_operation(
                 for arg in op.ops() {
                     translate(func, arg, Access::Read, offsets)?;
                     func.inner.push(Instruction::OAppend);
+                }
+            }
+            OperationType::OAppend => {
+                for arg in op.ops() {
+                    translate(func, arg, Access::Read, offsets)?;
+                    func.inner.push(Instruction::OAppend);
+                }
+            }
+            OperationType::OGet => unimplemented!(),
+            OperationType::OSet => {
+                let mut it = op.ops();
+                loop {
+                    match it.take(2).collect::<Vec<_>>().as_slice() {
+                        [OpValue::Operation(Operation {
+                            ty: OperationType::Push,
+                            ops,
+                        }), val] => match ops.as_slice() {
+                            [OpValue::Operand(Operand::Name(key))] => {
+                                translate(func, val, Access::Read, offsets)?;
+                                let idx =
+                                    index_of(&mut func.space.consts, &Value::Str(key.clone()));
+                                func.inner.push(Instruction::OSet(idx));
+                            }
+                            _ => unreachable!(),
+                        },
+                        [key, _] => panic!("incorrect key `{:?}`", key),
+                        _ => break,
+                    }
+                    break;
                 }
             }
             other => panic!("`{:?}` not yet implemented", other),

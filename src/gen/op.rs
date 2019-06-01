@@ -25,6 +25,9 @@ pub enum OperationType {
 
     ONew,
     ONewArray,
+    OAppend,
+    OGet,
+    OSet,
 
     CmpEq,
     CmpNe, // actually short for `CmpEq; Not`
@@ -63,6 +66,9 @@ derive_constructor!(OperationType::Push, push);
 derive_constructor!(OperationType::Pop, pop);
 derive_constructor!(OperationType::ONew, onew);
 derive_constructor!(OperationType::ONewArray, onewarray);
+derive_constructor!(OperationType::OAppend, oappend);
+derive_constructor!(OperationType::OGet, oget);
+derive_constructor!(OperationType::OSet, oset);
 
 derive_constructor!(OperationType::CmpEq, cmp_eq);
 derive_constructor!(OperationType::CmpNe, cmp_ne);
@@ -105,16 +111,13 @@ impl std::fmt::Display for OpValue {
     }
 }
 
-impl<T> From<T> for OpValue
-where
-    T: Into<Operand>,
-{
+impl<T: Into<Operand>> From<T> for OpValue {
     fn from(from: T) -> Self {
         OpValue::Operand(from.into())
     }
 }
 
-// constructor for arrays
+// constructor for arrays (tuples)
 impl<T> From<Vec<T>> for OpValue
 where
     T: Into<OpValue>,
@@ -128,6 +131,24 @@ where
     }
 }
 
+// constructor for objects (sets)
+impl<T> From<Vec<(Option<T>, T)>> for OpValue
+where
+    T: Into<OpValue>,
+{
+    fn from(from: Vec<(Option<T>, T)>) -> Self {
+        let mut ops = Operation::onew();
+        for (key, val) in from.into_iter() {
+            if let Some(key) = key {
+                ops.op(Operation::oset().op(key).op(val).end());
+            } else {
+                ops.op(Operation::oappend().op(val).end());
+            }
+        }
+        OpValue::Operation(ops)
+    }
+}
+
 impl From<Operation> for OpValue {
     fn from(from: Operation) -> Self {
         OpValue::Operation(from)
@@ -136,7 +157,7 @@ impl From<Operation> for OpValue {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Operation {
-    ops: Vec<OpValue>,
+    pub ops: Vec<OpValue>,
     pub ty: OperationType,
 }
 
