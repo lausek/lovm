@@ -17,6 +17,13 @@ impl ObjectPool {
     pub fn new_handle(&mut self) -> ObjectId {
         self.last_handle += 1;
         self.handles
+            .insert(self.last_handle, ObjectKind::Object(Object::new()));
+        self.last_handle
+    }
+
+    pub fn new_array_handle(&mut self) -> ObjectId {
+        self.last_handle += 1;
+        self.handles
             .insert(self.last_handle, ObjectKind::Array(Array::new()));
         self.last_handle
     }
@@ -75,6 +82,12 @@ impl ObjectProtocol for Array {
 
 #[derive(Clone, Debug)]
 pub struct Object {}
+
+impl Object {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
 
 impl ObjectProtocol for Object {
     fn get(&self, _: &Value) -> Option<&Value> {

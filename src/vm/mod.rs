@@ -304,6 +304,10 @@ impl Vm {
                     let handle = self.data.obj_pool.new_handle();
                     self.data.vstack.push(Value::Ref(handle));
                 }
+                Instruction::ONewArray => {
+                    let handle = self.data.obj_pool.new_array_handle();
+                    self.data.vstack.push(Value::Ref(handle));
+                }
                 Instruction::ODispose => {
                     let handle = 0;
                     self.data.obj_pool.dispose_handle(&handle);

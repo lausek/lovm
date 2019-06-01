@@ -135,6 +135,8 @@ pub enum Instruction {
 
     // create a new object pushing its handle onto the stack
     ONew,
+    // create a new array pushing its handle onto the stack
+    ONewArray,
     // dispose the last object on stack
     ODispose,
     // use constant at this index for accessing/calling object attributes
