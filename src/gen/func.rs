@@ -404,18 +404,11 @@ fn translate_operation(
                 let mut it = op.ops();
                 loop {
                     match it.take(2).collect::<Vec<_>>().as_slice() {
-                        [OpValue::Operation(Operation {
-                            ty: OperationType::Push,
-                            ops,
-                        }), val] => match ops.as_slice() {
-                            [OpValue::Operand(Operand::Name(key))] => {
-                                translate(func, val, Access::Read, offsets)?;
-                                let idx =
-                                    index_of(&mut func.space.consts, &Value::Str(key.clone()));
-                                func.inner.push(Instruction::OSet(idx));
-                            }
-                            _ => unreachable!(),
-                        },
+                        [OpValue::Operand(Operand::Const(key @ Value::Str(_))), val] => {
+                            translate(func, val, Access::Read, offsets)?;
+                            let idx = index_of(&mut func.space.consts, &key);
+                            func.inner.push(Instruction::OSet(idx));
+                        }
                         [key, _] => panic!("incorrect key `{:?}`", key),
                         _ => break,
                     }
