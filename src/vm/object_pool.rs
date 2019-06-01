@@ -81,11 +81,11 @@ impl ObjectProtocol for Array {
 }
 
 #[derive(Clone, Debug)]
-pub struct Object {}
+pub struct Object(HashMap<Value, Value>);
 
 impl Object {
     pub fn new() -> Self {
-        Self {}
+        Self(HashMap::new())
     }
 }
 
@@ -96,5 +96,8 @@ impl ObjectProtocol for Object {
 
     fn set(&mut self, _: &Value, _: Value) {}
 
-    fn append(&mut self, _: Value) {}
+    fn append(&mut self, val: Value) {
+        let len = self.0.len();
+        self.0.insert(Value::I64(len as i64), val);
+    }
 }

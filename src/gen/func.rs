@@ -386,6 +386,13 @@ fn translate_operation(
                     func.inner.push(Instruction::OAppend);
                 }
             }
+            OperationType::ONewArray => {
+                func.inner.extend(vec![Instruction::ONewArray]);
+                for arg in op.ops() {
+                    translate(func, arg, Access::Read, offsets)?;
+                    func.inner.push(Instruction::OAppend);
+                }
+            }
             other => panic!("`{:?}` not yet implemented", other),
         }
     }

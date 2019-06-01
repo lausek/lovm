@@ -24,6 +24,7 @@ pub enum OperationType {
     Pop,
 
     ONew,
+    ONewArray,
 
     CmpEq,
     CmpNe, // actually short for `CmpEq; Not`
@@ -61,6 +62,7 @@ derive_constructor!(OperationType::Ret, ret);
 derive_constructor!(OperationType::Push, push);
 derive_constructor!(OperationType::Pop, pop);
 derive_constructor!(OperationType::ONew, onew);
+derive_constructor!(OperationType::ONewArray, onewarray);
 
 derive_constructor!(OperationType::CmpEq, cmp_eq);
 derive_constructor!(OperationType::CmpNe, cmp_ne);
@@ -118,7 +120,7 @@ where
     T: Into<OpValue>,
 {
     fn from(from: Vec<T>) -> Self {
-        let mut ops = Operation::onew();
+        let mut ops = Operation::onewarray();
         for item in from.into_iter() {
             ops.op(item);
         }

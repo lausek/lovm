@@ -22,6 +22,20 @@ pub enum Value {
     Str(Str),
 }
 
+impl std::hash::Hash for Value {
+    fn hash<H: std::hash::Hasher>(&self, hash: &mut H) {
+        match self {
+            I(n) => hash.write_i8(*n),
+            I64(n) => hash.write_i64(*n),
+            F64(n) => hash.write_u64(n.to_bits()),
+            Ref(n) => hash.write_usize(*n),
+            T(t) => hash.write_u8(if *t { 0 } else { 1 }),
+            C(c) => hash.write_usize(*c as usize),
+            Str(s) => hash.write(s.as_bytes()),
+        }
+    }
+}
+
 impl std::convert::From<Value> for usize {
     fn from(v: Value) -> usize {
         match v {
