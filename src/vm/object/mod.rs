@@ -10,8 +10,8 @@ pub use self::pool::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Object {
-    assoc: Option<Module>,
-    inner: ObjectKind,
+    pub assoc: Option<Module>,
+    pub inner: ObjectKind,
 }
 
 impl Object {

@@ -397,7 +397,7 @@ fn translate_operation(
             }
             // TODO: something is wrong here; example `quirks`
             OperationType::ONewDict => {
-                func.inner.extend(vec![Instruction::ONewArray]);
+                func.inner.extend(vec![Instruction::ONewDict]);
                 for arg in op.ops() {
                     translate(func, arg, Access::Read, offsets)?;
                     func.inner.push(Instruction::OAppend);
@@ -413,16 +413,15 @@ fn translate_operation(
             OperationType::OSet => {
                 let mut it = op.ops();
                 loop {
-                    match it.take(2).collect::<Vec<_>>().as_slice() {
-                        [OpValue::Operand(Operand::Const(key @ Value::Str(_))), val] => {
+                    match (it.next(), it.next()) {
+                        (Some(OpValue::Operand(Operand::Const(key))), Some(val)) => {
                             translate(func, val, Access::Read, offsets)?;
                             let idx = index_of(&mut func.space.consts, &key);
                             func.inner.push(Instruction::OSet(idx));
                         }
-                        [key, _] => panic!("incorrect key `{:?}`", key),
+                        (Some(key), _) => panic!("incorrect key `{:?}`", key),
                         _ => break,
                     }
-                    break;
                 }
             }
             other => panic!("`{:?}` not yet implemented", other),
