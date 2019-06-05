@@ -16,9 +16,17 @@ macro_rules! unit {
 
 #[macro_export]
 macro_rules! func {
-    ($body:expr) => {{
+    (
+        $([$($param:ident),*] =>)?
+        { $($op:expr),* $(,)? }
+    ) => {{
         let mut func = FunctionBuilder::new();
-        $body(&mut func);
+        $(
+            let mut func = func.with_params::<&str>(vec![$(stringify!($param)),*]);
+        )?
+        $(
+            func.step($op);
+        )*
         func.build().expect("building func failed")
     }};
 }

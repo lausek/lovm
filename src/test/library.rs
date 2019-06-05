@@ -6,13 +6,13 @@ use crate::gen::*;
 
 #[test]
 fn simple_function() {
-    let _func = gen_foo().expect("building function failed");
+    let _func = gen_foo();
 }
 
 #[test]
 fn simple_module() {
-    let foo = gen_foo().expect("building `foo` failed");
-    let bar = gen_foo().expect("building `bar` failed");
+    let foo = gen_foo();
+    let bar = gen_foo();
 
     let _unit = unit! {
         foo => foo,
@@ -42,9 +42,10 @@ fn fib_function() {
     println!("{}", fib);
     let fib = fib.build().expect("building function failed");
 
-    let mut main = FunctionBuilder::new();
-    main.step(Operation::call("fib").op(8).end()).debug();
-    let main = main.build().expect("building function failed");
+    let mut main = func!({
+        Operation::call("fib").op(8).end(),
+        Operation::debug(),
+    });
 
     let unit = unit! {
         main => main,
@@ -66,16 +67,16 @@ fn fib_function() {
 }
 
 #[allow(dead_code)]
-fn gen_foo() -> BuildResult<CodeObject> {
+fn gen_foo() -> CodeObject {
     // pseudocode:
     //      f(x, y):
     //          z = 1
     //          z += x
     //          z += y
     //          return z ; not implemented
-    let mut func = FunctionBuilder::new().with_params(vec!["x", "y"]);
-    func.step(Operation::ass().var("z").op(1).end())
-        .step(Operation::add().var("z").op("x").end())
-        .step(Operation::add().var("z").op("y").end());
-    func.build()
+    func!([x] => {
+        Operation::ass().var("z").op(1).end(),
+        Operation::add().var("z").op("x").end(),
+        Operation::add().var("z").op("y").end()
+    })
 }
