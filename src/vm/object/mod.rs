@@ -60,7 +60,6 @@ pub enum ObjectKind {
     Value(Value),
 }
 
-// TODO: other name pls
 pub trait Indexable: std::fmt::Debug {
     // short for "get key"
     fn getk(&self, _: &Value) -> Option<&Value>;
