@@ -291,7 +291,7 @@ impl Vm {
                     self.data.vstack.push(Value::Ref(handle));
                 }
                 Instruction::ODispose => {
-                    let handle = 0;
+                    let handle = usize::from(self.data.vstack.pop().expect("no object"));
                     self.data.obj_pool.dispose_handle(&handle);
                 }
                 Instruction::OCall(idx) => {

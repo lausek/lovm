@@ -52,7 +52,6 @@ impl Object {
     }
 }
 
-// TODO: other name pls
 #[derive(Clone, Debug, PartialEq)]
 pub enum ObjectKind {
     Array(Array),

@@ -301,6 +301,7 @@ fn translate_operation(
     op: &Operation,
     offsets: &mut Vec<(usize, usize)>,
 ) -> BuildResult<()> {
+    // TODO: as_inx should actually be a flatter branch
     if let Some(inx) = op.as_inx() {
         let mut ops = op.ops();
         if let Some(first) = ops.next() {
@@ -386,7 +387,16 @@ fn translate_operation(
                     translate(func, arg, Access::Read, offsets)?;
                 }
             }
+            // TODO: something is wrong here; example `quirks`
             OperationType::ONewArray => {
+                func.inner.extend(vec![Instruction::ONewArray]);
+                for arg in op.ops() {
+                    translate(func, arg, Access::Read, offsets)?;
+                    func.inner.push(Instruction::OAppend);
+                }
+            }
+            // TODO: something is wrong here; example `quirks`
+            OperationType::ONewDict => {
                 func.inner.extend(vec![Instruction::ONewArray]);
                 for arg in op.ops() {
                     translate(func, arg, Access::Read, offsets)?;

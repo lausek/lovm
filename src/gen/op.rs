@@ -25,6 +25,8 @@ pub enum OperationType {
 
     ONew,
     ONewArray,
+    ONewDict,
+    ODispose,
     OAppend,
     OGet,
     OSet,
@@ -66,6 +68,8 @@ derive_constructor!(OperationType::Push, push);
 derive_constructor!(OperationType::Pop, pop);
 derive_constructor!(OperationType::ONew, onew);
 derive_constructor!(OperationType::ONewArray, onewarray);
+derive_constructor!(OperationType::ONewDict, onewdict);
+derive_constructor!(OperationType::ODispose, odispose);
 derive_constructor!(OperationType::OAppend, oappend);
 derive_constructor!(OperationType::OGet, oget);
 derive_constructor!(OperationType::OSet, oset);
@@ -187,6 +191,8 @@ impl Operation {
             OperationType::Xor => Some(Instruction::Xor),
             OperationType::Shl => Some(Instruction::Shl),
             OperationType::Shr => Some(Instruction::Shr),
+
+            OperationType::ODispose => Some(Instruction::ODispose),
             _ => None,
         }
     }
