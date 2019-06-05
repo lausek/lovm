@@ -60,6 +60,7 @@ pub enum ObjectKind {
     Value(Value),
 }
 
+// special trait to improve performance on array/dict
 pub trait Indexable: std::fmt::Debug {
     // short for "get key"
     fn getk(&self, _: &Value) -> Option<&Value>;
