@@ -10,12 +10,12 @@ impl Array {
 }
 
 impl IndexProtocol for Array {
-    fn get(&self, key: &Value) -> Option<&Value> {
+    fn getk(&self, key: &Value) -> Option<&Value> {
         let idx = usize::from(key.cast(&Value::I64(0)));
         self.0.get(idx)
     }
 
-    fn set(&mut self, key: &Value, val: Value) {
+    fn setk(&mut self, key: &Value, val: Value) {
         let idx = usize::from(key.cast(&Value::I64(0)));
         self.0[idx] = val;
     }

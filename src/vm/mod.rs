@@ -295,12 +295,14 @@ impl Vm {
                     self.data.obj_pool.dispose_handle(&handle);
                 }
                 Instruction::OCall(idx) => {
-                    let _object = self.data.vstack.pop().expect("no object");
-                    let _aname = &co.space.consts[*idx];
-                    // TODO: lookup _aname in _object associated methods
+                    let aname = &co.space.consts[*idx];
+                    let cb = {
+                        let object = object(&self.data);
+                        object.lookup(aname).expect("no method found")
+                    };
                     // TODO: check if locals[0] is self => assign self = vstack.last()
-                    // TODO: vm.run(codeobject)
-                    unimplemented!();
+                    // TODO: ugh... remove this clone pls
+                    self.run_object(&cb.clone())?;
                 }
                 Instruction::OAppend => {
                     let value = self.data.vstack.pop().expect("no value");
@@ -313,7 +315,7 @@ impl Vm {
                     let aname = &co.space.consts[*idx];
                     let value = {
                         let object = object_mut(&mut self.data).as_indexable().unwrap();
-                        object.get(&aname).expect("unknown attribute").clone()
+                        object.getk(&aname).expect("unknown attribute").clone()
                     };
                     self.data.vstack.push(value);
                 }
@@ -321,7 +323,7 @@ impl Vm {
                     let value = self.data.vstack.pop().expect("no value");
                     let object = object_mut(&mut self.data).as_indexable().unwrap();
                     let aname = &co.space.consts[*idx];
-                    object.set(&aname, value);
+                    object.setk(&aname, value);
                 }
             }
 
@@ -362,6 +364,13 @@ impl Vm {
         } else {
             *frame_mut(&mut self.data) = self.data.stack.last().expect("no last frame").clone();
         }
+    }
+}
+
+fn object(vm: &VmData) -> &Object {
+    match vm.vstack.last().expect("no object ref") {
+        Value::Ref(handle) => vm.obj_pool.get(&handle).unwrap(),
+        _ => unimplemented!(),
     }
 }
 

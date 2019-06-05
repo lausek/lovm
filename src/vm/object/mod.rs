@@ -44,8 +44,11 @@ impl Object {
         }
     }
 
-    pub fn assoc(&self) -> Option<&Module> {
-        self.assoc.as_ref()
+    pub fn lookup(&self, key: &Value) -> Option<&CodeObject> {
+        match (&self.assoc, key) {
+            (Some(module), Value::Str(name)) => module.get(name),
+            (_, _) => None,
+        }
     }
 }
 
@@ -59,7 +62,9 @@ pub enum ObjectKind {
 
 // TODO: other name pls
 pub trait IndexProtocol: std::fmt::Debug {
-    fn get(&self, _: &Value) -> Option<&Value>;
-    fn set(&mut self, _: &Value, _: Value);
+    // short for "get key"
+    fn getk(&self, _: &Value) -> Option<&Value>;
+    // short for "set key"
+    fn setk(&mut self, _: &Value, _: Value);
     fn append(&mut self, _: Value);
 }
