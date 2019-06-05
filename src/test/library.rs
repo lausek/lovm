@@ -14,7 +14,7 @@ fn simple_module() {
     let foo = gen_foo().expect("building `foo` failed");
     let bar = gen_foo().expect("building `bar` failed");
 
-    let mut builder = ModuleBuilder::new();
+    let mut builder = UnitBuilder::new();
     builder.decl("foo", foo.into()).decl("bar", bar.into());
 
     let _module = builder.build().expect("building module failed");
@@ -46,7 +46,7 @@ fn fib_function() {
     main.step(Operation::call("fib").op(8).end()).debug();
     let main = main.build().expect("building function failed");
 
-    let mut module = ModuleBuilder::new();
+    let mut module = UnitBuilder::new();
     module.decl("fib", fib.into()).decl("main", main.into());
     let module = module.build().expect("building module failed");
 

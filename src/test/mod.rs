@@ -7,7 +7,7 @@ pub mod runtime;
 macro_rules! run {
     ($func:expr $(, $dbg:expr)?) => {
         use crate::gen::*;
-        let mut module = ModuleBuilder::new();
+        let mut module = UnitBuilder::new();
         module.decl("main", $func.into());
         let module = module.build().expect("building module failed");
 

@@ -1,9 +1,9 @@
 use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Modules(pub Vec<Module>);
+pub struct Units(pub Vec<Unit>);
 
-impl Modules {
+impl Units {
     pub fn new() -> Self {
         Self(vec![])
     }
@@ -17,7 +17,7 @@ impl Modules {
         None
     }
 
-    pub fn load(&mut self, module: &Module) -> Result<(), String> {
+    pub fn load(&mut self, module: &Unit) -> Result<(), String> {
         self.0.push(module.clone());
         Ok(())
     }

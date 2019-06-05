@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 // the use of registers is therefore dropped in favor of a more dynamic and flexible
 // data management.
 //
-// for grouping `CodeObjects` into units, a `Module` structure is used. it basically contains
+// for grouping `CodeObjects` into units, a `Unit` structure is used. it basically contains
 // a list of identifiers next to their correspoding `CodeObject` (possible sig: Vec<(Ident, CodeObject)>).
 //
 // for the generation of lovm programs a library (WIP: module name) is exported.
@@ -20,15 +20,15 @@ use serde::{Deserialize, Serialize};
 pub type Name = String;
 pub type CodeBlock = Vec<Instruction>;
 
-pub type Program = Module;
+pub type Program = Unit;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct Module {
+pub struct Unit {
     pub space: Space,
     pub inner: Vec<(Name, CodeObject)>,
 }
 
-impl Module {
+impl Unit {
     pub fn new() -> Self {
         Self {
             space: Space::new(),
@@ -46,9 +46,9 @@ impl Module {
     }
 }
 
-impl std::fmt::Display for Module {
+impl std::fmt::Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        writeln!(f, "Module(slots: {})", self.inner.len())?;
+        writeln!(f, "Unit(slots: {})", self.inner.len())?;
         for (name, co) in self.inner.iter() {
             writeln!(f, "\t{}:\t{}", name, co)?;
         }
@@ -221,7 +221,7 @@ impl std::fmt::Display for Instruction {
     }
 }
 
-impl Module {
+impl Unit {
     pub fn serialize(&self) -> Result<Vec<u8>, bincode::Error> {
         bincode::serialize(&self)
     }

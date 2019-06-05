@@ -48,7 +48,7 @@ pub enum VmState {
 #[derive(Clone, Debug)]
 pub struct VmData {
     pub globals: HashMap<Name, Value>,
-    pub modules: Modules,
+    pub modules: Units,
     pub obj_pool: ObjectPool,
     pub state: VmState,
     pub stack: Vec<VmFrame>,
@@ -59,7 +59,7 @@ impl VmData {
     pub fn new() -> Self {
         Self {
             globals: HashMap::new(),
-            modules: Modules::new(),
+            modules: Units::new(),
             obj_pool: ObjectPool::new(),
             state: VmState::Initial,
             stack: vec![],
@@ -339,7 +339,7 @@ impl Vm {
         Ok(())
     }
 
-    pub fn run(&mut self, module: &Module) -> VmResult {
+    pub fn run(&mut self, module: &Unit) -> VmResult {
         // loads the programs main function
         let co = &module.code();
 

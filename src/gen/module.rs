@@ -1,11 +1,11 @@
 use super::*;
 
 #[derive(Clone, Debug)]
-pub struct ModuleBuilder {
+pub struct UnitBuilder {
     slots: Vec<(Name, CodeObject)>,
 }
 
-impl ModuleBuilder {
+impl UnitBuilder {
     pub fn new() -> Self {
         Self { slots: vec![] }
     }
@@ -36,8 +36,8 @@ impl ModuleBuilder {
         self
     }
 
-    pub fn build(&self) -> BuildResult<Module> {
-        let mut module = Module::new();
+    pub fn build(&self) -> BuildResult<Unit> {
+        let mut module = Unit::new();
         module.inner = self.slots.clone();
         Ok(module)
     }
