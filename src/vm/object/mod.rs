@@ -36,10 +36,10 @@ impl Object {
         }
     }
 
-    pub fn as_indexable(&mut self) -> Result<&mut dyn IndexProtocol, ()> {
+    pub fn as_indexable(&mut self) -> Result<&mut dyn Indexable, ()> {
         match &mut self.inner {
-            ObjectKind::Array(array) => Ok(array as &mut dyn IndexProtocol),
-            ObjectKind::Dict(dict) => Ok(dict as &mut dyn IndexProtocol),
+            ObjectKind::Array(array) => Ok(array as &mut dyn Indexable),
+            ObjectKind::Dict(dict) => Ok(dict as &mut dyn Indexable),
             _ => Err(()),
         }
     }
@@ -61,7 +61,7 @@ pub enum ObjectKind {
 }
 
 // TODO: other name pls
-pub trait IndexProtocol: std::fmt::Debug {
+pub trait Indexable: std::fmt::Debug {
     // short for "get key"
     fn getk(&self, _: &Value) -> Option<&Value>;
     // short for "set key"

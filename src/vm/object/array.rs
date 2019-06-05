@@ -9,7 +9,7 @@ impl Array {
     }
 }
 
-impl IndexProtocol for Array {
+impl Indexable for Array {
     fn getk(&self, key: &Value) -> Option<&Value> {
         let idx = usize::from(key.cast(&Value::I64(0)));
         self.0.get(idx)

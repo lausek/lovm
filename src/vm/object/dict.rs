@@ -9,7 +9,7 @@ impl Dict {
     }
 }
 
-impl IndexProtocol for Dict {
+impl Indexable for Dict {
     fn getk(&self, key: &Value) -> Option<&Value> {
         self.0.get(key)
     }
