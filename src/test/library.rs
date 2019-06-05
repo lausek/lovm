@@ -14,10 +14,10 @@ fn simple_module() {
     let foo = gen_foo().expect("building `foo` failed");
     let bar = gen_foo().expect("building `bar` failed");
 
-    let mut builder = UnitBuilder::new();
-    builder.decl("foo", foo.into()).decl("bar", bar.into());
-
-    let _module = builder.build().expect("building module failed");
+    let _unit = unit! {
+        foo => foo,
+        bar => bar
+    };
 }
 
 #[test]
@@ -46,9 +46,10 @@ fn fib_function() {
     main.step(Operation::call("fib").op(8).end()).debug();
     let main = main.build().expect("building function failed");
 
-    let mut module = UnitBuilder::new();
-    module.decl("fib", fib.into()).decl("main", main.into());
-    let module = module.build().expect("building module failed");
+    let unit = unit! {
+        main => main,
+        fib => fib
+    };
 
     fn debug(data: &mut vm::VmData) -> vm::VmResult {
         let frame = data.stack.last_mut().unwrap();
@@ -61,7 +62,7 @@ fn fib_function() {
     let mut vm = vm::Vm::new();
     vm.interrupts_mut()
         .set(vm::Interrupt::Debug as usize, &debug);
-    vm.run(&module).expect("error in code");
+    vm.run(&unit).expect("error in code");
 }
 
 #[allow(dead_code)]

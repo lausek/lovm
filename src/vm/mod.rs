@@ -1,21 +1,21 @@
 pub mod frame;
 pub mod interrupt;
-pub mod module;
 pub mod object;
 pub mod operation;
+pub mod unit;
 
 use super::*;
 
 pub use self::frame::*;
 pub use self::interrupt::*;
-pub use self::module::*;
 pub use self::object::*;
+pub use self::unit::*;
 
 pub use std::collections::HashMap;
 
 // the vm is meant to be used as a dynamic runtime. it keeps track of:
 //  - globals: area for storing global vm values
-//  - modules: loaded vm modules; used for name lookup (e.g. in function call)
+//  - units: loaded vm units; used for name lookup (e.g. in function call)
 //  - obj_pool: all allocated custom objects
 //  - state: status flag for vm flow control
 //  - stack: callstack consisting of local frames
@@ -48,7 +48,7 @@ pub enum VmState {
 #[derive(Clone, Debug)]
 pub struct VmData {
     pub globals: HashMap<Name, Value>,
-    pub modules: Units,
+    pub units: Units,
     pub obj_pool: ObjectPool,
     pub state: VmState,
     pub stack: Vec<VmFrame>,
@@ -59,7 +59,7 @@ impl VmData {
     pub fn new() -> Self {
         Self {
             globals: HashMap::new(),
-            modules: Units::new(),
+            units: Units::new(),
             obj_pool: ObjectPool::new(),
             state: VmState::Initial,
             stack: vec![],
@@ -97,7 +97,7 @@ impl Vm {
 
     // TODO: return `Rc` over `CodeObject` here because it could reassign itself
     fn call_lookup(&self, name: &Name) -> Result<&CodeObject, String> {
-        match self.data.modules.lookup(name) {
+        match self.data.units.lookup(name) {
             Some(item) => Ok(item),
             _ => Err(format!("function `{}` is unknown", name)),
         }
@@ -339,12 +339,12 @@ impl Vm {
         Ok(())
     }
 
-    pub fn run(&mut self, module: &Unit) -> VmResult {
+    pub fn run(&mut self, unit: &Unit) -> VmResult {
         // loads the programs main function
-        let co = &module.code();
+        let co = &unit.code();
 
         // TODO: something better than cloning?
-        self.data.modules.load(module)?;
+        self.data.units.load(unit)?;
         self.data.state = VmState::Running;
         self.run_object(co)
     }

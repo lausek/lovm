@@ -1,10 +1,12 @@
 pub mod func;
-pub mod module;
+pub mod macros;
 pub mod op;
+pub mod unit;
 
 pub use func::*;
-pub use module::*;
+pub use macros::*;
 pub use op::*;
+pub use unit::*;
 
 use super::*;
 

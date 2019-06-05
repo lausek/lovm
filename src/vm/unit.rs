@@ -9,16 +9,16 @@ impl Units {
     }
 
     pub fn lookup(&self, name: &Name) -> Option<&CodeObject> {
-        for unit in self.0.iter() {
-            if let Some(co) = unit.get(name) {
+        for module in self.0.iter() {
+            if let Some(co) = module.get(name) {
                 return Some(co);
             }
         }
         None
     }
 
-    pub fn load(&mut self, unit: &Unit) -> Result<(), String> {
-        self.0.push(unit.clone());
+    pub fn load(&mut self, module: &Unit) -> Result<(), String> {
+        self.0.push(module.clone());
         Ok(())
     }
 }
