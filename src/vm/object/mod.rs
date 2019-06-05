@@ -1,0 +1,65 @@
+use super::*;
+
+pub mod array;
+pub mod dict;
+pub mod pool;
+
+pub use self::array::*;
+pub use self::dict::*;
+pub use self::pool::*;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Object {
+    assoc: Option<Module>,
+    inner: ObjectKind,
+}
+
+impl Object {
+    pub fn new_value() -> Self {
+        Self {
+            assoc: None,
+            inner: ObjectKind::Value(Value::I(0)),
+        }
+    }
+
+    pub fn new_array() -> Self {
+        Self {
+            assoc: None,
+            inner: ObjectKind::Array(Array::new()),
+        }
+    }
+
+    pub fn new_dict() -> Self {
+        Self {
+            assoc: None,
+            inner: ObjectKind::Dict(Dict::new()),
+        }
+    }
+
+    pub fn as_indexable(&mut self) -> Result<&mut dyn IndexProtocol, ()> {
+        match &mut self.inner {
+            ObjectKind::Array(array) => Ok(array as &mut dyn IndexProtocol),
+            ObjectKind::Dict(dict) => Ok(dict as &mut dyn IndexProtocol),
+            _ => Err(()),
+        }
+    }
+
+    pub fn assoc(&self) -> Option<&Module> {
+        self.assoc.as_ref()
+    }
+}
+
+// TODO: other name pls
+#[derive(Clone, Debug, PartialEq)]
+pub enum ObjectKind {
+    Array(Array),
+    Dict(Dict),
+    Value(Value),
+}
+
+// TODO: other name pls
+pub trait IndexProtocol: std::fmt::Debug {
+    fn get(&self, _: &Value) -> Option<&Value>;
+    fn set(&mut self, _: &Value, _: Value);
+    fn append(&mut self, _: Value);
+}

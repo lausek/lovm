@@ -138,6 +138,8 @@ pub enum Instruction {
     ONew,
     // create a new array pushing its handle onto the stack
     ONewArray,
+    // create a new dict pushing its handle onto the stack
+    ONewDict,
     // dispose the last object on stack
     ODispose,
     // use constant at this index for accessing/calling object attributes

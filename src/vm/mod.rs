@@ -1,7 +1,7 @@
 pub mod frame;
 pub mod interrupt;
 pub mod module;
-pub mod object_pool;
+pub mod object;
 pub mod operation;
 
 use super::*;
@@ -9,7 +9,7 @@ use super::*;
 pub use self::frame::*;
 pub use self::interrupt::*;
 pub use self::module::*;
-pub use self::object_pool::*;
+pub use self::object::*;
 
 pub use std::collections::HashMap;
 
@@ -144,9 +144,6 @@ impl Vm {
                     if let Some(irh) = self.interrupts.get(*idx) {
                         irh(&mut self.data)?;
                     }
-                    //else {
-                    //    self.panic(format!("interrupt {} not defined", idx))?;
-                    //}
                 }
                 Instruction::Cast(ty_idx) => {
                     let val = self.data.vstack.last_mut().expect("no value");
@@ -285,6 +282,10 @@ impl Vm {
                     let handle = self.data.obj_pool.new_handle();
                     self.data.vstack.push(Value::Ref(handle));
                 }
+                Instruction::ONewDict => {
+                    let handle = self.data.obj_pool.new_dict_handle();
+                    self.data.vstack.push(Value::Ref(handle));
+                }
                 Instruction::ONewArray => {
                     let handle = self.data.obj_pool.new_array_handle();
                     self.data.vstack.push(Value::Ref(handle));
@@ -296,23 +297,29 @@ impl Vm {
                 Instruction::OCall(idx) => {
                     let _object = self.data.vstack.pop().expect("no object");
                     let _aname = &co.space.consts[*idx];
+                    // TODO: lookup _aname in _object associated methods
+                    // TODO: check if locals[0] is self => assign self = vstack.last()
+                    // TODO: vm.run(codeobject)
                     unimplemented!();
                 }
                 Instruction::OAppend => {
                     let value = self.data.vstack.pop().expect("no value");
-                    object_mut(&mut self.data).append(value);
+                    object_mut(&mut self.data)
+                        .as_indexable()
+                        .unwrap()
+                        .append(value);
                 }
                 Instruction::OGet(idx) => {
                     let aname = &co.space.consts[*idx];
                     let value = {
-                        let object = object_mut(&mut self.data);
+                        let object = object_mut(&mut self.data).as_indexable().unwrap();
                         object.get(&aname).expect("unknown attribute").clone()
                     };
                     self.data.vstack.push(value);
                 }
                 Instruction::OSet(idx) => {
                     let value = self.data.vstack.pop().expect("no value");
-                    let object = object_mut(&mut self.data);
+                    let object = object_mut(&mut self.data).as_indexable().unwrap();
                     let aname = &co.space.consts[*idx];
                     object.set(&aname, value);
                 }
@@ -358,9 +365,9 @@ impl Vm {
     }
 }
 
-fn object_mut(vm: &mut VmData) -> &mut dyn ObjectProtocol {
+fn object_mut(vm: &mut VmData) -> &mut Object {
     match vm.vstack.last().expect("no object ref") {
-        Value::Ref(handle) => vm.obj_pool.get_handle_mut(&handle).unwrap(),
+        Value::Ref(handle) => vm.obj_pool.get_mut(&handle).unwrap(),
         _ => unimplemented!(),
     }
 }
