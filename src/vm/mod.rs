@@ -298,11 +298,11 @@ impl Vm {
                     let aname = &co.space.consts[*idx];
                     let cb = {
                         let object = object(&self.data);
-                        object.lookup(aname).expect("no method found")
+                        object.lookup(aname).expect("no method found").clone()
                     };
                     // TODO: check if locals[0] is self => assign self = vstack.last()
                     // TODO: ugh... remove this clone pls
-                    self.run_object(&cb.clone())?;
+                    self.run_object(&cb)?;
                 }
                 Instruction::OAppend => {
                     let value = self.data.vstack.pop().expect("no value");

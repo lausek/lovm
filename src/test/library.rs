@@ -15,8 +15,8 @@ fn simple_module() {
     let bar = gen_foo();
 
     let _unit = unit! {
-        foo => foo,
-        bar => bar
+        foo,
+        bar,
     };
 }
 
@@ -32,14 +32,14 @@ fn fib_function() {
         ret()
     });
 
-    let mut main = func!({
+    let main = func!({
         Operation::call("fib").op(8),
         Operation::debug(),
     });
 
     let unit = unit! {
-        main => main,
-        fib => fib
+        main,
+        fib,
     };
 
     fn debug(data: &mut vm::VmData) -> vm::VmResult {

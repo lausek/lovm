@@ -2,6 +2,7 @@
 
 use super::*;
 
+#[allow(unused_imports)]
 use crate::gen::*;
 
 #[test]

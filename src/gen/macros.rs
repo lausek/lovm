@@ -1,14 +1,20 @@
+#[allow(unused_imports)]
 use super::*;
 
 #[macro_export]
 macro_rules! unit {
-    {$(
-        // TODO: make `=> $func` optional and let $name = $func if missing
-        $name:ident => $func:expr
-    ),*} => {{
+    (0 $unit:expr, $name:expr) => {
+        $unit.decl(stringify!($name), $name);
+    };
+    (0 $unit:expr, $name:expr, $func:expr) => {
+        $unit.decl(stringify!($name), $func.into());
+    };
+    {
+        $($name:ident $(=> $func:expr)?),* $(,)?
+    } => {{
         let mut unit = UnitBuilder::new();
         $(
-            unit.decl(stringify!($name), $func.into());
+            unit!(0 unit, $name $(, $func)?);
         )*
         unit.build().expect("building unit failed")
     }};
@@ -24,6 +30,7 @@ macro_rules! func {
             ),* $(,)?
         }
     ) => {{
+        #[allow(unused_mut)]
         let mut func = FunctionBuilder::new();
         $(
             let mut func = func.with_params::<&str>(vec![$(stringify!($param)),*]);
