@@ -16,7 +16,6 @@ macro_rules! derive_constructor {
     };
 }
 
-// TODO: operations must be redeclared here (code in asm project has already solved such a problem)
 #[derive(Clone, Debug, PartialEq)]
 pub enum OperationType {
     Ass,
@@ -105,8 +104,6 @@ derive_constructor!(OperationType::Or, or);
 derive_constructor!(OperationType::Xor, xor);
 derive_constructor!(OperationType::Shl, shl);
 derive_constructor!(OperationType::Shr, shr);
-
-// TODO: add `int`
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum OpValue {

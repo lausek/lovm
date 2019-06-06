@@ -2,13 +2,9 @@ use self::Value::*;
 
 use serde::{Deserialize, Serialize};
 
-// TODO: change type of `Value::Str(_)` to a String type
-//       that can be passed around easily over a StringPool (smth. like Rc<String> or Cow<String>)
-// TODO: implement Objects; stored in ObjectPool (requires well-designed memory layout)
-
 pub type ObjectId = usize;
 
-// TODO: replace this with `Cow<...>` to reduce memory usage and improve performance
+// TODO: replace this with `Cow<...>` to reduce memory usage and improve performance (?)
 pub type Str = String;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
