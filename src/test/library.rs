@@ -34,7 +34,7 @@ fn fib_function() {
 
     let main = func!({
         call("fib").op(8),
-        debug(),
+        Operation::debug(),
     });
 
     let unit = unit! {
