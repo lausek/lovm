@@ -7,6 +7,10 @@ impl Dict {
     pub fn new() -> Self {
         Self(HashMap::new())
     }
+
+    pub fn inner(&self) -> &HashMap<Value, Value> {
+        &self.0
+    }
 }
 
 impl Indexable for Dict {

@@ -62,16 +62,3 @@ fn new_dict() {
 
     run!(func, check_content);
 }
-
-#[test]
-fn quirks() {
-    let mut func = FunctionBuilder::new();
-
-    // valid
-    func.step(Operation::push().op(vec![1, 2, 3]).end());
-
-    // invalid
-    func.step(Operation::onewarray().op(vec![1, 2, 3]).end());
-
-    run!(func.build().unwrap());
-}

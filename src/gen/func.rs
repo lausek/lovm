@@ -387,20 +387,18 @@ fn translate_operation(
                     translate(func, arg, Access::Read, offsets)?;
                 }
             }
-            // TODO: something is wrong here; example `quirks`
             OperationType::ONewArray => {
                 func.inner.extend(vec![Instruction::ONewArray]);
                 for arg in op.ops() {
                     translate(func, arg, Access::Read, offsets)?;
+                    // TODO: look at ONewDict. something is wrong here
                     func.inner.push(Instruction::OAppend);
                 }
             }
-            // TODO: something is wrong here; example `quirks`
             OperationType::ONewDict => {
                 func.inner.extend(vec![Instruction::ONewDict]);
                 for arg in op.ops() {
                     translate(func, arg, Access::Read, offsets)?;
-                    func.inner.push(Instruction::OAppend);
                 }
             }
             OperationType::OAppend => {

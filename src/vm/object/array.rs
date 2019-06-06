@@ -7,6 +7,16 @@ impl Array {
     pub fn new() -> Self {
         Self(vec![])
     }
+
+    pub fn inner(&self) -> &Vec<Value> {
+        &self.0
+    }
+}
+
+impl From<Vec<Value>> for Array {
+    fn from(from: Vec<Value>) -> Self {
+        Self(from)
+    }
 }
 
 impl Indexable for Array {

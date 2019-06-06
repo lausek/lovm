@@ -143,13 +143,14 @@ where
     }
 }
 
+// TODO: this is ugly
 // constructor for objects (sets)
 impl<T> From<Vec<(Option<T>, T)>> for OpValue
 where
     T: Into<OpValue>,
 {
     fn from(from: Vec<(Option<T>, T)>) -> Self {
-        let mut ops = Operation::onew();
+        let mut ops = Operation::onewdict();
         for (key, val) in from.into_iter() {
             if let Some(key) = key {
                 ops.op(Operation::oset().op(key).op(val).end());
