@@ -28,8 +28,6 @@ pub use std::collections::HashMap;
 //
 // INFO: see operation.rs for more
 
-// TODO: rename `vm` to `runtime` to avoid name conflicts with vm binary (?)
-
 pub const VM_MEMORY_SIZE: usize = 2400;
 pub const VM_STACK_SIZE: usize = 256;
 

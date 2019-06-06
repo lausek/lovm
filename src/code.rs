@@ -146,7 +146,6 @@ pub enum Instruction {
     OGet(usize),
     OSet(usize),
     OCall(usize),
-    // TODO: add OAppend and OPop for appending/popping a value
     OAppend,
 }
 
