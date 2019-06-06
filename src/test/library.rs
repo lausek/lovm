@@ -33,8 +33,8 @@ fn fib_function() {
     });
 
     let main = func!({
-        Operation::call("fib").op(8),
-        Operation::debug(),
+        call("fib").op(8),
+        debug(),
     });
 
     let unit = unit! {

@@ -7,39 +7,36 @@ use crate::gen::*;
 
 #[test]
 fn allocation() {
-    let mut func = FunctionBuilder::new();
-    func.step(Operation::onew().end());
-    func.step(Operation::odispose().end());
-    func.step(Operation::onewarray().end());
-    func.step(Operation::onewdict().end());
-    func.step(Operation::odispose().end());
-    func.debug();
+    let func = func!({
+        onew(),
+        odispose(),
+        onewarray(),
+        onewdict(),
+        odispose(),
+        debug(),
+    });
 
     fn has_oref(data: &mut vm::VmData) -> vm::VmResult {
         assert!(*data.vstack.last().unwrap() == Value::Ref(2));
         Ok(())
     }
 
-    run!(func.build().unwrap(), has_oref);
+    run!(func, has_oref);
 }
 
 #[test]
 fn new_dict() {
-    let mut func = FunctionBuilder::new();
-    func.step(Operation::onewdict());
-    let dict = Operation::oset()
+    let func = func!({
+        onewdict(),
+        oset()
         // store 10 in key "x"
-        .op("x")
-        .op(10)
+        .op("x").op(10)
         // store 10 in key "y"
-        .op("y")
-        .op(10)
+        .op("y").op(10)
         // store 11 in key 10
-        .op(10)
-        .op(11)
-        .end();
-    func.step(dict);
-    func.debug();
+        .op(10).op(11),
+        debug(),
+    });
 
     fn check_content(data: &mut vm::VmData) -> vm::VmResult {
         use crate::vm::object::*;
@@ -63,7 +60,7 @@ fn new_dict() {
         Ok(())
     }
 
-    run!(func.build().unwrap(), check_content);
+    run!(func, check_content);
 }
 
 #[test]
