@@ -18,14 +18,21 @@ macro_rules! unit {
 macro_rules! func {
     (
         $([$($param:ident),*] =>)?
-        { $($op:expr),* $(,)? }
+        {
+            $($op:expr
+                $(=> { $($then:expr),* $(,)? })?
+            ),* $(,)?
+        }
     ) => {{
         let mut func = FunctionBuilder::new();
         $(
             let mut func = func.with_params::<&str>(vec![$(stringify!($param)),*]);
         )?
         $(
-            func.step($op);
+            func.step($op.end());
+            $(
+                func.branch_if(vec![$($then),*]);
+            )?
         )*
         func.build().expect("building func failed")
     }};

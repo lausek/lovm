@@ -4,9 +4,13 @@ pub type Sequence = Vec<Operation>;
 
 macro_rules! derive_constructor {
     ($ty:path, $name:ident) => {
+        pub fn $name() -> Operation {
+            Operation::new($ty)
+        }
+
         impl Operation {
             pub fn $name() -> Self {
-                Operation::new($ty)
+                $name()
             }
         }
     };
@@ -55,9 +59,13 @@ pub enum OperationType {
     Shr,
 }
 
+pub fn call(fname: &str) -> Operation {
+    Operation::new(OperationType::Call).var(fname).end()
+}
+
 impl Operation {
     pub fn call(fname: &str) -> Self {
-        Operation::new(OperationType::Call).var(fname).end()
+        call(fname)
     }
 }
 

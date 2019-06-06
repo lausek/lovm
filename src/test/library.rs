@@ -22,28 +22,18 @@ fn simple_module() {
 
 #[test]
 fn fib_function() {
-    let mut fib = FunctionBuilder::new().with_params(vec!["x"]);
-    let ret_x = vec![Operation::ret().var("x").end()];
-    fib.step(Operation::cmp_eq().var("x").op(0).end())
-        .branch_if(ret_x.clone())
-        .step(Operation::cmp_eq().var("x").op(1).end())
-        .branch_if(ret_x.clone())
-        .step(
-            Operation::add()
-                .op(Operation::call("fib")
-                    .op(Operation::sub().var("x").op(1).end())
-                    .end())
-                .op(Operation::call("fib")
-                    .op(Operation::sub().var("x").op(2).end())
-                    .end())
-                .end(),
-        )
-        .step(Operation::ret());
-    println!("{}", fib);
-    let fib = fib.build().expect("building function failed");
+    let ret_x = ret().var("x").end();
+    let fib = func!([x] => {
+        cmp_eq().var("x").op(0) => { ret_x.clone() },
+        cmp_eq().var("x").op(1) => { ret_x.clone() },
+        add()
+            .op(call("fib").op(sub().var("x").op(1).end()).end())
+            .op(call("fib").op(sub().var("x").op(2).end()).end()),
+        ret()
+    });
 
     let mut main = func!({
-        Operation::call("fib").op(8).end(),
+        Operation::call("fib").op(8),
         Operation::debug(),
     });
 
@@ -75,8 +65,8 @@ fn gen_foo() -> CodeObject {
     //          z += y
     //          return z ; not implemented
     func!([x] => {
-        Operation::ass().var("z").op(1).end(),
-        Operation::add().var("z").op("x").end(),
-        Operation::add().var("z").op("y").end()
+        ass().var("z").op(1),
+        add().var("z").op("x"),
+        add().var("z").op("y"),
     })
 }
