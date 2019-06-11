@@ -111,12 +111,17 @@ impl std::str::FromStr for Value {
         match from {
             "true" => Ok(Value::T(true)),
             "false" => Ok(Value::T(false)),
+            _ if from.contains(".") => match f64::from_str(from) {
+                Ok(val) => Ok(Value::F64(val)),
+                _ => Err("not a float".to_string()),
+            },
             _ => {
                 const MIN: i64 = i8::min_value() as i64;
                 const MAX: i64 = i8::max_value() as i64;
-                match i64::from_str(from).unwrap() {
-                    val @ MIN..=MAX => Ok(Value::I(val as i8)),
-                    val => Ok(Value::I64(val)),
+                match i64::from_str(from) {
+                    Ok(val @ MIN..=MAX) => Ok(Value::I(val as i8)),
+                    Ok(val) => Ok(Value::I64(val)),
+                    _ => Err("not a number".to_string()),
                 }
             }
         }
