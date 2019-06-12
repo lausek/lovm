@@ -60,6 +60,8 @@ impl CodeObject {
     }
 }
 
+// TODO: rename to CodeBuilder
+
 #[derive(Clone, Debug)]
 pub struct FunctionBuilder {
     argc: usize,
@@ -376,6 +378,13 @@ fn translate_operation(
                 }
                 func.inner.push(inx);
             }
+            OperationType::Int => match op.rest().next() {
+                Some(OpValue::Operand(idx)) => {
+                    let idx = idx.as_const().clone().into();
+                    func.inner.extend(vec![Instruction::Int(idx)])
+                }
+                _ => panic!("interrupt not specified"),
+            },
             OperationType::Debug => {
                 func.inner
                     .extend(vec![Instruction::Int(vm::Interrupt::Debug as usize)]);

@@ -22,6 +22,7 @@ pub enum OperationType {
     Debug,
 
     Call,
+    Int,
     Ret,
     Push,
     Pop,
@@ -62,9 +63,17 @@ pub fn call(fname: &str) -> Operation {
     Operation::new(OperationType::Call).var(fname).end()
 }
 
+pub fn int(idx: usize) -> Operation {
+    Operation::new(OperationType::Int).op(idx).end()
+}
+
 impl Operation {
     pub fn call(fname: &str) -> Self {
         call(fname)
+    }
+
+    pub fn int(idx: usize) -> Self {
+        int(idx)
     }
 }
 
