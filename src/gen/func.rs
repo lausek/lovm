@@ -378,7 +378,7 @@ fn translate_operation(
                 }
                 func.inner.push(inx);
             }
-            OperationType::Int => match op.rest().next() {
+            OperationType::Int => match op.ops().next() {
                 Some(OpValue::Operand(idx)) => {
                     let idx = idx.as_const().clone().into();
                     func.inner.extend(vec![Instruction::Int(idx)])
