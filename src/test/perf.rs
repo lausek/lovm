@@ -25,9 +25,9 @@ fn fib_recursion() {
     };
 
     let mut vm = vm::Vm::new();
-    static mut TRACK: Option<Instant> = None;
-    static mut TRACKS: Vec<Duration> = Vec::new();
     const ITERATIONS: usize = 1000;
+    static mut TRACK: Option<Instant> = None;
+    static mut AVG: f64 = 0.;
 
     vm.interrupts_mut()
         .set(vm::Interrupt::Debug as usize, &|_| {
@@ -35,8 +35,7 @@ fn fib_recursion() {
                 TRACK = match TRACK.take() {
                     Some(time) => {
                         let delta = Instant::now() - time;
-                        println!("runtime: {}", delta.as_nanos());
-                        TRACKS.push(delta);
+                        AVG += delta.as_nanos() as f64 / ITERATIONS as f64;
                         None
                     }
                     _ => Some(Instant::now()),
@@ -50,13 +49,11 @@ fn fib_recursion() {
     }
 
     unsafe {
-        let sigma = TRACKS.iter().sum::<Duration>().as_nanos();
-        let avg = sigma as f64 / TRACKS.len() as f64;
-        println!("average ({} runs): {}", ITERATIONS, avg);
+        println!("average ({} runs): {}", ITERATIONS, AVG);
 
-        if !TRACKS.is_empty() {
+        if 0. < AVG {
             // we want to be 10% faster
-            assert!(avg < 630_000f64 * 0.9);
+            assert!(AVG < 630_000f64 * 0.9);
             // if we have results, show them
             assert!(false, "runtime was faster now");
         }
