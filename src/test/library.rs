@@ -1,8 +1,5 @@
 #![cfg(test)]
-
 use super::*;
-
-use crate::gen::*;
 
 #[test]
 fn simple_function() {
@@ -11,12 +8,9 @@ fn simple_function() {
 
 #[test]
 fn simple_module() {
-    let foo = gen_foo();
-    let bar = gen_foo();
-
     let _unit = unit! {
-        foo,
-        bar,
+        foo => gen_foo(),
+        bar => gen_foo(),
     };
 }
 

@@ -1,7 +1,11 @@
 #[allow(unused_imports)]
 use super::*;
 
+#[allow(unused_imports)]
+use crate::gen::*;
+
 pub mod library;
+pub mod perf;
 pub mod runtime;
 
 #[macro_export]

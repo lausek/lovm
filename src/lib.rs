@@ -1,4 +1,5 @@
 #![feature(type_alias_enum_variants)]
+#![feature(const_vec_new)]
 
 #[macro_use]
 pub mod code;

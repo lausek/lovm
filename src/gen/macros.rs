@@ -38,7 +38,7 @@ macro_rules! func {
         $(
             func.step($op.end());
             $(
-                func.branch_if(vec![$($then),*]);
+                func.branch_if(vec![$($then.end()),*]);
             )?
         )*
         func.build(true).expect("building func failed")
