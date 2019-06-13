@@ -2,3 +2,4 @@
 - [] store values inside objects
 - [] call methods on objects
     - must pass object as `self` local
+- [] generation of loops
