@@ -60,17 +60,15 @@ impl CodeObject {
     }
 }
 
-// TODO: rename to CodeBuilder
-
 #[derive(Clone, Debug, PartialEq)]
-pub struct FunctionBuilder {
+pub struct CodeBuilder {
     argc: usize,
-    branches: Vec<FunctionBuilder>,
+    branches: Vec<CodeBuilder>,
     space: Space,
     seq: Sequence,
 }
 
-impl FunctionBuilder {
+impl CodeBuilder {
     pub fn new() -> Self {
         Self {
             argc: 0,
@@ -220,7 +218,7 @@ impl FunctionBuilder {
     }
 }
 
-impl From<Sequence> for FunctionBuilder {
+impl From<Sequence> for CodeBuilder {
     fn from(seq: Sequence) -> Self {
         let mut new = Self::new();
         for c in seq.iter().flat_map(|op| op.consts()) {
@@ -464,7 +462,7 @@ impl std::fmt::Display for CodeObject {
     }
 }
 
-impl std::fmt::Display for FunctionBuilder {
+impl std::fmt::Display for CodeBuilder {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         writeln!(f, "Function Builder(argc: {})", self.argc)?;
         if !self.space.consts.is_empty() {

@@ -118,7 +118,7 @@ derive_constructor!(OperationType::Shr, shr);
 pub enum OpValue {
     Operand(Operand),
     Operation(Operation),
-    Block(FunctionBuilder),
+    Block(CodeBuilder),
 }
 
 impl std::fmt::Display for OpValue {
@@ -137,8 +137,8 @@ impl<T: Into<Operand>> From<T> for OpValue {
     }
 }
 
-impl From<FunctionBuilder> for OpValue {
-    fn from(from: FunctionBuilder) -> Self {
+impl From<CodeBuilder> for OpValue {
+    fn from(from: CodeBuilder) -> Self {
         OpValue::Block(from)
     }
 }
