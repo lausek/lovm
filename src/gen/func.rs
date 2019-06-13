@@ -208,10 +208,11 @@ impl FunctionBuilder {
         }
 
         // TODO: check if last instruction already is return
-        match func.inner.last() {
-            Some(Instruction::Ret) | Some(Instruction::Jmp(_)) => {}
-            _ => func.inner.push(Instruction::Ret),
-        }
+        // TODO: this disrupts embedding function builders via `op()`
+        //match func.inner.last() {
+        //    Some(Instruction::Ret) | Some(Instruction::Jmp(_)) => {}
+        //    _ => func.inner.push(Instruction::Ret),
+        //}
 
         Ok(func)
     }
