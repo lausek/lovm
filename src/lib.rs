@@ -1,3 +1,5 @@
+#![feature(type_alias_enum_variants)]
+
 #[macro_use]
 pub mod code;
 pub mod gen;

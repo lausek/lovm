@@ -20,41 +20,9 @@ use serde::{Deserialize, Serialize};
 pub type Name = String;
 pub type CodeBlock = Vec<Instruction>;
 
+pub type Instruction = Protocol<usize>;
+
 pub type Program = Unit;
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct Unit {
-    pub space: Space,
-    pub inner: Vec<(Name, CodeObject)>,
-}
-
-impl Unit {
-    pub fn new() -> Self {
-        Self {
-            space: Space::new(),
-            inner: vec![],
-        }
-    }
-
-    pub fn get(&self, name: &Name) -> Option<&CodeObject> {
-        for (sname, co) in self.inner.iter() {
-            if sname == name {
-                return Some(co);
-            }
-        }
-        None
-    }
-}
-
-impl std::fmt::Display for Unit {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        writeln!(f, "Unit(slots: {})", self.inner.len())?;
-        for (name, co) in self.inner.iter() {
-            writeln!(f, "\t{}:\t{}", name, co)?;
-        }
-        Ok(())
-    }
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CodeObject {
@@ -92,7 +60,7 @@ impl Space {
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 #[repr(u8)]
-pub enum Instruction {
+pub enum Protocol<T> {
     Dup,
     Inc,
     Dec,
@@ -116,20 +84,20 @@ pub enum Instruction {
     CmpLe,
     CmpLt,
 
-    Jmp(usize),
-    Jt(usize),
-    Jf(usize),
+    Jmp(T),
+    Jt(T),
+    Jf(T),
 
-    CPush(usize), // push constant
-    LPush(usize), // push local value
-    LPop(usize),  // pop to local
-    LCall(usize),
-    GPush(usize), // push global value
-    GPop(usize),  // pop to global
-    GCall(usize),
+    CPush(T), // push constant
+    LPush(T), // push local value
+    LPop(T),  // pop to local
+    LCall(T),
+    GPush(T), // push global value
+    GPop(T),  // pop to global
+    GCall(T),
 
-    Cast(usize),
-    Int(usize),
+    Cast(T),
+    Int(T),
     Ret,
     Pusha,
     Popa,
@@ -143,9 +111,9 @@ pub enum Instruction {
     // dispose the last object on stack
     ODispose,
     // use constant at this index for accessing/calling object attributes
-    OGet(usize),
-    OSet(usize),
-    OCall(usize),
+    OGet(T),
+    OSet(T),
+    OCall(T),
     OAppend,
 }
 
@@ -220,7 +188,29 @@ impl std::fmt::Display for Instruction {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Unit {
+    pub space: Space,
+    pub inner: Vec<(Name, CodeObject)>,
+}
+
 impl Unit {
+    pub fn new() -> Self {
+        Self {
+            space: Space::new(),
+            inner: vec![],
+        }
+    }
+
+    pub fn get(&self, name: &Name) -> Option<&CodeObject> {
+        for (sname, co) in self.inner.iter() {
+            if sname == name {
+                return Some(co);
+            }
+        }
+        None
+    }
+
     pub fn serialize(&self) -> Result<Vec<u8>, bincode::Error> {
         bincode::serialize(&self)
     }
@@ -251,5 +241,15 @@ impl Unit {
 
     pub fn slots_mut(&mut self) -> &mut Vec<(Name, CodeObject)> {
         &mut self.inner
+    }
+}
+
+impl std::fmt::Display for Unit {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        writeln!(f, "Unit(slots: {})", self.inner.len())?;
+        for (name, co) in self.inner.iter() {
+            writeln!(f, "\t{}:\t{}", name, co)?;
+        }
+        Ok(())
     }
 }
