@@ -172,6 +172,7 @@ impl FunctionBuilder {
         self
     }
 
+    // TODO: the parameter obsfucates build calls; maybe remove it again
     pub fn build(&self, ensure_ret: bool) -> BuildResult<CodeObject> {
         // used for resolving branch offsets
         let mut offsets = vec![];
