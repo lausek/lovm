@@ -62,7 +62,7 @@ impl CodeObject {
 
 // TODO: rename to CodeBuilder
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FunctionBuilder {
     argc: usize,
     branches: Vec<FunctionBuilder>,
@@ -264,6 +264,10 @@ fn translate(
     match op {
         OpValue::Operand(op) => translate_operand(func, op, acc),
         OpValue::Operation(op) => translate_operation(func, op, offsets),
+        OpValue::Block(block) => {
+            func.merge(&block.build().unwrap());
+            Ok(())
+        }
     }
 }
 
