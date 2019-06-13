@@ -172,7 +172,7 @@ impl FunctionBuilder {
         self
     }
 
-    pub fn build(&self) -> BuildResult<CodeObject> {
+    pub fn build(&self, ensure_ret: bool) -> BuildResult<CodeObject> {
         // used for resolving branch offsets
         let mut offsets = vec![];
 
@@ -183,7 +183,7 @@ impl FunctionBuilder {
         translate_sequence(&mut func, self.seq.clone(), &mut offsets)?;
 
         for (bidx, branch) in self.branches.iter().enumerate() {
-            let branch_co = branch.build()?;
+            let branch_co = branch.build(true)?;
 
             // replace branch index with the branche's entry point inside `func` CodeObject
             for (_, link_arg) in offsets.iter_mut().filter(|(_, i)| *i == bidx) {
@@ -208,11 +208,12 @@ impl FunctionBuilder {
         }
 
         // TODO: check if last instruction already is return
-        // TODO: this disrupts embedding function builders via `op()`
-        //match func.inner.last() {
-        //    Some(Instruction::Ret) | Some(Instruction::Jmp(_)) => {}
-        //    _ => func.inner.push(Instruction::Ret),
-        //}
+        if ensure_ret {
+            match func.inner.last() {
+                Some(Instruction::Ret) | Some(Instruction::Jmp(_)) => {}
+                _ => func.inner.push(Instruction::Ret),
+            }
+        }
 
         Ok(func)
     }
@@ -266,7 +267,7 @@ fn translate(
         OpValue::Operand(op) => translate_operand(func, op, acc),
         OpValue::Operation(op) => translate_operation(func, op, offsets),
         OpValue::Block(block) => {
-            func.merge(&block.build().unwrap());
+            func.merge(&block.build(false).unwrap());
             Ok(())
         }
     }

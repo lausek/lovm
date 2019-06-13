@@ -41,6 +41,6 @@ macro_rules! func {
                 func.branch_if(vec![$($then),*]);
             )?
         )*
-        func.build().expect("building func failed")
+        func.build(true).expect("building func failed")
     }};
 }
