@@ -13,9 +13,7 @@ fn main() {
     let mut src = vec![];
     file.read_to_end(&mut src).expect("reading file failed");
 
-    // TODO: add `deserialize_from` to deserialize from a file
-    //let unit = Unit::deserialize(src).expect("deserialize failed");
-    //let module: Unit = bincode::deserialize(src.as_ref()).expect("deserialize failed");
+    let unit = Unit::deserialize(src.as_ref()).expect("deserialize failed");
 
-    //vm.run(&unit).unwrap();
+    vm.run(&unit).unwrap();
 }

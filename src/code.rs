@@ -4,8 +4,6 @@ use crate::value::*;
 
 use serde::{Deserialize, Serialize};
 
-// the bytecode definition of lovm
-//
 // a `CodeObject` is an executable bytecode unit. it holds the local constant values,
 // local identifiers, and extern (or global) identifiers. this allows a clear separation
 // of data and logic, aswell as a flattening of the bytecode structure due to the
@@ -61,6 +59,7 @@ impl Space {
     }
 }
 
+// the bytecode definition of lovm
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 #[repr(u8)]
 pub enum Protocol<T> {
@@ -239,7 +238,6 @@ impl Unit {
         let mut co = CodeObject::new();
         co.inner = code;
         new.set(&"main".into(), co);
-        //new.inner = vec![("main".into(), co)];
         new
     }
 
