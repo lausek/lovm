@@ -37,8 +37,10 @@ impl UnitBuilder {
     }
 
     pub fn build(&self) -> BuildResult<Unit> {
-        let mut module = Unit::new();
-        module.inner = self.slots.clone();
-        Ok(module)
+        let mut unit = Unit::new();
+        for (name, co) in self.slots.iter() {
+            unit.inner.push((name.clone(), Rc::new(co.clone())));
+        }
+        Ok(unit)
     }
 }

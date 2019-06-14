@@ -44,7 +44,7 @@ impl Object {
         }
     }
 
-    pub fn lookup(&self, key: &Value) -> Option<&CodeObject> {
+    pub fn lookup(&self, key: &Value) -> Option<CodeObjectRef> {
         match (&self.assoc, key) {
             (Some(module), Value::Str(name)) => module.get(name),
             (_, _) => None,

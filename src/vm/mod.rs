@@ -94,14 +94,19 @@ impl Vm {
     }
 
     // TODO: return `Rc` over `CodeObject` here because it could reassign itself
-    fn call_lookup(&self, name: &Name) -> Result<&CodeObject, String> {
+    //       if we return a `CodeObject` here, we give the promise that it stays
+    //       valid for the `run_object` call. however, the vm could decide to change
+    //       the object inside its `Unit` thus violating the given lifetime promise.
+    //       so this needs to return a data structure that copies its content if the
+    //       original bucket inside `Unit` was altered.
+    fn call_lookup(&self, name: &Name) -> Result<CodeObjectRef, String> {
         match self.data.units.lookup(name) {
             Some(item) => Ok(item),
             _ => Err(format!("function `{}` is unknown", name)),
         }
     }
 
-    pub fn run_object(&mut self, co: &CodeObject) -> VmResult {
+    pub fn run_object(&mut self, co: CodeObjectRef) -> VmResult {
         let bl = &co.inner;
         let len = bl.len();
         let mut ip = 0;
@@ -180,8 +185,8 @@ impl Vm {
                 }
                 Instruction::GCall(idx) => {
                     let fname = &co.space.globals[*idx];
-                    let co = self.call_lookup(&fname.to_string())?.clone();
-                    self.run_object(&co)?;
+                    let co = self.call_lookup(&fname.to_string())?;
+                    self.run_object(co)?;
                 }
                 Instruction::Inc | Instruction::Dec => {
                     unimplemented!();
@@ -296,11 +301,11 @@ impl Vm {
                     let aname = &co.space.consts[*idx];
                     let cb = {
                         let object = object(&self.data);
+                        // TODO: ugh... remove this clone pls
                         object.lookup(aname).expect("no method found").clone()
                     };
                     // TODO: check if locals[0] is self => assign self = vstack.last()
-                    // TODO: ugh... remove this clone pls
-                    self.run_object(&cb)?;
+                    self.run_object(cb)?;
                 }
                 Instruction::OAppend => {
                     let value = self.data.vstack.pop().expect("no value");
@@ -344,6 +349,7 @@ impl Vm {
         // TODO: something better than cloning?
         self.data.units.load(unit)?;
         self.data.state = VmState::Running;
+        let co = self.data.units.lookup(&"main".to_string()).unwrap();
         self.run_object(co)
     }
 

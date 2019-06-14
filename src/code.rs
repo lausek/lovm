@@ -1,9 +1,11 @@
-// the bytecode definition of lovm
+use super::*;
 
 use crate::value::*;
 
 use serde::{Deserialize, Serialize};
 
+// the bytecode definition of lovm
+//
 // a `CodeObject` is an executable bytecode unit. it holds the local constant values,
 // local identifiers, and extern (or global) identifiers. this allows a clear separation
 // of data and logic, aswell as a flattening of the bytecode structure due to the
@@ -23,6 +25,7 @@ pub type CodeBlock = Vec<Instruction>;
 pub type Instruction = Protocol<usize>;
 
 pub type Program = Unit;
+pub type CodeObjectRef = Rc<CodeObject>;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CodeObject {
@@ -188,10 +191,12 @@ impl std::fmt::Display for Instruction {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
+// TODO: implement serialization methods here
+//#[derive(Serialize, Deserialize)]
 pub struct Unit {
     pub space: Space,
-    pub inner: Vec<(Name, CodeObject)>,
+    pub inner: Vec<(Name, CodeObjectRef)>,
 }
 
 impl Unit {
@@ -202,28 +207,39 @@ impl Unit {
         }
     }
 
-    pub fn get(&self, name: &Name) -> Option<&CodeObject> {
+    pub fn get(&self, name: &Name) -> Option<CodeObjectRef> {
         for (sname, co) in self.inner.iter() {
             if sname == name {
-                return Some(co);
+                return Some(co.clone());
             }
         }
         None
     }
 
+    pub fn set(&mut self, name: &Name, co: CodeObject) {
+        if let Some(mut slot) = self.get(name) {
+            *Rc::make_mut(&mut slot) = co;
+        } else {
+            self.inner.push((name.clone(), Rc::new(co)));
+        }
+    }
+
     pub fn serialize(&self) -> Result<Vec<u8>, bincode::Error> {
-        bincode::serialize(&self)
+        unimplemented!()
+        //bincode::serialize(&self)
     }
 
     pub fn deserialize(bytes: &[u8]) -> Result<Self, bincode::Error> {
-        bincode::deserialize(bytes)
+        unimplemented!()
+        //bincode::deserialize(bytes)
     }
 
     pub fn with_code(code: CodeBlock) -> Self {
         let mut new = Self::new();
         let mut co = CodeObject::new();
         co.inner = code;
-        new.inner = vec![("main".into(), co)];
+        new.set(&"main".into(), co);
+        //new.inner = vec![("main".into(), co)];
         new
     }
 
@@ -235,11 +251,11 @@ impl Unit {
             .unwrap()
     }
 
-    pub fn slots(&self) -> &Vec<(Name, CodeObject)> {
+    pub fn slots(&self) -> &Vec<(Name, CodeObjectRef)> {
         &self.inner
     }
 
-    pub fn slots_mut(&mut self) -> &mut Vec<(Name, CodeObject)> {
+    pub fn slots_mut(&mut self) -> &mut Vec<(Name, CodeObjectRef)> {
         &mut self.inner
     }
 }

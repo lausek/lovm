@@ -8,10 +8,10 @@ impl Units {
         Self(vec![])
     }
 
-    pub fn lookup(&self, name: &Name) -> Option<&CodeObject> {
+    pub fn lookup(&self, name: &Name) -> Option<CodeObjectRef> {
         for module in self.0.iter() {
             if let Some(co) = module.get(name) {
-                return Some(co);
+                return Some(co.clone());
             }
         }
         None

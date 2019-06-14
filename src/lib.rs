@@ -11,6 +11,8 @@ pub mod vm;
 pub use code::*;
 pub use value::*;
 
+use std::rc::Rc;
+
 #[macro_export]
 macro_rules! lovm_value {
     ($ty:ident, $val:expr) => {
@@ -18,6 +20,7 @@ macro_rules! lovm_value {
     };
 }
 
+// TODO: implement dict aswell
 #[macro_export]
 macro_rules! lovm_object {
     () => {};
