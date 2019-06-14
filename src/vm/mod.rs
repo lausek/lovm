@@ -93,12 +93,6 @@ impl Vm {
         Err(msg.into())
     }
 
-    // TODO: return `Rc` over `CodeObject` here because it could reassign itself
-    //       if we return a `CodeObject` here, we give the promise that it stays
-    //       valid for the `run_object` call. however, the vm could decide to change
-    //       the object inside its `Unit` thus violating the given lifetime promise.
-    //       so this needs to return a data structure that copies its content if the
-    //       original bucket inside `Unit` was altered.
     fn call_lookup(&self, name: &Name) -> Result<CodeObjectRef, String> {
         match self.data.units.lookup(name) {
             Some(item) => Ok(item),

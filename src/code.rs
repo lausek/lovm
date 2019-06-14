@@ -18,11 +18,19 @@ use serde::{Deserialize, Serialize};
 // for the generation of lovm programs a library (WIP: module name) is exported.
 
 pub type Name = String;
+
+// TODO: rename this to `Code`
+pub type Instruction = Protocol<usize>;
 pub type CodeBlock = Vec<Instruction>;
 
-pub type Instruction = Protocol<usize>;
-
+// a program is nothing else than a `Unit` with a method named `main` that will be
+// used as entry point of execution.
 pub type Program = Unit;
+
+// if we return a `CodeObject` in lookup calls, we give the promise that it stays
+// valid for the `run_object` call aswell. however, the vm could decide to change
+// the object inside its `Unit` thus violating the given lifetime promise. we
+// therefore wrap everything inside a reference counter.
 pub type CodeObjectRef = Rc<CodeObject>;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
