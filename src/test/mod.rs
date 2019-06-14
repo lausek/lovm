@@ -1,8 +1,8 @@
-#[allow(unused_imports)]
+#![allow(unused_imports)]
 use super::*;
 
-#[allow(unused_imports)]
 use crate::gen::*;
+use crate::*;
 
 pub mod library;
 pub mod perf;

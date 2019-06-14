@@ -11,6 +11,10 @@ impl Dict {
     pub fn inner(&self) -> &HashMap<Value, Value> {
         &self.0
     }
+
+    pub fn inner_mut(&mut self) -> &mut HashMap<Value, Value> {
+        &mut self.0
+    }
 }
 
 impl Indexable for Dict {

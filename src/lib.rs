@@ -8,25 +8,43 @@ pub mod test;
 pub mod vm;
 
 pub use data::*;
+pub use vm::*;
 
 use std::borrow::Borrow;
 use std::rc::Rc;
 
 #[macro_export]
-macro_rules! lovm_value {
-    ($ty:ident, $val:expr) => {
-        lovm::Value::$ty($val)
-    };
+macro_rules! value {
+    ($val:ident) => { value!(stringify!($val).to_string(); Str)};
+    ($val:expr; $ty:ident) => {{
+        use crate::*;
+        Value::$ty($val)
+    }};
 }
 
-// TODO: implement dict aswell
 #[macro_export]
-macro_rules! lovm_object {
+macro_rules! object {
     () => {};
-    [ $($val:pat),* ] => {{
-        let array = lovm::vm::object::Array::new();
-        $()*
+    [ $($val:expr),* $(,)? ] => {{
+        use crate::*;
+        let mut array = lovm::vm::object::Array::new();
+        {
+            let array = array.inner_mut();
+            $(
+                array.push($val);
+            )*
+        }
         array
     }};
-    [ $($key:ident => $val:pat),* ] => {};
+    [ $($key:tt $(; $kty:ident)? => $val:expr; $ty:ident),* $(,)? ] => {{
+        use crate::*;
+        let mut dict = vm::object::Dict::new();
+        {
+            let dict = dict.inner_mut();
+            $(
+                dict.insert(value!($key $(; $kty)?), value!($val; $ty));
+            )*
+        }
+        dict
+    }};
 }

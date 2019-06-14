@@ -11,6 +11,10 @@ impl Array {
     pub fn inner(&self) -> &Vec<Value> {
         &self.0
     }
+
+    pub fn inner_mut(&mut self) -> &mut Vec<Value> {
+        &mut self.0
+    }
 }
 
 impl From<Vec<Value>> for Array {

@@ -28,7 +28,7 @@ fn fib_function() {
 
     let main = func!({
         call("fib").op(8),
-        Operation::debug(),
+        debug(),
     });
 
     let unit = unit! {
@@ -36,17 +36,17 @@ fn fib_function() {
         fib,
     };
 
-    fn debug(data: &mut vm::VmData) -> vm::VmResult {
+    fn callback(data: &mut vm::VmData) -> vm::VmResult {
         let frame = data.stack.last_mut().unwrap();
         println!("{:?}", frame);
         let result = data.vstack.pop().expect("no value");
-        assert!(result == Value::I64(21));
+        assert!(result == value!(21; I64));
         Ok(())
     }
 
     let mut vm = vm::Vm::new();
     vm.interrupts_mut()
-        .set(vm::Interrupt::Debug as usize, &debug);
+        .set(vm::Interrupt::Debug as usize, &callback);
     vm.run(&unit).expect("error in code");
 }
 
