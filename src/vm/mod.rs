@@ -101,6 +101,7 @@ impl Vm {
     }
 
     pub fn run_object(&mut self, co: CodeObjectRef) -> VmResult {
+        let co: &CodeObject = co.borrow();
         let bl = &co.inner;
         let len = bl.len();
         let mut ip = 0;
@@ -338,12 +339,10 @@ impl Vm {
 
     pub fn run(&mut self, unit: &Unit) -> VmResult {
         // loads the programs main function
-        let co = &unit.code();
+        let co = unit.code();
 
-        // TODO: something better than cloning?
         self.data.units.load(unit)?;
         self.data.state = VmState::Running;
-        let co = self.data.units.lookup(&"main".to_string()).unwrap();
         self.run_object(co)
     }
 

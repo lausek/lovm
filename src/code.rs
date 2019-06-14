@@ -2,7 +2,7 @@ use super::*;
 
 use crate::value::*;
 
-use serde::{Deserialize, Serialize};
+use serde::*;
 
 // a `CodeObject` is an executable bytecode unit. it holds the local constant values,
 // local identifiers, and extern (or global) identifiers. this allows a clear separation
@@ -27,12 +27,6 @@ pub type CodeBlock = Vec<Instruction>;
 // used as entry point of execution.
 pub type Program = Unit;
 
-// if we return a `CodeObject` in lookup calls, we give the promise that it stays
-// valid for the `run_object` call aswell. however, the vm could decide to change
-// the object inside its `Unit` thus violating the given lifetime promise. we
-// therefore wrap everything inside a reference counter.
-pub type CodeObjectRef = Rc<CodeObject>;
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CodeObject {
     pub argc: usize,
@@ -47,6 +41,10 @@ impl CodeObject {
             space: Space::new(),
             inner: CodeBlock::new(),
         }
+    }
+
+    pub fn into_ref(self) -> CodeObjectRef {
+        CodeObjectRef::from(self)
     }
 }
 
@@ -198,9 +196,7 @@ impl std::fmt::Display for Instruction {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-// TODO: implement serialization methods here
-//#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Unit {
     pub space: Space,
     pub inner: Vec<(Name, CodeObjectRef)>,
@@ -225,20 +221,18 @@ impl Unit {
 
     pub fn set(&mut self, name: &Name, co: CodeObject) {
         if let Some(mut slot) = self.get(name) {
-            *Rc::make_mut(&mut slot) = co;
+            *slot.get_mut() = co;
         } else {
-            self.inner.push((name.clone(), Rc::new(co)));
+            self.inner.push((name.clone(), CodeObjectRef::from(co)));
         }
     }
 
     pub fn serialize(&self) -> Result<Vec<u8>, bincode::Error> {
-        unimplemented!()
-        //bincode::serialize(&self)
+        bincode::serialize(&self)
     }
 
     pub fn deserialize(bytes: &[u8]) -> Result<Self, bincode::Error> {
-        unimplemented!()
-        //bincode::deserialize(bytes)
+        bincode::deserialize(bytes)
     }
 
     pub fn with_code(code: CodeBlock) -> Self {
@@ -249,11 +243,11 @@ impl Unit {
         new
     }
 
-    pub fn code(&self) -> &CodeObject {
+    pub fn code(&self) -> CodeObjectRef {
         self.inner
             .iter()
             .find(|(name, _)| name == "main")
-            .map(|(_, code)| code)
+            .map(|(_, code)| code.clone())
             .unwrap()
     }
 
