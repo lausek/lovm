@@ -98,7 +98,6 @@ impl CodeBuilder {
     {
         assert!(self.space.locals.is_empty());
         self.argc = params.len();
-        // TODO: optimize this
         self.space.locals = params.iter().map(|arg| arg.to_string()).collect::<Vec<_>>();
         self
     }
