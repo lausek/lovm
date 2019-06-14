@@ -18,8 +18,8 @@ use serde::*;
 pub type Name = String;
 
 // TODO: rename this to `Code`
-pub type Instruction = Protocol<usize>;
-pub type CodeBlock = Vec<Instruction>;
+pub type Code = Protocol<usize>;
+pub type CodeBlock = Vec<Code>;
 
 // a program is nothing else than a `Unit` with a method named `main` that will be
 // used as entry point of execution.
@@ -123,72 +123,72 @@ pub enum Protocol<T> {
     OAppend,
 }
 
-impl Instruction {
+impl Code {
     pub fn arg(&self) -> Option<usize> {
         match self {
-            Instruction::Int(c)
-            | Instruction::Cast(c)
-            | Instruction::Jmp(c)
-            | Instruction::Jt(c)
-            | Instruction::Jf(c)
-            | Instruction::CPush(c)
-            | Instruction::LPush(c)
-            | Instruction::LPop(c)
-            | Instruction::LCall(c)
-            | Instruction::GPush(c)
-            | Instruction::GPop(c)
-            | Instruction::GCall(c)
-            | Instruction::OGet(c)
-            | Instruction::OSet(c)
-            | Instruction::OCall(c) => Some(*c),
+            Code::Int(c)
+            | Code::Cast(c)
+            | Code::Jmp(c)
+            | Code::Jt(c)
+            | Code::Jf(c)
+            | Code::CPush(c)
+            | Code::LPush(c)
+            | Code::LPop(c)
+            | Code::LCall(c)
+            | Code::GPush(c)
+            | Code::GPop(c)
+            | Code::GCall(c)
+            | Code::OGet(c)
+            | Code::OSet(c)
+            | Code::OCall(c) => Some(*c),
             _ => None,
         }
     }
 
     pub fn arg_mut(&mut self) -> Option<&mut usize> {
         match self {
-            Instruction::Int(c)
-            | Instruction::Cast(c)
-            | Instruction::Jmp(c)
-            | Instruction::Jt(c)
-            | Instruction::Jf(c)
-            | Instruction::CPush(c)
-            | Instruction::LPush(c)
-            | Instruction::LPop(c)
-            | Instruction::LCall(c)
-            | Instruction::GPush(c)
-            | Instruction::GPop(c)
-            | Instruction::GCall(c)
-            | Instruction::OGet(c)
-            | Instruction::OSet(c)
-            | Instruction::OCall(c) => Some(c),
+            Code::Int(c)
+            | Code::Cast(c)
+            | Code::Jmp(c)
+            | Code::Jt(c)
+            | Code::Jf(c)
+            | Code::CPush(c)
+            | Code::LPush(c)
+            | Code::LPop(c)
+            | Code::LCall(c)
+            | Code::GPush(c)
+            | Code::GPop(c)
+            | Code::GCall(c)
+            | Code::OGet(c)
+            | Code::OSet(c)
+            | Code::OCall(c) => Some(c),
             _ => None,
         }
     }
 
     pub fn arguments(&self) -> usize {
         match self {
-            Instruction::Int(_)
-            | Instruction::Cast(_)
-            | Instruction::Jmp(_)
-            | Instruction::Jt(_)
-            | Instruction::Jf(_)
-            | Instruction::CPush(_)
-            | Instruction::LPush(_)
-            | Instruction::LPop(_)
-            | Instruction::LCall(_)
-            | Instruction::GPush(_)
-            | Instruction::GPop(_)
-            | Instruction::GCall(_)
-            | Instruction::OGet(_)
-            | Instruction::OSet(_)
-            | Instruction::OCall(_) => 1,
+            Code::Int(_)
+            | Code::Cast(_)
+            | Code::Jmp(_)
+            | Code::Jt(_)
+            | Code::Jf(_)
+            | Code::CPush(_)
+            | Code::LPush(_)
+            | Code::LPop(_)
+            | Code::LCall(_)
+            | Code::GPush(_)
+            | Code::GPop(_)
+            | Code::GCall(_)
+            | Code::OGet(_)
+            | Code::OSet(_)
+            | Code::OCall(_) => 1,
             _ => 0,
         }
     }
 }
 
-impl std::fmt::Display for Instruction {
+impl std::fmt::Display for Code {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         write!(f, "{:?}", self)
     }

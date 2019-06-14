@@ -193,29 +193,29 @@ impl Operation {
         Self { ops: vec![], ty }
     }
 
-    pub fn as_inx(&self) -> Option<Instruction> {
+    pub fn as_inx(&self) -> Option<Code> {
         match self.ty {
-            OperationType::CmpEq => Some(Instruction::CmpEq),
-            OperationType::CmpNe => Some(Instruction::CmpNe),
-            OperationType::CmpGe => Some(Instruction::CmpGe),
-            OperationType::CmpGt => Some(Instruction::CmpGt),
-            OperationType::CmpLe => Some(Instruction::CmpLe),
-            OperationType::CmpLt => Some(Instruction::CmpLt),
+            OperationType::CmpEq => Some(Code::CmpEq),
+            OperationType::CmpNe => Some(Code::CmpNe),
+            OperationType::CmpGe => Some(Code::CmpGe),
+            OperationType::CmpGt => Some(Code::CmpGt),
+            OperationType::CmpLe => Some(Code::CmpLe),
+            OperationType::CmpLt => Some(Code::CmpLt),
 
-            OperationType::Add => Some(Instruction::Add),
-            OperationType::Sub => Some(Instruction::Sub),
-            OperationType::Mul => Some(Instruction::Mul),
-            OperationType::Div => Some(Instruction::Div),
-            OperationType::Rem => Some(Instruction::Rem),
-            OperationType::Pow => Some(Instruction::Pow),
-            OperationType::Neg => Some(Instruction::Neg),
-            OperationType::And => Some(Instruction::And),
-            OperationType::Or => Some(Instruction::Or),
-            OperationType::Xor => Some(Instruction::Xor),
-            OperationType::Shl => Some(Instruction::Shl),
-            OperationType::Shr => Some(Instruction::Shr),
+            OperationType::Add => Some(Code::Add),
+            OperationType::Sub => Some(Code::Sub),
+            OperationType::Mul => Some(Code::Mul),
+            OperationType::Div => Some(Code::Div),
+            OperationType::Rem => Some(Code::Rem),
+            OperationType::Pow => Some(Code::Pow),
+            OperationType::Neg => Some(Code::Neg),
+            OperationType::And => Some(Code::And),
+            OperationType::Or => Some(Code::Or),
+            OperationType::Xor => Some(Code::Xor),
+            OperationType::Shl => Some(Code::Shl),
+            OperationType::Shr => Some(Code::Shr),
 
-            OperationType::ODispose => Some(Instruction::ODispose),
+            OperationType::ODispose => Some(Code::ODispose),
             _ => None,
         }
     }

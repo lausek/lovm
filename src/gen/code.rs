@@ -17,24 +17,24 @@ impl CodeObject {
         for inx in other.inner.iter_mut() {
             if let Some(prev_idx) = inx.arg() {
                 let new_idx = match inx {
-                    Instruction::CPush(_) => {
+                    Code::CPush(_) => {
                         let prev_val = &other.space.consts[prev_idx];
                         index_of(&mut self.space.consts, prev_val)
                     }
-                    Instruction::LPush(_) | Instruction::LPop(_) | Instruction::LCall(_) => {
+                    Code::LPush(_) | Code::LPop(_) | Code::LCall(_) => {
                         let prev_val = &other.space.locals[prev_idx];
                         index_of(&mut self.space.locals, prev_val)
                     }
-                    Instruction::GPush(_) | Instruction::GPop(_) | Instruction::GCall(_) => {
+                    Code::GPush(_) | Code::GPop(_) | Code::GCall(_) => {
                         let prev_val = &other.space.globals[prev_idx];
                         // if ident was defined in parent frame, translate global operations
                         // to local scope
                         if self.space.locals.contains(prev_val) {
                             let new_idx = index_of(&mut self.space.locals, prev_val);
                             match inx.clone() {
-                                Instruction::GPush(_) => *inx = Instruction::LPush(new_idx),
-                                Instruction::GPop(_) => *inx = Instruction::LPop(new_idx),
-                                Instruction::GCall(_) => *inx = Instruction::LCall(new_idx),
+                                Code::GPush(_) => *inx = Code::LPush(new_idx),
+                                Code::GPop(_) => *inx = Code::LPop(new_idx),
+                                Code::GCall(_) => *inx = Code::LCall(new_idx),
                                 _ => unimplemented!(),
                             }
                             continue;
@@ -42,7 +42,7 @@ impl CodeObject {
                             index_of(&mut self.space.globals, prev_val)
                         }
                     }
-                    Instruction::Jmp(bidx) | Instruction::Jt(bidx) | Instruction::Jf(bidx) => {
+                    Code::Jmp(bidx) | Code::Jt(bidx) | Code::Jf(bidx) => {
                         // if this panics, no branch resolve was done
                         assert!(*bidx < std::usize::MAX);
 
@@ -194,9 +194,9 @@ impl CodeBuilder {
 
         for (offset, link_arg) in offsets.iter() {
             match &mut func.inner[*offset] {
-                Instruction::Jmp(prev_idx)
-                | Instruction::Jt(prev_idx)
-                | Instruction::Jf(prev_idx)
+                Code::Jmp(prev_idx)
+                | Code::Jt(prev_idx)
+                | Code::Jf(prev_idx)
                     // only take uninitialized jumps for now
                     if *prev_idx == std::usize::MAX =>
                 {
@@ -209,8 +209,8 @@ impl CodeBuilder {
         // TODO: check if last instruction already is return
         if ensure_ret {
             match func.inner.last() {
-                Some(Instruction::Ret) | Some(Instruction::Jmp(_)) => {}
-                _ => func.inner.push(Instruction::Ret),
+                Some(Code::Ret) | Some(Code::Jmp(_)) => {}
+                _ => func.inner.push(Code::Ret),
             }
         }
 
@@ -282,22 +282,22 @@ fn translate_operand(func: &mut CodeObject, op: &Operand, acc: Access) -> BuildR
                 .position(|local| local == n)
                 .unwrap();
             func.inner.push(if acc == Access::Write {
-                Instruction::LPop(idx)
+                Code::LPop(idx)
             } else {
-                Instruction::LPush(idx)
+                Code::LPush(idx)
             });
         }
         Operand::Name(n) => {
             let idx = index_of(&mut func.space.globals, n);
             func.inner.push(if acc == Access::Write {
-                Instruction::GPop(idx)
+                Code::GPop(idx)
             } else {
-                Instruction::GPush(idx)
+                Code::GPush(idx)
             });
         }
         Operand::Const(v) => {
             let idx = index_of(&mut func.space.consts, &v);
-            func.inner.push(Instruction::CPush(idx));
+            func.inner.push(Code::CPush(idx));
         }
     }
     Ok(())
@@ -332,7 +332,7 @@ fn translate_operation(
                 for arg in op.ops() {
                     translate(func, arg, Access::Read, offsets)?;
                 }
-                func.inner.push(Instruction::Ret);
+                func.inner.push(Code::Ret);
             }
             OperationType::Ass => {
                 if let Some(next) = op.rest().next() {
@@ -347,7 +347,7 @@ fn translate_operation(
                 }
                 // TODO: look at locals first
                 let idx = index_of(&mut func.space.globals, &fname);
-                func.inner.push(Instruction::GCall(idx));
+                func.inner.push(Code::GCall(idx));
             }
             OperationType::Push => {
                 for arg in op.ops() {
@@ -373,9 +373,9 @@ fn translate_operation(
             }
             OperationType::Jmp | OperationType::Jt | OperationType::Jf => {
                 let inx = match op.ty {
-                    OperationType::Jmp => Instruction::Jmp(std::usize::MAX),
-                    OperationType::Jt => Instruction::Jt(std::usize::MAX),
-                    OperationType::Jf => Instruction::Jf(std::usize::MAX),
+                    OperationType::Jmp => Code::Jmp(std::usize::MAX),
+                    OperationType::Jt => Code::Jt(std::usize::MAX),
+                    OperationType::Jf => Code::Jf(std::usize::MAX),
                     _ => unreachable!(),
                 };
                 if let Some(OpValue::Operand(jmp_offset)) = op.ops().next() {
@@ -386,31 +386,31 @@ fn translate_operation(
             OperationType::Int => match op.ops().next() {
                 Some(OpValue::Operand(idx)) => {
                     let idx = idx.as_const().clone().into();
-                    func.inner.extend(vec![Instruction::Int(idx)])
+                    func.inner.extend(vec![Code::Int(idx)])
                 }
                 _ => panic!("interrupt not specified"),
             },
             OperationType::Debug => {
                 func.inner
-                    .extend(vec![Instruction::Int(vm::Interrupt::Debug as usize)]);
+                    .extend(vec![Code::Int(vm::Interrupt::Debug as usize)]);
             }
             OperationType::ONew => {
-                func.inner.extend(vec![Instruction::ONew]);
+                func.inner.extend(vec![Code::ONew]);
                 for arg in op.ops() {
                     // arg is either oset or oappend
                     translate(func, arg, Access::Read, offsets)?;
                 }
             }
             OperationType::ONewArray => {
-                func.inner.extend(vec![Instruction::ONewArray]);
+                func.inner.extend(vec![Code::ONewArray]);
                 for arg in op.ops() {
                     translate(func, arg, Access::Read, offsets)?;
                     // TODO: look at ONewDict. something is wrong here
-                    func.inner.push(Instruction::OAppend);
+                    func.inner.push(Code::OAppend);
                 }
             }
             OperationType::ONewDict => {
-                func.inner.extend(vec![Instruction::ONewDict]);
+                func.inner.extend(vec![Code::ONewDict]);
                 for arg in op.ops() {
                     translate(func, arg, Access::Read, offsets)?;
                 }
@@ -418,7 +418,7 @@ fn translate_operation(
             OperationType::OAppend => {
                 for arg in op.ops() {
                     translate(func, arg, Access::Read, offsets)?;
-                    func.inner.push(Instruction::OAppend);
+                    func.inner.push(Code::OAppend);
                 }
             }
             OperationType::OGet => unimplemented!(),
@@ -429,7 +429,7 @@ fn translate_operation(
                         (Some(OpValue::Operand(Operand::Const(key))), Some(val)) => {
                             translate(func, val, Access::Read, offsets)?;
                             let idx = index_of(&mut func.space.consts, &key);
-                            func.inner.push(Instruction::OSet(idx));
+                            func.inner.push(Code::OSet(idx));
                         }
                         (Some(key), _) => panic!("incorrect key `{:?}`", key),
                         _ => break,

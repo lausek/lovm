@@ -117,11 +117,9 @@ impl Vm {
                     ip,
                     inx,
                     inx.arg().map_or("".to_string(), |arg| match inx {
-                        Instruction::CPush(_) => format!(":= {}", co.space.consts[arg]),
-                        Instruction::LPush(_) | Instruction::LPop(_) => {
-                            format!(":= {}", co.space.locals[arg])
-                        }
-                        Instruction::GPush(_) | Instruction::GPop(_) | Instruction::GCall(_) => {
+                        Code::CPush(_) => format!(":= {}", co.space.consts[arg]),
+                        Code::LPush(_) | Code::LPop(_) => format!(":= {}", co.space.locals[arg]),
+                        Code::GPush(_) | Code::GPop(_) | Code::GCall(_) => {
                             format!(":= {}", co.space.globals[arg])
                         }
                         _ => "".to_string(),
@@ -131,40 +129,40 @@ impl Vm {
 
             match inx {
                 // ret is needed for early returns
-                Instruction::Ret => break,
-                Instruction::Pusha => self.push_frame(0),
-                Instruction::Popa => self.pop_frame(),
-                Instruction::Dup => {
+                Code::Ret => break,
+                Code::Pusha => self.push_frame(0),
+                Code::Popa => self.pop_frame(),
+                Code::Dup => {
                     let dup = self.data.vstack.last().expect("no value").clone();
                     self.data.vstack.push(dup);
                 }
-                Instruction::Int(idx) => {
+                Code::Int(idx) => {
                     if let Some(irh) = self.interrupts.get(*idx) {
                         irh(&mut self.data)?;
                     }
                 }
-                Instruction::Cast(ty_idx) => {
+                Code::Cast(ty_idx) => {
                     let val = self.data.vstack.last_mut().expect("no value");
                     *val = val.cast(&Value::from_type(*ty_idx));
                 }
-                Instruction::LPop(idx) | Instruction::GPop(idx) => {
+                Code::LPop(idx) | Code::GPop(idx) => {
                     let value = self.data.vstack.pop().expect("no value");
                     match inx {
-                        Instruction::LPop(_) => {
+                        Code::LPop(_) => {
                             frame_mut(&mut self.data).locals[*idx] = value;
                         }
-                        Instruction::GPop(_) => {
+                        Code::GPop(_) => {
                             let name = co.space.globals.get(*idx).unwrap();
                             self.data.globals.insert(name.clone(), value);
                         }
                         _ => unreachable!(),
                     }
                 }
-                Instruction::CPush(idx) | Instruction::LPush(idx) | Instruction::GPush(idx) => {
+                Code::CPush(idx) | Code::LPush(idx) | Code::GPush(idx) => {
                     let value = match inx {
-                        Instruction::CPush(_) => co.space.consts[*idx].clone(),
-                        Instruction::LPush(_) => frame(&self.data).locals[*idx].clone(),
-                        Instruction::GPush(_) => {
+                        Code::CPush(_) => co.space.consts[*idx].clone(),
+                        Code::LPush(_) => frame(&self.data).locals[*idx].clone(),
+                        Code::GPush(_) => {
                             let name = co.space.globals.get(*idx).unwrap();
                             match self.data.globals.get(name) {
                                 Some(value) => value.clone(),
@@ -175,41 +173,41 @@ impl Vm {
                     };
                     self.data.vstack.push(value);
                 }
-                Instruction::LCall(_idx) => {
+                Code::LCall(_idx) => {
                     unimplemented!();
                 }
-                Instruction::GCall(idx) => {
+                Code::GCall(idx) => {
                     let fname = &co.space.globals[*idx];
                     let co = self.call_lookup(&fname.to_string())?;
                     self.run_object(co)?;
                 }
-                Instruction::Inc | Instruction::Dec => {
+                Code::Inc | Code::Dec => {
                     unimplemented!();
                     // `increment` and `decrement` are common operations and allow for
                     // inplace modifications instead of computation over the stack.
                     // TODO: implement inc and dec
                     //let val = read(&self, &args[0]);
                     //match inx {
-                    //    Instruction::Inc => write(self, &args[0], val.add(&Value::I(1))),
-                    //    Instruction::Dec => write(self, &args[0], val.sub(&Value::I(1))),
+                    //    Code::Inc => write(self, &args[0], val.add(&Value::I(1))),
+                    //    Code::Dec => write(self, &args[0], val.sub(&Value::I(1))),
                     //    _ => unreachable!(),
                     //}
                 }
-                Instruction::Neg => {
+                Code::Neg => {
                     let target = self.data.vstack.last_mut().expect("no target");
                     *target = target.neg();
                 }
-                Instruction::Add
-                | Instruction::Sub
-                | Instruction::Mul
-                | Instruction::Div
-                | Instruction::Rem
-                | Instruction::Pow
-                | Instruction::And
-                | Instruction::Or
-                | Instruction::Xor
-                | Instruction::Shl
-                | Instruction::Shr => {
+                Code::Add
+                | Code::Sub
+                | Code::Mul
+                | Code::Div
+                | Code::Rem
+                | Code::Pow
+                | Code::And
+                | Code::Or
+                | Code::Xor
+                | Code::Shl
+                | Code::Shr => {
                     let op = self.data.vstack.pop().expect("no operand");
                     let target = self.data.vstack.last_mut().expect("no target");
 
@@ -218,81 +216,75 @@ impl Vm {
                     }
 
                     *target = match inx {
-                        Instruction::Add => target.add(&op),
-                        Instruction::Sub => target.sub(&op),
-                        Instruction::Mul => target.mul(&op),
-                        Instruction::Div => target.div(&op),
-                        Instruction::Rem => target.rem(&op),
-                        Instruction::Pow => target.pow(&op),
-                        Instruction::And => target.and(&op),
-                        Instruction::Or => target.or(&op),
-                        Instruction::Xor => target.xor(&op),
-                        Instruction::Shl => target.shl(&op),
-                        Instruction::Shr => target.shr(&op),
+                        Code::Add => target.add(&op),
+                        Code::Sub => target.sub(&op),
+                        Code::Mul => target.mul(&op),
+                        Code::Div => target.div(&op),
+                        Code::Rem => target.rem(&op),
+                        Code::Pow => target.pow(&op),
+                        Code::And => target.and(&op),
+                        Code::Or => target.or(&op),
+                        Code::Xor => target.xor(&op),
+                        Code::Shl => target.shl(&op),
+                        Code::Shr => target.shr(&op),
                         _ => unimplemented!(),
                     };
                 }
-                Instruction::CmpEq
-                | Instruction::CmpNe
-                | Instruction::CmpGe
-                | Instruction::CmpGt
-                | Instruction::CmpLe
-                | Instruction::CmpLt => {
+                Code::CmpEq
+                | Code::CmpNe
+                | Code::CmpGe
+                | Code::CmpGt
+                | Code::CmpLe
+                | Code::CmpLt => {
                     use std::cmp::Ordering;
                     let op1 = self.data.vstack.pop().expect("missing op1");
                     let op2 = self.data.vstack.pop().expect("missing op2");
                     let inx = *inx;
                     let cond = match op2.partial_cmp(&op1).unwrap() {
                         Ordering::Equal => {
-                            inx == Instruction::CmpEq
-                                || inx == Instruction::CmpGe
-                                || inx == Instruction::CmpLe
+                            inx == Code::CmpEq || inx == Code::CmpGe || inx == Code::CmpLe
                         }
                         Ordering::Greater => {
-                            inx == Instruction::CmpNe
-                                || inx == Instruction::CmpGe
-                                || inx == Instruction::CmpGt
+                            inx == Code::CmpNe || inx == Code::CmpGe || inx == Code::CmpGt
                         }
                         Ordering::Less => {
-                            inx == Instruction::CmpNe
-                                || inx == Instruction::CmpLe
-                                || inx == Instruction::CmpLt
+                            inx == Code::CmpNe || inx == Code::CmpLe || inx == Code::CmpLt
                         }
                     };
                     self.data.vstack.push(Value::T(cond));
                 }
-                Instruction::Jmp(nip) => {
+                Code::Jmp(nip) => {
                     ip = *nip;
                     continue;
                 }
-                Instruction::Jt(nip) | Instruction::Jf(nip) => {
+                Code::Jt(nip) | Code::Jf(nip) => {
                     let cond: bool = self.data.vstack.pop().expect("no condition").into();
                     if match inx {
-                        Instruction::Jt(_) => cond,
-                        Instruction::Jf(_) => !cond,
+                        Code::Jt(_) => cond,
+                        Code::Jf(_) => !cond,
                         _ => unreachable!(),
                     } {
                         ip = *nip;
                         continue;
                     }
                 }
-                Instruction::ONew => {
+                Code::ONew => {
                     let handle = self.data.obj_pool.new_handle();
                     self.data.vstack.push(Value::Ref(handle));
                 }
-                Instruction::ONewDict => {
+                Code::ONewDict => {
                     let handle = self.data.obj_pool.new_dict_handle();
                     self.data.vstack.push(Value::Ref(handle));
                 }
-                Instruction::ONewArray => {
+                Code::ONewArray => {
                     let handle = self.data.obj_pool.new_array_handle();
                     self.data.vstack.push(Value::Ref(handle));
                 }
-                Instruction::ODispose => {
+                Code::ODispose => {
                     let handle = usize::from(self.data.vstack.pop().expect("no object"));
                     self.data.obj_pool.dispose_handle(&handle);
                 }
-                Instruction::OCall(idx) => {
+                Code::OCall(idx) => {
                     let aname = &co.space.consts[*idx];
                     let cb = {
                         let object = object(&self.data);
@@ -302,14 +294,14 @@ impl Vm {
                     // TODO: check if locals[0] is self => assign self = vstack.last()
                     self.run_object(cb)?;
                 }
-                Instruction::OAppend => {
+                Code::OAppend => {
                     let value = self.data.vstack.pop().expect("no value");
                     object_mut(&mut self.data)
                         .as_indexable()
                         .unwrap()
                         .append(value);
                 }
-                Instruction::OGet(idx) => {
+                Code::OGet(idx) => {
                     let aname = &co.space.consts[*idx];
                     let value = {
                         let object = object_mut(&mut self.data).as_indexable().unwrap();
@@ -317,7 +309,7 @@ impl Vm {
                     };
                     self.data.vstack.push(value);
                 }
-                Instruction::OSet(idx) => {
+                Code::OSet(idx) => {
                     let value = self.data.vstack.pop().expect("no value");
                     let object = object_mut(&mut self.data).as_indexable().unwrap();
                     let aname = &co.space.consts[*idx];
