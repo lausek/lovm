@@ -17,7 +17,6 @@ use serde::*;
 
 pub type Name = String;
 
-// TODO: rename this to `Code`
 pub type Code = Protocol<usize>;
 pub type CodeBlock = Vec<Code>;
 
