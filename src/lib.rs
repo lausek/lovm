@@ -1,17 +1,13 @@
 #![feature(type_alias_enum_variants)]
 #![feature(const_vec_new)]
 
+pub mod data;
 #[macro_use]
-pub mod code;
-pub mod coref;
 pub mod gen;
 pub mod test;
-pub mod value;
 pub mod vm;
 
-pub use code::*;
-pub use coref::*;
-pub use value::*;
+pub use data::*;
 
 use std::borrow::Borrow;
 use std::rc::Rc;

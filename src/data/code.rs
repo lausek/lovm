@@ -1,7 +1,5 @@
 use super::*;
 
-use crate::value::*;
-
 use serde::*;
 
 // a `CodeObject` is an executable bytecode unit. it holds the local constant values,
