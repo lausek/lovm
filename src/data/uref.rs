@@ -1,8 +1,5 @@
 use super::*;
 
-use serde::de::*;
-use serde::*;
-
 // if we return a `Unit` in lookup calls, we give the promise that it stays
 // valid for the `run_object` call aswell. however, the vm could decide to change
 // the object inside its `Unit` thus violating the given lifetime promise. we

@@ -270,7 +270,8 @@ impl Vm {
                 }
                 Code::ONew(idx) => {
                     let ty = &co.space.globals[*idx];
-                    let handle = self.data.obj_pool.new_handle();
+                    let uref = self.data.units.lookup_ty(ty).expect("unknown type");
+                    let handle = self.data.obj_pool.new_handle_with_assoc(uref);
                     self.data.vstack.push(Value::Ref(handle));
                 }
                 Code::ONewDict => {
