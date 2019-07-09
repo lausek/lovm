@@ -463,7 +463,7 @@ impl std::fmt::Display for CodeObject {
 
 impl std::fmt::Display for CodeBuilder {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        writeln!(f, "Function Builder(argc: {})", self.argc)?;
+        writeln!(f, "Code Builder(argc: {})", self.argc)?;
         if !self.space.consts.is_empty() {
             writeln!(f, "\tconsts: {:?}", self.space.consts)?;
         }
