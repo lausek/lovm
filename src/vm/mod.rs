@@ -268,7 +268,8 @@ impl Vm {
                         continue;
                     }
                 }
-                Code::ONew => {
+                Code::ONew(idx) => {
+                    let ty = &co.space.globals[*idx];
                     let handle = self.data.obj_pool.new_handle();
                     self.data.vstack.push(Value::Ref(handle));
                 }

@@ -4,7 +4,7 @@ use super::*;
 #[test]
 fn allocation() {
     let func = func!({
-        onew(),
+        onew("object"),
         odispose(),
         onewarray(),
         onewdict(),

@@ -20,6 +20,13 @@ impl ObjectPool {
         self.last_handle
     }
 
+    pub fn new_handle_with_assoc(&mut self, unit: UnitRef) -> ObjectId {
+        self.last_handle += 1;
+        self.handles
+            .insert(self.last_handle, Object::new_value_assoc(unit));
+        self.last_handle
+    }
+
     pub fn new_dict_handle(&mut self) -> ObjectId {
         self.last_handle += 1;
         self.handles.insert(self.last_handle, Object::new_dict());

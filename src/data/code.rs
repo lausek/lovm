@@ -108,7 +108,7 @@ pub enum Protocol<T> {
     Popa,
 
     // create a new object pushing its handle onto the stack
-    ONew,
+    ONew(T),
     // create a new array pushing its handle onto the stack
     ONewArray,
     // create a new dict pushing its handle onto the stack
@@ -137,6 +137,7 @@ impl Code {
             | Code::GPush(c)
             | Code::GPop(c)
             | Code::GCall(c)
+            | Code::ONew(c)
             | Code::OGet(c)
             | Code::OSet(c)
             | Code::OCall(c) => Some(*c),
@@ -158,6 +159,7 @@ impl Code {
             | Code::GPush(c)
             | Code::GPop(c)
             | Code::GCall(c)
+            | Code::ONew(c)
             | Code::OGet(c)
             | Code::OSet(c)
             | Code::OCall(c) => Some(c),
@@ -179,6 +181,7 @@ impl Code {
             | Code::GPush(_)
             | Code::GPop(_)
             | Code::GCall(_)
+            | Code::ONew(_)
             | Code::OGet(_)
             | Code::OSet(_)
             | Code::OCall(_) => 1,

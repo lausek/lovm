@@ -394,8 +394,15 @@ fn translate_operation(
                     .extend(vec![Code::Int(vm::Interrupt::Debug as usize)]);
             }
             OperationType::ONew => {
-                func.inner.extend(vec![Code::ONew]);
-                for arg in op.ops() {
+                // first argument for onew is types name
+                let ty_name = match op.ops().next() {
+                    Some(OpValue::Operand(ty)) => ty.as_name(),
+                    _ => unreachable!(),
+                };
+                let idx = index_of(&mut func.space.globals, &ty_name);
+                func.inner.extend(vec![Code::ONew(idx)]);
+                // other arguments are initializers
+                for arg in op.rest() {
                     // arg is either oset or oappend
                     translate(func, arg, Access::Read, offsets)?;
                 }

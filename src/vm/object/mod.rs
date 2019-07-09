@@ -10,7 +10,7 @@ pub use self::pool::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Object {
-    pub assoc: Option<Unit>,
+    pub assoc: Option<UnitRef>,
     pub inner: ObjectKind,
 }
 
@@ -18,6 +18,13 @@ impl Object {
     pub fn new_value() -> Self {
         Self {
             assoc: None,
+            inner: ObjectKind::Value(Value::I(0)),
+        }
+    }
+
+    pub fn new_value_assoc(assoc: UnitRef) -> Self {
+        Self {
+            assoc: Some(assoc),
             inner: ObjectKind::Value(Value::I(0)),
         }
     }
@@ -46,7 +53,10 @@ impl Object {
 
     pub fn lookup(&self, key: &Value) -> Option<CodeObjectRef> {
         match (&self.assoc, key) {
-            (Some(module), Value::Str(name)) => module.get(name),
+            (Some(module), Value::Str(name)) => {
+                let module: &Unit = module.borrow();
+                module.get(name)
+            }
             (_, _) => None,
         }
     }

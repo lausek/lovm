@@ -67,6 +67,10 @@ pub fn int(idx: usize) -> Operation {
     Operation::new(OperationType::Int).op(idx).end()
 }
 
+pub fn onew(ty_name: &str) -> Operation {
+    Operation::new(OperationType::ONew).op(ty_name).end()
+}
+
 impl Operation {
     pub fn call(fname: &str) -> Self {
         call(fname)
@@ -75,6 +79,10 @@ impl Operation {
     pub fn int(idx: usize) -> Self {
         int(idx)
     }
+
+    pub fn onew(ty_name: &str) -> Self {
+        onew(ty_name)
+    }
 }
 
 derive_constructor!(OperationType::Ass, ass);
@@ -82,7 +90,6 @@ derive_constructor!(OperationType::Debug, debug);
 derive_constructor!(OperationType::Ret, ret);
 derive_constructor!(OperationType::Push, push);
 derive_constructor!(OperationType::Pop, pop);
-derive_constructor!(OperationType::ONew, onew);
 derive_constructor!(OperationType::ONewArray, onewarray);
 derive_constructor!(OperationType::ONewDict, onewdict);
 derive_constructor!(OperationType::ODispose, odispose);
