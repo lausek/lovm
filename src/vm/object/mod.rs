@@ -8,6 +8,12 @@ pub use self::array::*;
 pub use self::dict::*;
 pub use self::pool::*;
 
+pub type ObjectRef = Box<dyn ObjectProtocol>;
+
+pub trait ObjectProtocol {
+    fn invoke(&mut self, _: &mut Vm);
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Object {
     pub assoc: Option<UnitRef>,
@@ -15,16 +21,17 @@ pub struct Object {
 }
 
 impl Object {
-    pub fn new_value() -> Self {
+    pub fn new_value_assoc(assoc: UnitRef) -> Self {
         Self {
-            assoc: None,
+            assoc: Some(assoc),
             inner: ObjectKind::Value(Value::I(0)),
         }
     }
 
-    pub fn new_value_assoc(assoc: UnitRef) -> Self {
+    /*
+    pub fn new_value() -> Self {
         Self {
-            assoc: Some(assoc),
+            assoc: None,
             inner: ObjectKind::Value(Value::I(0)),
         }
     }
@@ -42,6 +49,7 @@ impl Object {
             inner: ObjectKind::Dict(Dict::new()),
         }
     }
+    */
 
     pub fn as_indexable(&mut self) -> Result<&mut dyn Indexable, ()> {
         match &mut self.inner {
@@ -60,6 +68,10 @@ impl Object {
             (_, _) => None,
         }
     }
+}
+
+impl ObjectProtocol for Object {
+    fn invoke(&mut self, _: &mut Vm) {}
 }
 
 #[derive(Clone, Debug, PartialEq)]

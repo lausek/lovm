@@ -23,6 +23,10 @@ impl From<Vec<Value>> for Array {
     }
 }
 
+impl ObjectProtocol for Array {
+    fn invoke(&mut self, _: &mut Vm) {}
+}
+
 impl Indexable for Array {
     fn getk(&self, key: &Value) -> Option<&Value> {
         let idx = usize::from(key.cast(&Value::I64(0)));

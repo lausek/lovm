@@ -17,6 +17,10 @@ impl Dict {
     }
 }
 
+impl ObjectProtocol for Dict {
+    fn invoke(&mut self, _: &mut Vm) {}
+}
+
 impl Indexable for Dict {
     fn getk(&self, key: &Value) -> Option<&Value> {
         self.0.get(key)
