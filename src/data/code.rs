@@ -210,6 +210,7 @@ impl Unit {
         }
     }
 
+    // TODO: rename to `lookup` or something like that
     pub fn get(&self, name: &Name) -> Option<CodeObjectRef> {
         for (sname, co) in self.inner.iter() {
             if sname == name {

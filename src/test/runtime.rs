@@ -63,7 +63,8 @@ fn object_call() {
     });
 
     fn check_content(data: &mut VmData) -> VmResult {
-        assert!(false);
+        // expect len for 3 items
+        assert!(*data.vstack.last().unwrap() == Value::Ref(3));
         Ok(())
     }
 

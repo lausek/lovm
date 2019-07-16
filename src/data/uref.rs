@@ -6,7 +6,7 @@ use super::*;
 // therefore wrap everything inside a reference counter.
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct UnitRef(Rc<Unit>);
+pub struct UnitRef(pub Rc<Unit>);
 
 impl UnitRef {
     pub fn get_mut(&mut self) -> &mut Unit {

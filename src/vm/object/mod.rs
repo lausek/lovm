@@ -10,13 +10,38 @@ pub use self::pool::*;
 
 pub type ObjectRef = Rc<RefCell<dyn ObjectProtocol>>;
 
+pub enum ObjectMethod {
+    Virtual(CodeObjectRef),
+    // will be implemented in `call`
+    Native,
+}
+
 pub trait ObjectProtocol
 where
     Self: std::fmt::Debug,
 {
-    fn call(&mut self, _: &mut Vm);
+    fn lookup(&self, _: &Value) -> Option<ObjectMethod> {
+        None
+    }
+
+    // TODO: add params
+    fn call(&mut self, _: &Name) -> Result<Option<Value>, ()> {
+        unimplemented!()
+    }
+
     fn as_indexable(&mut self) -> Result<&mut dyn Indexable, ()> {
         Err(())
+    }
+}
+
+impl ObjectProtocol for Object {
+    fn lookup(&self, key: &Value) -> Option<ObjectMethod> {
+        self.assoc
+            .as_ref()
+            .unwrap()
+            .0
+            .get(&key.to_string())
+            .and_then(|cb| Some(ObjectMethod::Virtual(cb)))
     }
 }
 
@@ -32,27 +57,6 @@ impl Object {
             assoc: Some(assoc),
             inner: vec![],
         }
-    }
-
-    pub fn as_indexable(&mut self) -> Result<&mut dyn Indexable, ()> {
-        Err(())
-    }
-
-    pub fn lookup(&self, key: &Value) -> Option<CodeObjectRef> {
-        match (&self.assoc, key) {
-            (Some(module), Value::Str(name)) => {
-                let module: &Unit = module.borrow();
-                module.get(name)
-            }
-            (_, _) => None,
-        }
-    }
-}
-
-impl ObjectProtocol for Object {
-    fn call(&mut self, _: &mut Vm) {}
-    fn as_indexable(&mut self) -> Result<&mut dyn Indexable, ()> {
-        Err(())
     }
 }
 

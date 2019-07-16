@@ -290,16 +290,29 @@ impl Vm {
                     let name = &co.space.consts[*idx];
                     let argc = self.data.vstack.pop().expect("no argc");
                     let stack_size_after = self.data.vstack.len() - usize::from(argc);
-                    let params = self.data.vstack.drain(stack_size_after..);
+                    let params = self
+                        .data
+                        .vstack
+                        .drain(stack_size_after..)
+                        .collect::<Vec<_>>();
                     println!("calling {:?} with {:?}", name, params);
-                    //let object = object_mut(&mut self.data);
-                    //object.call();
-                    //let cb = {
-                    //    // TODO: ugh... remove this clone pls
-                    //    object.lookup(aname).expect("no method found").clone()
-                    //};
-                    //// TODO: check if locals[0] is self => assign self = vstack.last()
-                    //self.run_object(cb)?;
+                    let mut object = object_mut(&mut self.data);
+                    match object.lookup(&name) {
+                        Some(ObjectMethod::Virtual(cb)) => {
+                            drop(object);
+                            self.run_object(cb)?;
+                        }
+                        // TODO: this should only allow strings
+                        Some(ObjectMethod::Native) => match object.call(&name.to_string()) {
+                            Ok(Some(val)) => {
+                                drop(object);
+                                self.data.vstack.push(val);
+                            }
+                            Ok(_) => {}
+                            _ => panic!("native call error"),
+                        },
+                        _ => panic!("method `{:?}` not found", name),
+                    }
                 }
                 Code::OAppend => {
                     let value = self.data.vstack.pop().expect("no value");

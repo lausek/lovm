@@ -18,7 +18,20 @@ impl Dict {
 }
 
 impl ObjectProtocol for Dict {
-    fn call(&mut self, _: &mut Vm) {}
+    fn lookup(&self, key: &Value) -> Option<ObjectMethod> {
+        match key.to_string().as_ref() {
+            "len" => Some(ObjectMethod::Native),
+            _ => None,
+        }
+    }
+
+    fn call(&mut self, name: &Name) -> Result<Option<Value>, ()> {
+        match name.as_ref() {
+            "len" => Ok(Some(Value::from(self.0.len()))),
+            _ => Err(()),
+        }
+    }
+
     fn as_indexable(&mut self) -> Result<&mut dyn Indexable, ()> {
         Ok(self as &mut dyn Indexable)
     }
