@@ -8,7 +8,7 @@ fn fib_recursion() {
     let unit = unit! {
         fib => func!([n] => {
             cmp_eq().var("n").op(0) => {
-                ret().op(0
+                ret().op(0)
             },
             cmp_eq().var("n").op(1) => {
                 ret().op(1)

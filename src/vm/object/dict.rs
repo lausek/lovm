@@ -18,7 +18,10 @@ impl Dict {
 }
 
 impl ObjectProtocol for Dict {
-    fn invoke(&mut self, _: &mut Vm) {}
+    fn call(&mut self, _: &mut Vm) {}
+    fn as_indexable(&mut self) -> Result<&mut dyn Indexable, ()> {
+        Err(())
+    }
 }
 
 impl Indexable for Dict {

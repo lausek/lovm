@@ -8,10 +8,10 @@ macro_rules! spawn {
     }};
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ObjectPool {
     last_handle: ObjectId,
-    handles: HashMap<ObjectId, Box<dyn ObjectProtocol>>,
+    handles: HashMap<ObjectId, ObjectRef>,
 }
 
 impl ObjectPool {
@@ -48,5 +48,12 @@ impl ObjectPool {
 
     pub fn get_mut(&mut self, id: &ObjectId) -> Option<&mut ObjectRef> {
         self.handles.get_mut(id)
+    }
+}
+
+impl Clone for ObjectPool {
+    fn clone(&self) -> Self {
+        // TODO: do actual clone; figure out how to copy trait objects
+        Self::new()
     }
 }

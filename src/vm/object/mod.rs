@@ -10,8 +10,14 @@ pub use self::pool::*;
 
 pub type ObjectRef = Box<dyn ObjectProtocol>;
 
-pub trait ObjectProtocol {
-    fn invoke(&mut self, _: &mut Vm);
+pub trait ObjectProtocol
+where
+    Self: std::fmt::Debug,
+{
+    fn call(&mut self, _: &mut Vm);
+    fn as_indexable(&mut self) -> Result<&mut dyn Indexable, ()> {
+        Err(())
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -71,7 +77,10 @@ impl Object {
 }
 
 impl ObjectProtocol for Object {
-    fn invoke(&mut self, _: &mut Vm) {}
+    fn call(&mut self, _: &mut Vm) {}
+    fn as_indexable(&mut self) -> Result<&mut dyn Indexable, ()> {
+        Err(())
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]

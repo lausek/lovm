@@ -288,13 +288,14 @@ impl Vm {
                 }
                 Code::OCall(idx) => {
                     let aname = &co.space.consts[*idx];
-                    let cb = {
-                        let object = object(&self.data);
-                        // TODO: ugh... remove this clone pls
-                        object.lookup(aname).expect("no method found").clone()
-                    };
-                    // TODO: check if locals[0] is self => assign self = vstack.last()
-                    self.run_object(cb)?;
+                    let object = object_mut(&mut self.data);
+                    //object.call();
+                    //let cb = {
+                    //    // TODO: ugh... remove this clone pls
+                    //    object.lookup(aname).expect("no method found").clone()
+                    //};
+                    //// TODO: check if locals[0] is self => assign self = vstack.last()
+                    //self.run_object(cb)?;
                 }
                 Code::OAppend => {
                     let value = self.data.vstack.pop().expect("no value");
@@ -358,14 +359,14 @@ impl Vm {
     }
 }
 
-fn object(vm: &VmData) -> &Object {
+fn object(vm: &VmData) -> &ObjectRef {
     match vm.vstack.last().expect("no object ref") {
         Value::Ref(handle) => vm.obj_pool.get(&handle).unwrap(),
         _ => unimplemented!(),
     }
 }
 
-fn object_mut(vm: &mut VmData) -> &mut Object {
+fn object_mut(vm: &mut VmData) -> &mut ObjectRef {
     match vm.vstack.last().expect("no object ref") {
         Value::Ref(handle) => vm.obj_pool.get_mut(&handle).unwrap(),
         _ => unimplemented!(),
