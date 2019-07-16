@@ -26,7 +26,7 @@ impl From<Vec<Value>> for Array {
 impl ObjectProtocol for Array {
     fn call(&mut self, _: &mut Vm) {}
     fn as_indexable(&mut self) -> Result<&mut dyn Indexable, ()> {
-        Err(())
+        Ok(self as &mut dyn Indexable)
     }
 }
 

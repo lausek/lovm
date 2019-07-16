@@ -287,8 +287,8 @@ impl Vm {
                     self.data.obj_pool.dispose_handle(&handle);
                 }
                 Code::OCall(idx) => {
-                    let aname = &co.space.consts[*idx];
-                    let object = object_mut(&mut self.data);
+                    let _aname = &co.space.consts[*idx];
+                    let _object = object_mut(&mut self.data);
                     //object.call();
                     //let cb = {
                     //    // TODO: ugh... remove this clone pls
@@ -356,13 +356,6 @@ impl Vm {
         } else {
             *frame_mut(&mut self.data) = self.data.stack.last().expect("no last frame").clone();
         }
-    }
-}
-
-fn object(vm: &VmData) -> &ObjectRef {
-    match vm.vstack.last().expect("no object ref") {
-        Value::Ref(handle) => vm.obj_pool.get(&handle).unwrap(),
-        _ => unimplemented!(),
     }
 }
 

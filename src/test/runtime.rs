@@ -36,17 +36,15 @@ fn new_dict() {
 
     fn check_content(data: &mut VmData) -> VmResult {
         assert!(*data.vstack.last().unwrap() == Value::Ref(1));
-        match &data.obj_pool.get(&1).expect("no object").inner {
-            ObjectKind::Dict(object) => {
-                let eobject = object! [
-                    x => 10; I64,
-                    y => 10; I64,
-                    10; I64 => 11; I64,
-                ];
-                assert_eq!(object, &eobject);
-            }
-            _ => unreachable!(),
-        }
+        let dict = &data
+            .obj_pool
+            .get_mut(&1)
+            .expect("no object")
+            .as_indexable()
+            .expect("not indexable");
+        assert_eq!(dict.getk(&Value::from("x")).unwrap(), &Value::I64(10));
+        assert_eq!(dict.getk(&Value::from("y")).unwrap(), &Value::I64(10));
+        assert_eq!(dict.getk(&Value::from(10)).unwrap(), &Value::I64(11));
         Ok(())
     }
 

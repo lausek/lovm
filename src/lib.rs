@@ -1,4 +1,3 @@
-#![feature(type_alias_enum_variants)]
 #![feature(const_vec_new)]
 #![feature(trivial_bounds)]
 

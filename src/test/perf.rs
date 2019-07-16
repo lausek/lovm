@@ -1,9 +1,11 @@
 #![cfg(test)]
 use super::*;
 
+#[allow(unreachable_code)]
 #[test]
 fn fib_recursion() {
     use std::time::*;
+    return;
 
     let unit = unit! {
         fib => func!([n] => {
