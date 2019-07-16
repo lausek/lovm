@@ -307,16 +307,21 @@ impl Vm {
                 Code::OGet(idx) => {
                     let aname = &co.space.consts[*idx];
                     let value = {
-                        let object = object_mut(&mut self.data).as_indexable().unwrap();
-                        object.getk(&aname).expect("unknown attribute").clone()
+                        let mut object = object_mut(&mut self.data);
+                        object
+                            .as_indexable()
+                            .unwrap()
+                            .getk(&aname)
+                            .expect("unknown attribute")
+                            .clone()
                     };
                     self.data.vstack.push(value);
                 }
                 Code::OSet(idx) => {
                     let value = self.data.vstack.pop().expect("no value");
-                    let object = object_mut(&mut self.data).as_indexable().unwrap();
+                    let mut object = object_mut(&mut self.data);
                     let aname = &co.space.consts[*idx];
-                    object.setk(&aname, value);
+                    object.as_indexable().unwrap().setk(&aname, value);
                 }
             }
 
@@ -359,9 +364,9 @@ impl Vm {
     }
 }
 
-fn object_mut(vm: &mut VmData) -> &mut ObjectRef {
+fn object_mut(vm: &mut VmData) -> std::cell::RefMut<dyn ObjectProtocol> {
     match vm.vstack.last().expect("no object ref") {
-        Value::Ref(handle) => vm.obj_pool.get_mut(&handle).unwrap(),
+        Value::Ref(handle) => vm.obj_pool.get_mut(&handle).unwrap().borrow_mut(),
         _ => unimplemented!(),
     }
 }

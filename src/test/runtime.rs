@@ -36,12 +36,8 @@ fn new_dict() {
 
     fn check_content(data: &mut VmData) -> VmResult {
         assert!(*data.vstack.last().unwrap() == Value::Ref(1));
-        let dict = &data
-            .obj_pool
-            .get_mut(&1)
-            .expect("no object")
-            .as_indexable()
-            .expect("not indexable");
+        let dict = &mut data.obj_pool.get_mut(&1).expect("no object").borrow_mut();
+        let dict = dict.as_indexable().expect("not indexable");
         assert_eq!(dict.getk(&Value::from("x")).unwrap(), &Value::I64(10));
         assert_eq!(dict.getk(&Value::from("y")).unwrap(), &Value::I64(10));
         assert_eq!(dict.getk(&Value::from(10)).unwrap(), &Value::I64(11));

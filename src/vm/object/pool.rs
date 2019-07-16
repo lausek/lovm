@@ -3,7 +3,9 @@ use super::*;
 macro_rules! spawn {
     ($pool:expr, $obj:expr) => {{
         $pool.last_handle += 1;
-        $pool.handles.insert($pool.last_handle, Box::new($obj));
+        $pool
+            .handles
+            .insert($pool.last_handle, Rc::new(RefCell::new($obj)));
         $pool.last_handle
     }};
 }

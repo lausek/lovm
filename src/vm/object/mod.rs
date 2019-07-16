@@ -8,7 +8,7 @@ pub use self::array::*;
 pub use self::dict::*;
 pub use self::pool::*;
 
-pub type ObjectRef = Box<dyn ObjectProtocol>;
+pub type ObjectRef = Rc<RefCell<dyn ObjectProtocol>>;
 
 pub trait ObjectProtocol
 where

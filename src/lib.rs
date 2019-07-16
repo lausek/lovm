@@ -11,6 +11,7 @@ pub use data::*;
 pub use vm::*;
 
 use std::borrow::Borrow;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 #[macro_export]
