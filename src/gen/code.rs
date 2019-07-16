@@ -442,6 +442,22 @@ fn translate_operation(
                     }
                 }
             }
+            OperationType::OCall => {
+                let mut argc = 0;
+
+                // push arguments onto stack
+                for arg in op.rest() {
+                    translate(func, arg, Access::Read, offsets)?;
+                    argc += 1;
+                }
+                // push argc onto stack
+                let argc: OpValue = Operation::push().op(argc).end().into();
+                translate(func, &argc, Access::Read, offsets)?;
+
+                let fname = op.target().unwrap().as_name();
+                let idx = index_of(&mut func.space.consts, &Value::from(fname.as_ref()));
+                func.inner.push(Code::OCall(idx));
+            }
             other => panic!("`{:?}` not yet implemented", other),
         }
     }

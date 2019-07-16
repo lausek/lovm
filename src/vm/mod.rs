@@ -287,8 +287,12 @@ impl Vm {
                     self.data.obj_pool.dispose_handle(&handle);
                 }
                 Code::OCall(idx) => {
-                    let _aname = &co.space.consts[*idx];
-                    let _object = object_mut(&mut self.data);
+                    let name = &co.space.consts[*idx];
+                    let argc = self.data.vstack.pop().expect("no argc");
+                    let stack_size_after = self.data.vstack.len() - usize::from(argc);
+                    let params = self.data.vstack.drain(stack_size_after..);
+                    println!("calling {:?} with {:?}", name, params);
+                    //let object = object_mut(&mut self.data);
                     //object.call();
                     //let cb = {
                     //    // TODO: ugh... remove this clone pls

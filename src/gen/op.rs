@@ -34,6 +34,7 @@ pub enum OperationType {
     OAppend,
     OGet,
     OSet,
+    OCall,
 
     CmpEq,
     CmpNe, // actually short for `CmpEq; Not`
@@ -63,6 +64,10 @@ pub fn call(fname: &str) -> Operation {
     Operation::new(OperationType::Call).var(fname).end()
 }
 
+pub fn ocall(fname: &str) -> Operation {
+    Operation::new(OperationType::OCall).var(fname).end()
+}
+
 pub fn int(idx: usize) -> Operation {
     Operation::new(OperationType::Int).op(idx).end()
 }
@@ -74,6 +79,10 @@ pub fn onew(ty_name: &str) -> Operation {
 impl Operation {
     pub fn call(fname: &str) -> Self {
         call(fname)
+    }
+
+    pub fn ocall(fname: &str) -> Self {
+        ocall(fname)
     }
 
     pub fn int(idx: usize) -> Self {
