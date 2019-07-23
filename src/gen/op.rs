@@ -16,6 +16,11 @@ macro_rules! derive_constructor {
     };
 }
 
+// TODO: three new operations: js (jump-start), je (jump-end), jr (jump-relative)
+// these will be compiled in a funny way to allow a better control flow interface
+
+// TODO: declare a trait that allows static dispatch when handling operations.
+// this should lead to a cleaner code layout.
 #[derive(Clone, Debug, PartialEq)]
 pub enum OperationType {
     Ass,
@@ -46,6 +51,10 @@ pub enum OperationType {
     Jt,
     Jf,
 
+    Js, // jump start
+    Je, // jump end
+    Jr, // jump relative
+
     Add,
     Sub,
     Mul,
@@ -58,6 +67,8 @@ pub enum OperationType {
     Xor,
     Shl,
     Shr,
+
+    Embed,
 }
 
 pub fn call(fname: &str) -> Operation {
@@ -76,6 +87,11 @@ pub fn onew(ty_name: &str) -> Operation {
     Operation::new(OperationType::ONew).op(ty_name).end()
 }
 
+pub fn embed_fn(cb: CodeBuilder) -> Operation {
+    let val: OpValue = cb.into();
+    Operation::new(OperationType::Embed).op(val).end()
+}
+
 impl Operation {
     pub fn call(fname: &str) -> Self {
         call(fname)
@@ -91,6 +107,10 @@ impl Operation {
 
     pub fn onew(ty_name: &str) -> Self {
         onew(ty_name)
+    }
+
+    pub fn embed(cb: CodeBuilder) -> Self {
+        embed_fn(cb)
     }
 }
 
@@ -116,6 +136,10 @@ derive_constructor!(OperationType::CmpLt, cmp_lt);
 derive_constructor!(OperationType::Jmp, jmp);
 derive_constructor!(OperationType::Jt, jt);
 derive_constructor!(OperationType::Jf, jf);
+
+derive_constructor!(OperationType::Js, js);
+derive_constructor!(OperationType::Je, je);
+derive_constructor!(OperationType::Jr, jr);
 
 derive_constructor!(OperationType::Add, add);
 derive_constructor!(OperationType::Sub, sub);

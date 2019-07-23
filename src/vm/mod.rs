@@ -211,10 +211,6 @@ impl Vm {
                     let op = self.data.vstack.pop().expect("no operand");
                     let target = self.data.vstack.last_mut().expect("no target");
 
-                    if cfg!(debug_assertions) {
-                        println!("target({:?}) {:?} {:?}", target, inx, op);
-                    }
-
                     *target = match inx {
                         Code::Add => target.add(&op),
                         Code::Sub => target.sub(&op),

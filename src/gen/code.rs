@@ -15,6 +15,11 @@ impl CodeObject {
         // - place the new index in argument location
 
         for inx in other.inner.iter_mut() {
+            // interrupts stay the same
+            if let Code::Int(_) = inx {
+                continue;
+            }
+
             if let Some(prev_idx) = inx.arg() {
                 let new_idx = match inx {
                     Code::CPush(_) => {
@@ -63,6 +68,8 @@ impl CodeObject {
 #[derive(Clone, Debug, PartialEq)]
 pub struct CodeBuilder {
     argc: usize,
+    // TODO: branches must be abandoned, because the process of linking
+    // them at the end of a codebuilder is overcomplicated and inefficient.
     branches: Vec<CodeBuilder>,
     space: Space,
     seq: Sequence,
@@ -118,6 +125,7 @@ impl CodeBuilder {
                     .push(Operation::new(ty).op(self.branches.len()).end());
                 self.branches.push(bl);
             }
+            _ => unimplemented!(),
         }
         self
     }
@@ -169,6 +177,15 @@ impl CodeBuilder {
         self
     }
 
+    pub fn embed(&mut self, _cb: CodeBuilder) -> &mut Self {
+        // TODO: assert if argc != 0 (embed is not allowed for arguments)
+        // TODO: merge spaces
+        // TODO: save self.len for later loop optimization
+        // TODO: append opertions from cb to self
+        // TODO: loop from former self.len till end and adjust jumps
+        self
+    }
+
     // TODO: the parameter obsfucates build calls; maybe remove it again
     pub fn build(&self, ensure_ret: bool) -> BuildResult<CodeObject> {
         // used for resolving branch offsets
@@ -180,28 +197,52 @@ impl CodeBuilder {
 
         translate_sequence(&mut func, self.seq.clone(), &mut offsets)?;
 
+        // generating phase is nearly over! compute the final offsets now.
+        let mut final_offsets: Vec<(usize, usize)> = vec![];
+
+        // compiler branches onto end of function
         for (bidx, branch) in self.branches.iter().enumerate() {
+            let bidx: BranchTarget = bidx.into();
             let branch_co = branch.build(true)?;
 
             // replace branch index with the branche's entry point inside `func` CodeObject
-            for (_, link_arg) in offsets.iter_mut().filter(|(_, i)| *i == bidx) {
-                *link_arg = func.inner.len();
+            for (location, _) in offsets.iter().filter(|(_, i)| *i == bidx) {
+                final_offsets.push((*location, func.inner.len().into()));
             }
 
             func.merge(&branch_co);
         }
 
-        for (offset, link_arg) in offsets.iter() {
-            match &mut func.inner[*offset] {
+        let codelen = func.inner.len();
+
+        final_offsets.extend(
+            offsets
+                .into_iter()
+                .filter_map(|(location, target)| match target {
+                    BranchTarget::Index(idx) => Some((location, idx)),
+                    BranchTarget::Location(loc) => match loc {
+                        BranchLocation::Start => Some((location, 0)),
+                        BranchLocation::End => Some((location, codelen)),
+                        BranchLocation::Relative(_) => unimplemented!(),
+                    },
+                    BranchTarget::Block(_) => None,
+                }),
+        );
+
+        // resolve offsets for this function
+        for (location, link_arg) in final_offsets.into_iter() {
+            match &mut func.inner[location] {
                 Code::Jmp(prev_idx)
                 | Code::Jt(prev_idx)
                 | Code::Jf(prev_idx)
                     // only take uninitialized jumps for now
                     if *prev_idx == std::usize::MAX =>
                 {
-                    *prev_idx = *link_arg;
+                    *prev_idx = link_arg;
                 }
-                e => println!("vad är {}", e),
+                e => if cfg!(debug_assertions) {
+                    println!("{} already resolved", e)
+                }
             };
         }
 
@@ -247,7 +288,7 @@ where
 fn translate_sequence(
     func: &mut CodeObject,
     seq: Sequence,
-    offsets: &mut Vec<(usize, usize)>,
+    offsets: &mut Offsets,
 ) -> BuildResult<()> {
     for op in seq.iter() {
         translate_operation(func, op, offsets)?;
@@ -259,7 +300,7 @@ fn translate(
     func: &mut CodeObject,
     op: &OpValue,
     acc: Access,
-    offsets: &mut Vec<(usize, usize)>,
+    offsets: &mut Offsets,
 ) -> BuildResult<()> {
     match op {
         OpValue::Operand(op) => translate_operand(func, op, acc),
@@ -305,7 +346,7 @@ fn translate_operand(func: &mut CodeObject, op: &Operand, acc: Access) -> BuildR
 fn translate_operation(
     func: &mut CodeObject,
     op: &Operation,
-    offsets: &mut Vec<(usize, usize)>,
+    offsets: &mut Offsets,
 ) -> BuildResult<()> {
     // TODO: as_inx should actually be a flatter branch
     if let Some(inx) = op.as_inx() {
@@ -378,9 +419,29 @@ fn translate_operation(
                     _ => unreachable!(),
                 };
                 if let Some(OpValue::Operand(jmp_offset)) = op.ops().next() {
-                    offsets.push((func.inner.len(), jmp_offset.as_const().clone().into()));
+                    offsets.push((
+                        func.inner.len(),
+                        BranchTarget::Index(jmp_offset.as_const().clone().into()),
+                    ));
                 }
                 func.inner.push(inx);
+            }
+            OperationType::Js | OperationType::Je | OperationType::Jr => {
+                let offset = match op.ty {
+                    OperationType::Js => BranchLocation::Start,
+                    OperationType::Je => BranchLocation::End,
+                    OperationType::Jr => {
+                        let rel = if let Some(OpValue::Operand(jmp_offset)) = op.ops().next() {
+                            jmp_offset.as_const().clone().into()
+                        } else {
+                            panic!("not a valid relative value")
+                        };
+                        BranchLocation::Relative(rel)
+                    }
+                    _ => unreachable!(),
+                };
+                offsets.push((func.inner.len(), offset.into()));
+                func.inner.push(Code::Jmp(std::usize::MAX));
             }
             OperationType::Int => match op.ops().next() {
                 Some(OpValue::Operand(idx)) => {
@@ -457,6 +518,14 @@ fn translate_operation(
                 let fname = op.target().unwrap().as_name();
                 let idx = index_of(&mut func.space.consts, &Value::from(fname.as_ref()));
                 func.inner.push(Code::OCall(idx));
+            }
+            OperationType::Embed => {
+                if let Some(OpValue::Block(child)) = op.ops().next() {
+                    let child = child.build(false).unwrap();
+                    func.merge(&child);
+                } else {
+                    panic!("not a valid embed argument")
+                }
             }
             other => panic!("`{:?}` not yet implemented", other),
         }

@@ -33,7 +33,7 @@ macro_rules! func {
         #[allow(unused_mut)]
         let mut func = CodeBuilder::new();
         $(
-            let mut func = func.with_params::<&str>(vec![$(stringify!($param)),*]);
+            func.with_params::<&str>(vec![$(stringify!($param)),*]);
         )?
         $(
             func.step($op.end());

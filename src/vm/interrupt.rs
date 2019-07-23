@@ -40,8 +40,10 @@ impl std::default::Default for Interrupts {
 }
 
 fn put(data: &mut VmData) -> VmResult {
-    let v = data.vstack.last().expect("no operand");
+    use std::io::*;
+    let v = data.vstack.pop().expect("no operand");
     print!("{}", v.to_string());
+    stdout().flush().ok();
     Ok(())
 }
 
