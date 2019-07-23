@@ -78,21 +78,21 @@ impl CodeBuilder {
         }
     }
 
-    pub fn with_params<T>(self, params: Vec<T>) -> Self
+    pub fn with_params<T>(&mut self, params: Vec<T>) -> &mut Self
     where
         T: std::string::ToString,
     {
-        let mut new = self.with_params_loose(params);
+        self.with_params_loose(params);
         // param order: last in, first out
-        for i in (0..new.argc).rev() {
-            let param = new.space.locals[i].clone();
-            new.step(gen::Operation::ass().var(param.to_string()).end());
+        for i in (0..self.argc).rev() {
+            let param = self.space.locals[i].clone();
+            self.step(gen::Operation::ass().var(param.to_string()).end());
         }
-        new
+        self
     }
 
     // does not enforce argument popping; needed when branches are compiled (?)
-    pub fn with_params_loose<T>(mut self, params: Vec<T>) -> Self
+    pub fn with_params_loose<T>(&mut self, params: Vec<T>) -> &mut Self
     where
         T: std::string::ToString,
     {
