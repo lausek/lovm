@@ -5,7 +5,7 @@ use super::*;
 // the object inside its `Unit` thus violating the given lifetime promise. we
 // therefore wrap everything inside a reference counter.
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct UnitRef(pub Rc<Unit>);
 
 impl UnitRef {
@@ -28,6 +28,12 @@ impl Borrow<Unit> for UnitRef {
 
 impl std::fmt::Display for UnitRef {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "{:?}", self)
+        write!(f, "{:?}", self.0)
+    }
+}
+
+impl std::fmt::Debug for UnitRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "{:?}", self.0)
     }
 }

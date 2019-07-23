@@ -1,14 +1,13 @@
 use super::*;
 
 use serde::de::*;
-use serde::*;
 
 // if we return a `CodeObject` in lookup calls, we give the promise that it stays
 // valid for the `run_object` call aswell. however, the vm could decide to change
 // the object inside its `Unit` thus violating the given lifetime promise. we
 // therefore wrap everything inside a reference counter.
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct CodeObjectRef(Rc<CodeObject>);
 
 impl CodeObjectRef {
@@ -31,7 +30,13 @@ impl Borrow<CodeObject> for CodeObjectRef {
 
 impl std::fmt::Display for CodeObjectRef {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "{:?}", self)
+        write!(f, "{:?}", self.0)
+    }
+}
+
+impl std::fmt::Debug for CodeObjectRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "{:?}", self.0)
     }
 }
 
