@@ -45,11 +45,7 @@ impl CodeObject {
 
 impl std::fmt::Debug for CodeObject {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        writeln!(
-            f,
-            "CodeObject({}, {:?})",
-            self.argc, self.space
-        )?;
+        writeln!(f, "CodeObject({}, {:?})", self.argc, self.space)?;
         for (off, inx) in self.code.iter().enumerate() {
             writeln!(f, "{}:\t {:?}", off, inx)?;
         }

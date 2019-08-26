@@ -59,22 +59,21 @@ impl BlockDef {
         self.blocks.push(smth.into())
     }
 
-    pub fn branch(&mut self, cond: BlockDef, tblock: BlockDef, fblock: Option<BlockDef>)
-    {
-//        self.step(Operation::push().op(cond).end());
-//
-//        let mut branch = CodeBuilder::new();
-//        branch.step(Operation::je().op(Operation::jf()).end());
-//        branch.embed(bcode);
-//        self.embed(branch);
-//
-//        if let Some(fbranch) = fbranch {
-//            let mut else_branch = CodeBuilder::new();
-//            else_branch.step(Operation::je());
-//            else_branch.embed(fbranch);
-//            self.embed(else_branch);
-//        }
-//
+    pub fn branch(&mut self, cond: BlockDef, tblock: BlockDef, fblock: Option<BlockDef>) {
+        //        self.step(Operation::push().op(cond).end());
+        //
+        //        let mut branch = CodeBuilder::new();
+        //        branch.step(Operation::je().op(Operation::jf()).end());
+        //        branch.embed(bcode);
+        //        self.embed(branch);
+        //
+        //        if let Some(fbranch) = fbranch {
+        //            let mut else_branch = CodeBuilder::new();
+        //            else_branch.step(Operation::je());
+        //            else_branch.embed(fbranch);
+        //            self.embed(else_branch);
+        //        }
+        //
         let branch = Branch::new(cond, tblock, fblock);
         self.step(Block::Branch(Box::new(branch)));
     }
@@ -88,9 +87,10 @@ impl BlockDef {
                     BranchLocation::Start => Some((*location, 0)),
                     BranchLocation::End => Some((*location, codelen)),
                     BranchLocation::Relative(_) => unimplemented!(),
-                }
+                },
                 _ => unimplemented!(),
-            }).collect()
+            })
+            .collect()
     }
 
     pub fn build(&self, _ensure_ret: bool) -> BuildResult<CodeObject> {
@@ -104,7 +104,7 @@ impl BlockDef {
         // TODO: translate should produce a list of linktargets that
         // contain information about the codeobjects constants and
         // jump targets. the codeobject basically tells us, where
-        // it expects a certain kind of value. we are then free to 
+        // it expects a certain kind of value. we are then free to
         // exchange these code points freely.
         translate_sequence(&mut func, self.blocks.clone())?;
 
@@ -381,19 +381,17 @@ fn translate_sequence(
                 let co = bl.build(false).unwrap();
                 func.merge(&co);
             }
-            Block::Sequence(seq) => for op in seq.iter() {
-                translate_operation(func, op)?;
+            Block::Sequence(seq) => {
+                for op in seq.iter() {
+                    translate_operation(func, op)?;
+                }
             }
         }
     }
     Ok(())
 }
 
-fn translate(
-    func: &mut CodeObject,
-    op: &OpValue,
-    acc: Access,
-) -> BuildResult<()> {
+fn translate(func: &mut CodeObject, op: &OpValue, acc: Access) -> BuildResult<()> {
     match op {
         OpValue::Operand(op) => translate_operand(func, op, acc),
         OpValue::Operation(op) => translate_operation(func, op),
@@ -435,10 +433,7 @@ fn translate_operand(func: &mut CodeObject, op: &Operand, acc: Access) -> BuildR
     Ok(())
 }
 
-fn translate_operation(
-    func: &mut CodeObject,
-    op: &Operation,
-) -> BuildResult<()> {
+fn translate_operation(func: &mut CodeObject, op: &Operation) -> BuildResult<()> {
     // TODO: as_inx should actually be a flatter branch
     if let Some(inx) = op.as_inx() {
         let mut ops = op.ops();

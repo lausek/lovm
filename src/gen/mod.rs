@@ -6,6 +6,7 @@ pub mod unit;
 
 pub use block::*;
 pub use code::*;
+pub use il::*;
 pub use macros::*;
 pub use op::*;
 pub use unit::*;
