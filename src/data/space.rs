@@ -15,6 +15,18 @@ impl Space {
             globals: vec![],
         }
     }
+
+    pub fn merge(&mut self, other: &Self) {
+        for oconst in other.consts.iter() {
+            gen::index_of(&mut self.consts, oconst);
+        }
+        for olocal in other.locals.iter() {
+            gen::index_of(&mut self.locals, olocal);
+        }
+        for oglobal in other.globals.iter() {
+            gen::index_of(&mut self.globals, oglobal);
+        }
+    }
 }
 
 impl std::fmt::Debug for Space {

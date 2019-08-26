@@ -26,7 +26,7 @@ pub type Program = Unit;
 pub struct CodeObject {
     pub argc: usize,
     pub space: Space,
-    pub inner: CodeBlock,
+    pub code: CodeBlock,
 }
 
 impl CodeObject {
@@ -34,7 +34,7 @@ impl CodeObject {
         Self {
             argc: 0,
             space: Space::new(),
-            inner: CodeBlock::new(),
+            code: CodeBlock::new(),
         }
     }
 
@@ -45,11 +45,15 @@ impl CodeObject {
 
 impl std::fmt::Debug for CodeObject {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        write!(
+        writeln!(
             f,
-            "CodeObject({}, {:?}, {:?})",
-            self.argc, self.space, self.inner
-        )
+            "CodeObject({}, {:?})",
+            self.argc, self.space
+        )?;
+        for (off, inx) in self.code.iter().enumerate() {
+            writeln!(f, "{}:\t {:?}", off, inx)?;
+        }
+        Ok(())
     }
 }
 

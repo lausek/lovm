@@ -1,8 +1,10 @@
+pub mod block;
 pub mod code;
 pub mod macros;
 pub mod op;
 pub mod unit;
 
+pub use block::*;
 pub use code::*;
 pub use macros::*;
 pub use op::*;
@@ -11,7 +13,7 @@ pub use unit::*;
 use super::*;
 
 pub type BuildResult<T> = Result<T, ()>;
-pub type Offsets = Vec<(usize, BranchTarget)>;
+pub type Offsets = Vec<(usize, LinkTarget)>;
 
 #[derive(PartialEq)]
 enum Access {
@@ -19,37 +21,51 @@ enum Access {
     Write,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum BranchTarget {
+#[derive(Clone, Debug, PartialEq)]
+pub enum LinkTarget {
     Index(usize),
     Location(BranchLocation),
-    Block(CodeBuilder),
+    Const(Operand),
+    //BlockDef(BlockDef),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum BranchLocation {
     Start,
     End,
     Relative(usize),
 }
 
-impl From<usize> for BranchTarget {
+impl From<usize> for LinkTarget {
     fn from(from: usize) -> Self {
-        BranchTarget::Index(from)
+        LinkTarget::Index(from)
     }
 }
 
-impl<T> From<T> for BranchTarget
-where
-    T: Into<CodeBuilder>,
-{
-    fn from(from: T) -> Self {
-        BranchTarget::Block(from.into())
-    }
-}
+//impl<T> From<T> for LinkTarget
+//where
+//    T: Into<BlockDef>,
+//{
+//    fn from(from: T) -> Self {
+//        LinkTarget::BlockDef(from.into())
+//    }
+//}
 
-impl From<BranchLocation> for BranchTarget {
+impl From<BranchLocation> for LinkTarget {
     fn from(from: BranchLocation) -> Self {
-        BranchTarget::Location(from)
+        LinkTarget::Location(from)
+    }
+}
+
+pub fn index_of<T>(ls: &mut Vec<T>, item: &T) -> usize
+where
+    T: Clone + Eq + std::fmt::Debug,
+{
+    match ls.iter().position(|a| a == item) {
+        Some(idx) => idx,
+        _ => {
+            ls.push(item.clone());
+            ls.len() - 1
+        }
     }
 }

@@ -87,8 +87,8 @@ pub fn onew(ty_name: &str) -> Operation {
     Operation::new(OperationType::ONew).op(ty_name).end()
 }
 
-pub fn embed_fn(cb: CodeBuilder) -> Operation {
-    let val: OpValue = cb.into();
+pub fn embed_fn(b: BlockDef) -> Operation {
+    let val: OpValue = b.into();
     Operation::new(OperationType::Embed).op(val).end()
 }
 
@@ -109,8 +109,8 @@ impl Operation {
         onew(ty_name)
     }
 
-    pub fn embed(cb: CodeBuilder) -> Self {
-        embed_fn(cb)
+    pub fn embed(b: BlockDef) -> Self {
+        embed_fn(b)
     }
 }
 
@@ -154,11 +154,21 @@ derive_constructor!(OperationType::Xor, xor);
 derive_constructor!(OperationType::Shl, shl);
 derive_constructor!(OperationType::Shr, shr);
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum OpValue {
     Operand(Operand),
     Operation(Operation),
-    Block(CodeBuilder),
+    BlockDef(BlockDef),
+}
+
+impl std::fmt::Debug for OpValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        match self {
+            OpValue::Operand(op) => write!(f, "{:?}", op),
+            OpValue::Operation(op) => write!(f, "{:?}", op),
+            OpValue::BlockDef(block) => write!(f, "{:?}", block),
+        }
+    }
 }
 
 impl std::fmt::Display for OpValue {
@@ -166,7 +176,7 @@ impl std::fmt::Display for OpValue {
         match self {
             OpValue::Operand(op) => write!(f, "{}", op),
             OpValue::Operation(op) => write!(f, "{}", op),
-            OpValue::Block(block) => write!(f, "{:?}", block),
+            OpValue::BlockDef(block) => write!(f, "{:?}", block),
         }
     }
 }
@@ -177,9 +187,9 @@ impl<T: Into<Operand>> From<T> for OpValue {
     }
 }
 
-impl From<CodeBuilder> for OpValue {
-    fn from(from: CodeBuilder) -> Self {
-        OpValue::Block(from)
+impl From<BlockDef> for OpValue {
+    fn from(from: BlockDef) -> Self {
+        OpValue::BlockDef(from)
     }
 }
 
@@ -222,7 +232,7 @@ impl From<Operation> for OpValue {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Operation {
     pub ops: Vec<OpValue>,
     pub ty: OperationType,
@@ -319,6 +329,12 @@ impl Operation {
     pub fn rest(&self) -> impl Iterator<Item = &OpValue> {
         // skip first item as it is the target
         self.ops().skip(1)
+    }
+}
+
+impl std::fmt::Debug for Operation {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "{:?}({:?})", self.ty, self.ops)
     }
 }
 

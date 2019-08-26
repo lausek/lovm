@@ -8,11 +8,11 @@ impl Dict {
         Self(HashMap::new())
     }
 
-    pub fn inner(&self) -> &HashMap<Value, Value> {
+    pub fn code(&self) -> &HashMap<Value, Value> {
         &self.0
     }
 
-    pub fn inner_mut(&mut self) -> &mut HashMap<Value, Value> {
+    pub fn code_mut(&mut self) -> &mut HashMap<Value, Value> {
         &mut self.0
     }
 }

@@ -8,11 +8,11 @@ impl Array {
         Self(vec![])
     }
 
-    pub fn inner(&self) -> &Vec<Value> {
+    pub fn code(&self) -> &Vec<Value> {
         &self.0
     }
 
-    pub fn inner_mut(&mut self) -> &mut Vec<Value> {
+    pub fn code_mut(&mut self) -> &mut Vec<Value> {
         &mut self.0
     }
 }

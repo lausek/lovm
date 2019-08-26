@@ -48,14 +48,14 @@ impl ObjectProtocol for Object {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Object {
     pub assoc: Option<UnitRef>,
-    pub inner: Vec<Value>,
+    pub code: Vec<Value>,
 }
 
 impl Object {
     pub fn new_value_assoc(assoc: UnitRef) -> Self {
         Self {
             assoc: Some(assoc),
-            inner: vec![],
+            code: vec![],
         }
     }
 }

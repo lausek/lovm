@@ -30,7 +30,7 @@ macro_rules! object {
         use crate::*;
         let mut array = lovm::vm::object::Array::new();
         {
-            let array = array.inner_mut();
+            let array = array.code_mut();
             $(
                 array.push($val);
             )*
@@ -41,7 +41,7 @@ macro_rules! object {
         use crate::*;
         let mut dict = vm::object::Dict::new();
         {
-            let dict = dict.inner_mut();
+            let dict = dict.code_mut();
             $(
                 dict.insert(value!($key $(; $kty)?), value!($val; $ty));
             )*

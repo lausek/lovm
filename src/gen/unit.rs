@@ -39,7 +39,7 @@ impl UnitBuilder {
     pub fn build(&self) -> BuildResult<Unit> {
         let mut unit = Unit::new();
         for (name, co) in self.slots.iter() {
-            unit.inner
+            unit.code
                 .push((name.clone(), CodeObjectRef::from(co.clone())));
         }
         Ok(unit)

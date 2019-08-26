@@ -102,7 +102,7 @@ impl Vm {
 
     pub fn run_object(&mut self, co: CodeObjectRef) -> VmResult {
         let co: &CodeObject = co.borrow();
-        let bl = &co.inner;
+        let bl = &co.code;
         let len = bl.len();
         let mut ip = 0;
 

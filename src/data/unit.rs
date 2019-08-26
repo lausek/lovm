@@ -3,20 +3,20 @@ use super::*;
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct Unit {
     pub space: Space,
-    pub inner: Vec<(Name, CodeObjectRef)>,
+    pub code: Vec<(Name, CodeObjectRef)>,
 }
 
 impl Unit {
     pub fn new() -> Self {
         Self {
             space: Space::new(),
-            inner: vec![],
+            code: vec![],
         }
     }
 
     // TODO: rename to `lookup` or something like that
     pub fn get(&self, name: &Name) -> Option<CodeObjectRef> {
-        for (sname, co) in self.inner.iter() {
+        for (sname, co) in self.code.iter() {
             if sname == name {
                 return Some(co.clone());
             }
@@ -28,7 +28,7 @@ impl Unit {
         if let Some(mut slot) = self.get(name) {
             *slot.get_mut() = co;
         } else {
-            self.inner.push((name.clone(), CodeObjectRef::from(co)));
+            self.code.push((name.clone(), CodeObjectRef::from(co)));
         }
     }
 
@@ -43,13 +43,13 @@ impl Unit {
     pub fn with_code(code: CodeBlock) -> Self {
         let mut new = Self::new();
         let mut co = CodeObject::new();
-        co.inner = code;
+        co.code = code;
         new.set(&"main".into(), co);
         new
     }
 
     pub fn code(&self) -> CodeObjectRef {
-        self.inner
+        self.code
             .iter()
             .find(|(name, _)| name == "main")
             .map(|(_, code)| code.clone())
@@ -57,20 +57,23 @@ impl Unit {
     }
 
     pub fn slots(&self) -> &Vec<(Name, CodeObjectRef)> {
-        &self.inner
+        &self.code
     }
 
     pub fn slots_mut(&mut self) -> &mut Vec<(Name, CodeObjectRef)> {
-        &mut self.inner
+        &mut self.code
     }
 }
 
 impl std::fmt::Debug for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        writeln!(f, "Unit(slots: {})", self.inner.len())?;
-        for (name, co) in self.inner.iter() {
+        writeln!(f, "Unit(slots: {})", self.code.len())?;
+        for (name, co) in self.code.iter() {
             let co: &CodeObject = co.borrow();
-            writeln!(f, "\t{}({}): {:?}, {:?}", name, co.argc, co.space, co.inner)?;
+            writeln!(f, "\t{}({}): {:?}", name, co.argc, co.space)?;
+            for (off, inx) in co.code.iter().enumerate() {
+                writeln!(f, "\t\t{}:\t {:?}", off, inx)?;
+            }
         }
         Ok(())
     }
@@ -78,8 +81,8 @@ impl std::fmt::Debug for Unit {
 
 impl std::fmt::Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        writeln!(f, "Unit(slots: {})", self.inner.len())?;
-        for (name, co) in self.inner.iter() {
+        writeln!(f, "Unit(slots: {})", self.code.len())?;
+        for (name, co) in self.code.iter() {
             writeln!(f, "\t{}: {}", name, co)?;
         }
         Ok(())
