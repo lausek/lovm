@@ -1,4 +1,3 @@
-#![feature(const_vec_new)]
 #![feature(trivial_bounds)]
 
 pub mod data;
