@@ -109,6 +109,7 @@ pub enum Protocol<T> {
     // use constant at this index for accessing/calling object attributes
     OGet(T),
     OSet(T),
+    // TODO: deprecate
     OCall(T),
     OAppend,
 }

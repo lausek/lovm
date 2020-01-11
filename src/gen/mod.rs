@@ -1,5 +1,6 @@
 pub mod block;
 pub mod code;
+pub mod il;
 pub mod macros;
 pub mod op;
 pub mod unit;

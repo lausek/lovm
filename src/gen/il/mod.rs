@@ -2,6 +2,9 @@ use super::*;
 
 // home of the lovm intermediate language
 //
+// TODO: new ast structure
+// TODO: lalrpop to parse file
+//
 // example code:
 //
 // def conv($from) -> i64
@@ -22,4 +25,9 @@ use super::*;
 //  else
 //      return fib($x-1) + fib($x-2)
 //  end
+// end
+//
+// def goto_example()
+// label1:
+//  goto label1
 // end

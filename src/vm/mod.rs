@@ -2,6 +2,7 @@ pub mod frame;
 pub mod interrupt;
 pub mod object;
 pub mod operation;
+pub mod ty;
 pub mod unit;
 
 use super::*;
@@ -9,6 +10,7 @@ use super::*;
 pub use self::frame::*;
 pub use self::interrupt::*;
 pub use self::object::*;
+pub use self::ty::*;
 pub use self::unit::*;
 
 pub use std::collections::HashMap;
@@ -27,6 +29,12 @@ pub use std::collections::HashMap;
 // later when the performance expectations are higher.
 //
 // INFO: see operation.rs for more
+
+macro_rules! lovm_stack_call {
+    ($vm:expr, $idx:expr) => {{
+
+    }};
+}
 
 pub const VM_MEMORY_SIZE: usize = 2400;
 pub const VM_STACK_SIZE: usize = 256;
@@ -47,6 +55,9 @@ pub enum VmState {
 pub struct VmData {
     pub globals: HashMap<Name, Value>,
     pub units: Units,
+    // TODO: add types field for type_pool
+    // TODO: add functions pool
+    // TODO: add threads pool, vec of futures
     pub obj_pool: ObjectPool,
     pub state: VmState,
     pub stack: Vec<VmFrame>,
@@ -177,6 +188,7 @@ impl Vm {
                     unimplemented!();
                 }
                 Code::GCall(idx) => {
+                    lovm_stack_call!(self, idx);
                     let fname = &co.space.globals[*idx];
                     let co = self.call_lookup(&fname.to_string())?;
                     self.run_object(co)?;
