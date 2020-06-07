@@ -202,7 +202,7 @@ impl Value {
 
 impl std::cmp::PartialEq for Value {
     fn eq(&self, rhs: &Self) -> bool {
-        // TODO: comparing values for equality must check the argument; add comparison for losely
+        // TODO: comparing values for equality must check the argument; add comparison for loosely
         // typed
         //let rhs = rhs.try_cast(&self);
         //if rhs.is_err() {

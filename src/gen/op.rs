@@ -4,24 +4,37 @@ pub type Sequence = Vec<Operation>;
 
 macro_rules! derive_constructor {
     ($ty:path, $name:ident) => {
+        pub fn $name() -> Operation {
+            Operation::new($ty)
+        }
+
         impl Operation {
             pub fn $name() -> Self {
-                Operation::new($ty)
+                $name()
             }
         }
     };
 }
 
-// TODO: operations must be redeclared here (code in asm project has already solved such a problem)
 #[derive(Clone, Debug, PartialEq)]
 pub enum OperationType {
     Ass,
     Debug,
 
     Call,
+    Int,
     Ret,
     Push,
     Pop,
+
+    ONew,
+    ONewArray,
+    ONewDict,
+    ODispose,
+    OAppend,
+    OGet,
+    OSet,
+    OCall,
 
     CmpEq,
     CmpNe, // actually short for `CmpEq; Not`
@@ -47,9 +60,37 @@ pub enum OperationType {
     Shr,
 }
 
+pub fn call(fname: &str) -> Operation {
+    Operation::new(OperationType::Call).var(fname).end()
+}
+
+pub fn ocall(fname: &str) -> Operation {
+    Operation::new(OperationType::OCall).var(fname).end()
+}
+
+pub fn int(idx: usize) -> Operation {
+    Operation::new(OperationType::Int).op(idx).end()
+}
+
+pub fn onew(ty_name: &str) -> Operation {
+    Operation::new(OperationType::ONew).op(ty_name).end()
+}
+
 impl Operation {
     pub fn call(fname: &str) -> Self {
-        Operation::new(OperationType::Call).var(fname).end()
+        call(fname)
+    }
+
+    pub fn ocall(fname: &str) -> Self {
+        ocall(fname)
+    }
+
+    pub fn int(idx: usize) -> Self {
+        int(idx)
+    }
+
+    pub fn onew(ty_name: &str) -> Self {
+        onew(ty_name)
     }
 }
 
@@ -58,6 +99,12 @@ derive_constructor!(OperationType::Debug, debug);
 derive_constructor!(OperationType::Ret, ret);
 derive_constructor!(OperationType::Push, push);
 derive_constructor!(OperationType::Pop, pop);
+derive_constructor!(OperationType::ONewArray, onewarray);
+derive_constructor!(OperationType::ONewDict, onewdict);
+derive_constructor!(OperationType::ODispose, odispose);
+derive_constructor!(OperationType::OAppend, oappend);
+derive_constructor!(OperationType::OGet, oget);
+derive_constructor!(OperationType::OSet, oset);
 
 derive_constructor!(OperationType::CmpEq, cmp_eq);
 derive_constructor!(OperationType::CmpNe, cmp_ne);
@@ -83,12 +130,11 @@ derive_constructor!(OperationType::Xor, xor);
 derive_constructor!(OperationType::Shl, shl);
 derive_constructor!(OperationType::Shr, shr);
 
-// TODO: add `int`
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum OpValue {
     Operand(Operand),
     Operation(Operation),
+    Block(CodeBuilder),
 }
 
 impl std::fmt::Display for OpValue {
@@ -96,16 +142,53 @@ impl std::fmt::Display for OpValue {
         match self {
             OpValue::Operand(op) => write!(f, "{}", op),
             OpValue::Operation(op) => write!(f, "{}", op),
+            OpValue::Block(block) => write!(f, "{:?}", block),
         }
     }
 }
 
-impl<T> From<T> for OpValue
-where
-    T: Into<Operand>,
-{
+impl<T: Into<Operand>> From<T> for OpValue {
     fn from(from: T) -> Self {
         OpValue::Operand(from.into())
+    }
+}
+
+impl From<CodeBuilder> for OpValue {
+    fn from(from: CodeBuilder) -> Self {
+        OpValue::Block(from)
+    }
+}
+
+// constructor for arrays (tuples)
+impl<T> From<Vec<T>> for OpValue
+where
+    T: Into<OpValue>,
+{
+    fn from(from: Vec<T>) -> Self {
+        let mut ops = Operation::onewarray();
+        for item in from.into_iter() {
+            ops.op(item);
+        }
+        OpValue::Operation(ops)
+    }
+}
+
+// TODO: this is ugly
+// constructor for objects (sets)
+impl<T> From<Vec<(Option<T>, T)>> for OpValue
+where
+    T: Into<OpValue>,
+{
+    fn from(from: Vec<(Option<T>, T)>) -> Self {
+        let mut ops = Operation::onewdict();
+        for (key, val) in from.into_iter() {
+            if let Some(key) = key {
+                ops.op(Operation::oset().op(key).op(val).end());
+            } else {
+                ops.op(Operation::oappend().op(val).end());
+            }
+        }
+        OpValue::Operation(ops)
     }
 }
 
@@ -117,7 +200,7 @@ impl From<Operation> for OpValue {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Operation {
-    ops: Vec<OpValue>,
+    pub ops: Vec<OpValue>,
     pub ty: OperationType,
 }
 
@@ -126,27 +209,29 @@ impl Operation {
         Self { ops: vec![], ty }
     }
 
-    pub fn as_inx(&self) -> Option<Instruction> {
+    pub fn as_inx(&self) -> Option<Code> {
         match self.ty {
-            OperationType::CmpEq => Some(Instruction::CmpEq),
-            OperationType::CmpNe => Some(Instruction::CmpNe),
-            OperationType::CmpGe => Some(Instruction::CmpGe),
-            OperationType::CmpGt => Some(Instruction::CmpGt),
-            OperationType::CmpLe => Some(Instruction::CmpLe),
-            OperationType::CmpLt => Some(Instruction::CmpLt),
+            OperationType::CmpEq => Some(Code::CmpEq),
+            OperationType::CmpNe => Some(Code::CmpNe),
+            OperationType::CmpGe => Some(Code::CmpGe),
+            OperationType::CmpGt => Some(Code::CmpGt),
+            OperationType::CmpLe => Some(Code::CmpLe),
+            OperationType::CmpLt => Some(Code::CmpLt),
 
-            OperationType::Add => Some(Instruction::Add),
-            OperationType::Sub => Some(Instruction::Sub),
-            OperationType::Mul => Some(Instruction::Mul),
-            OperationType::Div => Some(Instruction::Div),
-            OperationType::Rem => Some(Instruction::Rem),
-            OperationType::Pow => Some(Instruction::Pow),
-            OperationType::Neg => Some(Instruction::Neg),
-            OperationType::And => Some(Instruction::And),
-            OperationType::Or => Some(Instruction::Or),
-            OperationType::Xor => Some(Instruction::Xor),
-            OperationType::Shl => Some(Instruction::Shl),
-            OperationType::Shr => Some(Instruction::Shr),
+            OperationType::Add => Some(Code::Add),
+            OperationType::Sub => Some(Code::Sub),
+            OperationType::Mul => Some(Code::Mul),
+            OperationType::Div => Some(Code::Div),
+            OperationType::Rem => Some(Code::Rem),
+            OperationType::Pow => Some(Code::Pow),
+            OperationType::Neg => Some(Code::Neg),
+            OperationType::And => Some(Code::And),
+            OperationType::Or => Some(Code::Or),
+            OperationType::Xor => Some(Code::Xor),
+            OperationType::Shl => Some(Code::Shl),
+            OperationType::Shr => Some(Code::Shr),
+
+            OperationType::ODispose => Some(Code::ODispose),
             _ => None,
         }
     }

@@ -1,20 +1,22 @@
 pub mod frame;
 pub mod interrupt;
-pub mod module;
+pub mod object;
 pub mod operation;
+pub mod unit;
 
 use super::*;
 
 pub use self::frame::*;
 pub use self::interrupt::*;
-pub use self::module::*;
+pub use self::object::*;
+pub use self::unit::*;
 
 pub use std::collections::HashMap;
 
 // the vm is meant to be used as a dynamic runtime. it keeps track of:
 //  - globals: area for storing global vm values
-//  - modules: loaded vm modules; used for name lookup (e.g. in function call)
-//  - objects: all allocated custom objects
+//  - units: loaded vm units; used for name lookup (e.g. in function call)
+//  - obj_pool: all allocated custom objects
 //  - state: status flag for vm flow control
 //  - stack: callstack consisting of local frames
 //  - vstack: global value stack; used for returning values (?)
@@ -25,8 +27,6 @@ pub use std::collections::HashMap;
 // later when the performance expectations are higher.
 //
 // INFO: see operation.rs for more
-
-// TODO: rename `vm` to `runtime` to avoid name conflicts with vm binary (?)
 
 pub const VM_MEMORY_SIZE: usize = 2400;
 pub const VM_STACK_SIZE: usize = 256;
@@ -46,8 +46,8 @@ pub enum VmState {
 #[derive(Clone, Debug)]
 pub struct VmData {
     pub globals: HashMap<Name, Value>,
-    pub modules: Modules,
-    pub objects: HashMap<Name, ()>,
+    pub units: Units,
+    pub obj_pool: ObjectPool,
     pub state: VmState,
     pub stack: Vec<VmFrame>,
     pub vstack: Vec<Value>,
@@ -57,8 +57,8 @@ impl VmData {
     pub fn new() -> Self {
         Self {
             globals: HashMap::new(),
-            modules: Modules::new(),
-            objects: HashMap::new(),
+            units: Units::new(),
+            obj_pool: ObjectPool::new(),
             state: VmState::Initial,
             stack: vec![],
             vstack: vec![],
@@ -93,24 +93,20 @@ impl Vm {
         Err(msg.into())
     }
 
-    // TODO: return `Rc` over `CodeObject` here because it could reassign itself
-    fn call_lookup(&self, name: &Name) -> Result<&CodeObject, String> {
-        match self.data.modules.lookup(name) {
+    fn call_lookup(&self, name: &Name) -> Result<CodeObjectRef, String> {
+        match self.data.units.lookup(name) {
             Some(item) => Ok(item),
             _ => Err(format!("function `{}` is unknown", name)),
         }
     }
 
-    pub fn run_object(&mut self, co: &CodeObject) -> VmResult {
-        let len = co.inner.len();
+    pub fn run_object(&mut self, co: CodeObjectRef) -> VmResult {
+        let co: &CodeObject = co.borrow();
+        let bl = &co.inner;
+        let len = bl.len();
         let mut ip = 0;
 
         self.push_frame(co.space.locals.len());
-
-        // TODO: should code handle argument popping itself?
-        //for i in 0..co.argc {
-        //    register_mut(&mut self.data).locals[i] = self.data.vstack.pop().expect("no argument");
-        //}
 
         while self.data.state == VmState::Running && ip < len {
             let inx = &co.inner[ip];
@@ -121,11 +117,9 @@ impl Vm {
                     ip,
                     inx,
                     inx.arg().map_or("".to_string(), |arg| match inx {
-                        Instruction::Cpush(_) => format!(":= {}", co.space.consts[arg]),
-                        Instruction::Lpush(_) | Instruction::Lpop(_) => {
-                            format!(":= {}", co.space.locals[arg])
-                        }
-                        Instruction::Gpush(_) | Instruction::Gpop(_) | Instruction::Gcall(_) => {
+                        Code::CPush(_) => format!(":= {}", co.space.consts[arg]),
+                        Code::LPush(_) | Code::LPop(_) => format!(":= {}", co.space.locals[arg]),
+                        Code::GPush(_) | Code::GPop(_) | Code::GCall(_) => {
                             format!(":= {}", co.space.globals[arg])
                         }
                         _ => "".to_string(),
@@ -135,37 +129,40 @@ impl Vm {
 
             match inx {
                 // ret is needed for early returns
-                Instruction::Ret => break,
-                Instruction::Int(idx) => {
+                Code::Ret => break,
+                Code::Pusha => self.push_frame(0),
+                Code::Popa => self.pop_frame(),
+                Code::Dup => {
+                    let dup = self.data.vstack.last().expect("no value").clone();
+                    self.data.vstack.push(dup);
+                }
+                Code::Int(idx) => {
                     if let Some(irh) = self.interrupts.get(*idx) {
                         irh(&mut self.data)?;
                     }
-                    //else {
-                    //    self.panic(format!("interrupt {} not defined", idx))?;
-                    //}
                 }
-                Instruction::Cast(ty_idx) => {
+                Code::Cast(ty_idx) => {
                     let val = self.data.vstack.last_mut().expect("no value");
                     *val = val.cast(&Value::from_type(*ty_idx));
                 }
-                Instruction::Lpop(idx) | Instruction::Gpop(idx) => {
+                Code::LPop(idx) | Code::GPop(idx) => {
                     let value = self.data.vstack.pop().expect("no value");
                     match inx {
-                        Instruction::Lpop(_) => {
-                            register_mut(&mut self.data).locals[*idx] = value;
+                        Code::LPop(_) => {
+                            frame_mut(&mut self.data).locals[*idx] = value;
                         }
-                        Instruction::Gpop(_) => {
+                        Code::GPop(_) => {
                             let name = co.space.globals.get(*idx).unwrap();
                             self.data.globals.insert(name.clone(), value);
                         }
                         _ => unreachable!(),
                     }
                 }
-                Instruction::Cpush(idx) | Instruction::Lpush(idx) | Instruction::Gpush(idx) => {
+                Code::CPush(idx) | Code::LPush(idx) | Code::GPush(idx) => {
                     let value = match inx {
-                        Instruction::Cpush(_) => co.space.consts[*idx].clone(),
-                        Instruction::Lpush(_) => register(&self.data).locals[*idx].clone(),
-                        Instruction::Gpush(_) => {
+                        Code::CPush(_) => co.space.consts[*idx].clone(),
+                        Code::LPush(_) => frame(&self.data).locals[*idx].clone(),
+                        Code::GPush(_) => {
                             let name = co.space.globals.get(*idx).unwrap();
                             match self.data.globals.get(name) {
                                 Some(value) => value.clone(),
@@ -176,38 +173,41 @@ impl Vm {
                     };
                     self.data.vstack.push(value);
                 }
-                Instruction::Lcall(_idx) => {
+                Code::LCall(_idx) => {
                     unimplemented!();
                 }
-                Instruction::Gcall(idx) => {
+                Code::GCall(idx) => {
                     let fname = &co.space.globals[*idx];
-                    let co = self.call_lookup(&fname.to_string())?.clone();
-                    self.run_object(&co)?;
+                    let co = self.call_lookup(&fname.to_string())?;
+                    self.run_object(co)?;
                 }
-                Instruction::Inc | Instruction::Dec => {
+                Code::Inc | Code::Dec => {
                     unimplemented!();
                     // `increment` and `decrement` are common operations and allow for
                     // inplace modifications instead of computation over the stack.
                     // TODO: implement inc and dec
                     //let val = read(&self, &args[0]);
                     //match inx {
-                    //    Instruction::Inc => write(self, &args[0], val.add(&Value::I(1))),
-                    //    Instruction::Dec => write(self, &args[0], val.sub(&Value::I(1))),
+                    //    Code::Inc => write(self, &args[0], val.add(&Value::I(1))),
+                    //    Code::Dec => write(self, &args[0], val.sub(&Value::I(1))),
                     //    _ => unreachable!(),
                     //}
                 }
-                Instruction::Add
-                | Instruction::Sub
-                | Instruction::Mul
-                | Instruction::Div
-                | Instruction::Rem
-                | Instruction::Pow
-                | Instruction::Neg
-                | Instruction::And
-                | Instruction::Or
-                | Instruction::Xor
-                | Instruction::Shl
-                | Instruction::Shr => {
+                Code::Neg => {
+                    let target = self.data.vstack.last_mut().expect("no target");
+                    *target = target.neg();
+                }
+                Code::Add
+                | Code::Sub
+                | Code::Mul
+                | Code::Div
+                | Code::Rem
+                | Code::Pow
+                | Code::And
+                | Code::Or
+                | Code::Xor
+                | Code::Shl
+                | Code::Shr => {
                     let op = self.data.vstack.pop().expect("no operand");
                     let target = self.data.vstack.last_mut().expect("no target");
 
@@ -216,68 +216,130 @@ impl Vm {
                     }
 
                     *target = match inx {
-                        Instruction::Add => target.add(&op),
-                        Instruction::Sub => target.sub(&op),
-                        Instruction::Mul => target.mul(&op),
-                        Instruction::Div => target.div(&op),
-                        Instruction::Rem => target.rem(&op),
-                        Instruction::Pow => target.pow(&op),
-                        // TODO: Neg does not have an operand
-                        Instruction::Neg => op.neg(),
-                        Instruction::And => target.and(&op),
-                        Instruction::Or => target.or(&op),
-                        Instruction::Xor => target.xor(&op),
-                        Instruction::Shl => target.shl(&op),
-                        Instruction::Shr => target.shr(&op),
+                        Code::Add => target.add(&op),
+                        Code::Sub => target.sub(&op),
+                        Code::Mul => target.mul(&op),
+                        Code::Div => target.div(&op),
+                        Code::Rem => target.rem(&op),
+                        Code::Pow => target.pow(&op),
+                        Code::And => target.and(&op),
+                        Code::Or => target.or(&op),
+                        Code::Xor => target.xor(&op),
+                        Code::Shl => target.shl(&op),
+                        Code::Shr => target.shr(&op),
                         _ => unimplemented!(),
                     };
                 }
-                Instruction::CmpEq
-                | Instruction::CmpNe
-                | Instruction::CmpGe
-                | Instruction::CmpGt
-                | Instruction::CmpLe
-                | Instruction::CmpLt => {
+                Code::CmpEq
+                | Code::CmpNe
+                | Code::CmpGe
+                | Code::CmpGt
+                | Code::CmpLe
+                | Code::CmpLt => {
                     use std::cmp::Ordering;
                     let op1 = self.data.vstack.pop().expect("missing op1");
                     let op2 = self.data.vstack.pop().expect("missing op2");
                     let inx = *inx;
                     let cond = match op2.partial_cmp(&op1).unwrap() {
                         Ordering::Equal => {
-                            inx == Instruction::CmpEq
-                                || inx == Instruction::CmpGe
-                                || inx == Instruction::CmpLe
+                            inx == Code::CmpEq || inx == Code::CmpGe || inx == Code::CmpLe
                         }
                         Ordering::Greater => {
-                            inx == Instruction::CmpNe
-                                || inx == Instruction::CmpGe
-                                || inx == Instruction::CmpGt
+                            inx == Code::CmpNe || inx == Code::CmpGe || inx == Code::CmpGt
                         }
                         Ordering::Less => {
-                            inx == Instruction::CmpNe
-                                || inx == Instruction::CmpLe
-                                || inx == Instruction::CmpLt
+                            inx == Code::CmpNe || inx == Code::CmpLe || inx == Code::CmpLt
                         }
                     };
                     self.data.vstack.push(Value::T(cond));
                 }
-                Instruction::Jmp(nip) => {
+                Code::Jmp(nip) => {
                     ip = *nip;
                     continue;
                 }
-                Instruction::Jt(nip) | Instruction::Jf(nip) => {
+                Code::Jt(nip) | Code::Jf(nip) => {
                     let cond: bool = self.data.vstack.pop().expect("no condition").into();
                     if match inx {
-                        Instruction::Jt(_) => cond,
-                        Instruction::Jf(_) => !cond,
+                        Code::Jt(_) => cond,
+                        Code::Jf(_) => !cond,
                         _ => unreachable!(),
                     } {
                         ip = *nip;
                         continue;
                     }
                 }
-                Instruction::Pusha => self.push_frame(0),
-                Instruction::Popa => self.pop_frame(),
+                Code::ONew(idx) => {
+                    let ty = &co.space.globals[*idx];
+                    let uref = self.data.units.lookup_ty(ty).expect("unknown type");
+                    let handle = self.data.obj_pool.new_handle_with_assoc(uref);
+                    self.data.vstack.push(Value::Ref(handle));
+                }
+                Code::ONewDict => {
+                    let handle = self.data.obj_pool.new_dict_handle();
+                    self.data.vstack.push(Value::Ref(handle));
+                }
+                Code::ONewArray => {
+                    let handle = self.data.obj_pool.new_array_handle();
+                    self.data.vstack.push(Value::Ref(handle));
+                }
+                Code::ODispose => {
+                    let handle = usize::from(self.data.vstack.pop().expect("no object"));
+                    self.data.obj_pool.dispose_handle(&handle);
+                }
+                Code::OCall(idx) => {
+                    let name = &co.space.consts[*idx];
+                    let argc = self.data.vstack.pop().expect("no argc");
+                    let stack_size_after = self.data.vstack.len() - usize::from(argc);
+                    let params = self
+                        .data
+                        .vstack
+                        .drain(stack_size_after..)
+                        .collect::<Vec<_>>();
+                    println!("calling {:?} with {:?}", name, params);
+                    let mut object = object_mut(&mut self.data);
+                    match object.lookup(&name) {
+                        Some(ObjectMethod::Virtual(cb)) => {
+                            drop(object);
+                            self.run_object(cb)?;
+                        }
+                        // TODO: this should only allow strings
+                        Some(ObjectMethod::Native) => match object.call(&name.to_string()) {
+                            Ok(Some(val)) => {
+                                drop(object);
+                                self.data.vstack.push(val);
+                            }
+                            Ok(_) => {}
+                            _ => panic!("native call error"),
+                        },
+                        _ => panic!("method `{:?}` not found", name),
+                    }
+                }
+                Code::OAppend => {
+                    let value = self.data.vstack.pop().expect("no value");
+                    object_mut(&mut self.data)
+                        .as_indexable()
+                        .unwrap()
+                        .append(value);
+                }
+                Code::OGet(idx) => {
+                    let aname = &co.space.consts[*idx];
+                    let value = {
+                        let mut object = object_mut(&mut self.data);
+                        object
+                            .as_indexable()
+                            .unwrap()
+                            .getk(&aname)
+                            .expect("unknown attribute")
+                            .clone()
+                    };
+                    self.data.vstack.push(value);
+                }
+                Code::OSet(idx) => {
+                    let value = self.data.vstack.pop().expect("no value");
+                    let mut object = object_mut(&mut self.data);
+                    let aname = &co.space.consts[*idx];
+                    object.as_indexable().unwrap().setk(&aname, value);
+                }
             }
 
             if cfg!(debug_assertions) {
@@ -292,12 +354,11 @@ impl Vm {
         Ok(())
     }
 
-    pub fn run(&mut self, module: &Module) -> VmResult {
+    pub fn run(&mut self, unit: &Unit) -> VmResult {
         // loads the programs main function
-        let co = &module.code();
+        let co = unit.code();
 
-        // TODO: something better than cloning?
-        self.data.modules.load(module)?;
+        self.data.units.load(unit)?;
         self.data.state = VmState::Running;
         self.run_object(co)
     }
@@ -315,15 +376,22 @@ impl Vm {
         if self.data.stack.is_empty() {
             self.data.state = VmState::Exited;
         } else {
-            *register_mut(&mut self.data) = self.data.stack.last().expect("no last frame").clone();
+            *frame_mut(&mut self.data) = self.data.stack.last().expect("no last frame").clone();
         }
     }
 }
 
-fn register(vm: &VmData) -> &VmFrame {
+fn object_mut(vm: &mut VmData) -> std::cell::RefMut<dyn ObjectProtocol> {
+    match vm.vstack.last().expect("no object ref") {
+        Value::Ref(handle) => vm.obj_pool.get_mut(&handle).unwrap().borrow_mut(),
+        _ => unimplemented!(),
+    }
+}
+
+fn frame(vm: &VmData) -> &VmFrame {
     vm.stack.last().expect("no last frame")
 }
 
-fn register_mut(vm: &mut VmData) -> &mut VmFrame {
+fn frame_mut(vm: &mut VmData) -> &mut VmFrame {
     vm.stack.last_mut().expect("no last frame")
 }

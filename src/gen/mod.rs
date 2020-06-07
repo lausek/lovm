@@ -1,10 +1,12 @@
-pub mod func;
-pub mod module;
+pub mod code;
+pub mod macros;
 pub mod op;
+pub mod unit;
 
-pub use func::*;
-pub use module::*;
+pub use code::*;
+pub use macros::*;
 pub use op::*;
+pub use unit::*;
 
 use super::*;
 
@@ -18,7 +20,7 @@ enum Access {
 
 pub enum BranchTarget {
     Index(usize),
-    Block(FunctionBuilder),
+    Block(CodeBuilder),
 }
 
 impl From<usize> for BranchTarget {
@@ -29,7 +31,7 @@ impl From<usize> for BranchTarget {
 
 impl<T> From<T> for BranchTarget
 where
-    T: Into<FunctionBuilder>,
+    T: Into<CodeBuilder>,
 {
     fn from(from: T) -> Self {
         BranchTarget::Block(from.into())

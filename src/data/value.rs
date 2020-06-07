@@ -2,9 +2,10 @@ use self::Value::*;
 
 use serde::{Deserialize, Serialize};
 
-// TODO: change type of `Value::Str(_)` to a String type
-//       that can be passed around easily over a StringPool (smth. like Rc<String> or Cow<String>)
-// TODO: implement Objects; stored in ObjectPool (requires well-designed memory layout)
+pub type ObjectId = usize;
+
+// TODO: replace this with `Cow<...>` to reduce memory usage and improve performance (?)
+pub type Str = String;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Value {
@@ -14,7 +15,21 @@ pub enum Value {
     Ref(usize),
     T(bool),
     C(char),
-    Str(String),
+    Str(Str),
+}
+
+impl std::hash::Hash for Value {
+    fn hash<H: std::hash::Hasher>(&self, hash: &mut H) {
+        match self {
+            I(n) => hash.write_i8(*n),
+            I64(n) => hash.write_i64(*n),
+            F64(n) => hash.write_u64(n.to_bits()),
+            Ref(n) => hash.write_usize(*n),
+            T(t) => hash.write_u8(if *t { 0 } else { 1 }),
+            C(c) => hash.write_usize(*c as usize),
+            Str(s) => hash.write(s.as_bytes()),
+        }
+    }
 }
 
 impl std::convert::From<Value> for usize {
@@ -96,12 +111,17 @@ impl std::str::FromStr for Value {
         match from {
             "true" => Ok(Value::T(true)),
             "false" => Ok(Value::T(false)),
+            _ if from.contains(".") => match f64::from_str(from) {
+                Ok(val) => Ok(Value::F64(val)),
+                _ => Err("not a float".to_string()),
+            },
             _ => {
                 const MIN: i64 = i8::min_value() as i64;
                 const MAX: i64 = i8::max_value() as i64;
-                match i64::from_str(from).unwrap() {
-                    val @ MIN..=MAX => Ok(Value::I(val as i8)),
-                    val => Ok(Value::I64(val)),
+                match i64::from_str(from) {
+                    Ok(val @ MIN..=MAX) => Ok(Value::I(val as i8)),
+                    Ok(val) => Ok(Value::I64(val)),
+                    _ => Err("not a number".to_string()),
                 }
             }
         }

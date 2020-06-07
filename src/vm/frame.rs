@@ -5,6 +5,7 @@ pub struct VmFrame {
     pub locals: Vec<Value>,
 }
 
+// TODO: add new constructor with preinitialized array
 impl VmFrame {
     pub fn new(argc: usize) -> Self {
         Self {
